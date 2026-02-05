@@ -170,35 +170,7 @@ export function CreateInvoiceDialog({
 
       if (itemsError) throw itemsError;
 
-      // Reduce inventory quantity for each sold item
-      for (const item of invoiceItems) {
-        // Get current product quantity
-        const { data: productData } = await supabase
-          .from('products')
-          .select('quantity')
-          .eq('id', item.product_id)
-          .single();
-
-        if (productData) {
-          const newQuantity = Math.max(0, productData.quantity - item.quantity);
-          
-          // Update product quantity
-          await supabase
-            .from('products')
-            .update({ quantity: newQuantity })
-            .eq('id', item.product_id);
-
-          // Log stock history
-          await supabase.from('stock_history').insert({
-            product_id: item.product_id,
-            type: 'sale',
-            quantity_change: -item.quantity,
-            reason: `Sold via Invoice ${invoiceNum}`,
-            reference_id: invoice.id,
-            created_by: user?.id,
-          });
-        }
-      }
+      // Stock reduction is handled automatically by database trigger
 
       // Generate PDF for download
       if (businessSettings) {
