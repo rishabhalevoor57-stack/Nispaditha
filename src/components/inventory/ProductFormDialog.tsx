@@ -83,6 +83,8 @@ export function ProductFormDialog({
         price_per_gram: product.price_per_gram,
         status: product.status,
         mrp: product.mrp,
+        purchase_price_per_gram: product.purchase_price_per_gram || 0,
+        purchase_making_charges: product.purchase_making_charges || 0,
       });
       setImagePreview(product.image_url);
     } else {
@@ -98,12 +100,25 @@ export function ProductFormDialog({
     return goldValue + formData.making_charges;
   }, [formData.weight_grams, formData.price_per_gram, formData.making_charges]);
 
+  // Auto-calculate purchase price from purchase price per gram and purchase making charges
+  const calculatedPurchasePrice = useMemo(() => {
+    const goldValue = formData.weight_grams * formData.purchase_price_per_gram;
+    return goldValue + formData.purchase_making_charges;
+  }, [formData.weight_grams, formData.purchase_price_per_gram, formData.purchase_making_charges]);
+
   // Update selling price when components change
   useEffect(() => {
     if (calculatedSellingPrice > 0) {
       setFormData(prev => ({ ...prev, selling_price: calculatedSellingPrice }));
     }
   }, [calculatedSellingPrice]);
+
+  // Update purchase price when components change
+  useEffect(() => {
+    if (calculatedPurchasePrice > 0) {
+      setFormData(prev => ({ ...prev, purchase_price: calculatedPurchasePrice }));
+    }
+  }, [calculatedPurchasePrice]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -395,6 +410,41 @@ export function ProductFormDialog({
               </div>
             </div>
 
+            {/* Purchase Price Calculation */}
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <h4 className="text-sm font-semibold mb-3">Purchase Price Calculation</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="purchase_price_per_gram">Purchase Price Per Gram (₹)</Label>
+                  <Input
+                    id="purchase_price_per_gram"
+                    type="number"
+                    value={formData.purchase_price_per_gram}
+                    onChange={(e) => updateField('purchase_price_per_gram', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="purchase_making_charges">Purchase Making Charges (₹)</Label>
+                  <Input
+                    id="purchase_making_charges"
+                    type="number"
+                    value={formData.purchase_making_charges}
+                    onChange={(e) => updateField('purchase_making_charges', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Calculated Purchase Price</Label>
+                  <div className="h-10 px-3 py-2 rounded-md border bg-background flex items-center">
+                    <span className="text-sm text-muted-foreground mr-1">₹</span>
+                    <span className="font-semibold">{calculatedPurchasePrice.toLocaleString('en-IN')}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    ({formData.weight_grams}g × ₹{formData.purchase_price_per_gram}) + ₹{formData.purchase_making_charges} MC
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="mrp">MRP (₹)</Label>
@@ -403,15 +453,6 @@ export function ProductFormDialog({
                   type="number"
                   value={formData.mrp}
                   onChange={(e) => updateField('mrp', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="purchase_price">Purchase Price (₹)</Label>
-                <Input
-                  id="purchase_price"
-                  type="number"
-                  value={formData.purchase_price}
-                  onChange={(e) => updateField('purchase_price', parseFloat(e.target.value) || 0)}
                 />
               </div>
             </div>

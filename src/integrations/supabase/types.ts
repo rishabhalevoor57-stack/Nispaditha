@@ -308,7 +308,9 @@ export type Database = {
           mrp: number | null
           name: string
           price_per_gram: number | null
+          purchase_making_charges: number | null
           purchase_price: number
+          purchase_price_per_gram: number | null
           purity: string | null
           quantity: number
           selling_price: number
@@ -334,7 +336,9 @@ export type Database = {
           mrp?: number | null
           name: string
           price_per_gram?: number | null
+          purchase_making_charges?: number | null
           purchase_price?: number
+          purchase_price_per_gram?: number | null
           purity?: string | null
           quantity?: number
           selling_price?: number
@@ -360,7 +364,9 @@ export type Database = {
           mrp?: number | null
           name?: string
           price_per_gram?: number | null
+          purchase_making_charges?: number | null
           purchase_price?: number
+          purchase_price_per_gram?: number | null
           purity?: string | null
           quantity?: number
           selling_price?: number
