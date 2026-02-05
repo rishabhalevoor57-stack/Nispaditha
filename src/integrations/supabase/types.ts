@@ -22,11 +22,13 @@ export type Database = {
           currency: string
           default_gst: number
           email: string | null
+          gold_rate_per_gram: number
           gst_number: string | null
           id: string
           invoice_prefix: string
           logo_url: string | null
           phone: string | null
+          silver_rate_per_gram: number
           updated_at: string
         }
         Insert: {
@@ -36,11 +38,13 @@ export type Database = {
           currency?: string
           default_gst?: number
           email?: string | null
+          gold_rate_per_gram?: number
           gst_number?: string | null
           id?: string
           invoice_prefix?: string
           logo_url?: string | null
           phone?: string | null
+          silver_rate_per_gram?: number
           updated_at?: string
         }
         Update: {
@@ -50,11 +54,13 @@ export type Database = {
           currency?: string
           default_gst?: number
           email?: string | null
+          gold_rate_per_gram?: number
           gst_number?: string | null
           id?: string
           invoice_prefix?: string
           logo_url?: string | null
           phone?: string | null
+          silver_rate_per_gram?: number
           updated_at?: string
         }
         Relationships: []

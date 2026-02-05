@@ -1,22 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { X } from 'lucide-react';
 import type { InvoiceItem, Product } from '@/types/invoice';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
+import { ProductSearchInput } from './ProductSearchInput';
+import { RateEditConfirmDialog } from './RateEditConfirmDialog';
 
 interface InvoiceItemsTableProps {
   items: InvoiceItem[];
   products: Product[];
-  isAdmin: boolean;
+  defaultRate: number;
   onItemsChange: (items: InvoiceItem[]) => void;
 }
 
@@ -31,33 +25,46 @@ const formatCurrency = (amount: number) => {
 export function InvoiceItemsTable({
   items,
   products,
-  isAdmin,
+  defaultRate,
   onItemsChange,
 }: InvoiceItemsTableProps) {
-  const [selectedProduct, setSelectedProduct] = useState<string>('');
-  const [customRate, setCustomRate] = useState<string>('');
   const { createInvoiceItem, updateItemDiscount, updateItemQuantity, updateItemRate } = useInvoiceCalculations(items);
+  
+  // Rate edit confirmation state
+  const [rateConfirmDialog, setRateConfirmDialog] = useState<{
+    open: boolean;
+    index: number;
+    originalRate: number;
+    newRate: number;
+    productName: string;
+  }>({
+    open: false,
+    index: -1,
+    originalRate: 0,
+    newRate: 0,
+    productName: '',
+  });
 
-  const handleAddProduct = () => {
-    if (!selectedProduct) return;
-    
-    const product = products.find(p => p.id === selectedProduct);
-    if (!product) return;
+  const handleAddProduct = (product: Product) => {
+    // Check if product already in items
+    const existingIndex = items.findIndex(item => item.product_id === product.id);
+    if (existingIndex >= 0) {
+      // Increment quantity instead
+      handleQuantityChange(existingIndex, items[existingIndex].quantity + 1);
+      return;
+    }
 
-    // Calculate rate per gram from selling price
-    const ratePerGram = customRate 
-      ? parseFloat(customRate) 
-      : product.selling_price / product.weight_grams;
-    
-    const newItem = createInvoiceItem(product, ratePerGram);
+    // Use default rate (live metal rate)
+    const newItem = createInvoiceItem(product, defaultRate);
     onItemsChange([...items, newItem]);
-    setSelectedProduct('');
-    setCustomRate('');
   };
 
   const handleDiscountChange = (index: number, discount: number) => {
+    const item = items[index];
+    // Discount cannot exceed making charges
+    const clampedDiscount = Math.min(Math.max(0, discount), item.making_charges);
     const updatedItems = [...items];
-    updatedItems[index] = updateItemDiscount(updatedItems[index], discount);
+    updatedItems[index] = updateItemDiscount(updatedItems[index], clampedDiscount);
     onItemsChange(updatedItems);
   };
 
@@ -68,11 +75,33 @@ export function InvoiceItemsTable({
     onItemsChange(updatedItems);
   };
 
-  const handleRateChange = (index: number, rate: number) => {
+  const handleRateInputChange = (index: number, rate: number) => {
+    const item = items[index];
     if (rate < 0) return;
+    
+    // If rate differs from default, show confirmation
+    if (rate !== item.rate_per_gram && rate !== defaultRate) {
+      setRateConfirmDialog({
+        open: true,
+        index,
+        originalRate: item.rate_per_gram,
+        newRate: rate,
+        productName: item.product_name,
+      });
+    } else {
+      applyRateChange(index, rate);
+    }
+  };
+
+  const applyRateChange = (index: number, rate: number) => {
     const updatedItems = [...items];
     updatedItems[index] = updateItemRate(updatedItems[index], rate);
     onItemsChange(updatedItems);
+  };
+
+  const confirmRateChange = () => {
+    applyRateChange(rateConfirmDialog.index, rateConfirmDialog.newRate);
+    setRateConfirmDialog({ ...rateConfirmDialog, open: false });
   };
 
   const handleRemoveItem = (index: number) => {
@@ -81,40 +110,16 @@ export function InvoiceItemsTable({
 
   return (
     <div className="space-y-4">
-      {/* Add Product Section */}
-      <div className="flex gap-3 items-end">
-        <div className="flex-1 space-y-2">
-          <Label>Add Product</Label>
-          <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select product to add" />
-            </SelectTrigger>
-            <SelectContent>
-              {products.map((product) => (
-                <SelectItem key={product.id} value={product.id}>
-                  {product.sku} - {product.name} ({product.weight_grams}g) - Stock: {product.quantity}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-36 space-y-2">
-          <Label>Rate/gram (optional)</Label>
-          <Input
-            type="number"
-            placeholder="Auto"
-            value={customRate}
-            onChange={(e) => setCustomRate(e.target.value)}
-          />
-        </div>
-        <Button 
-          type="button" 
-          onClick={handleAddProduct}
-          disabled={!selectedProduct}
-          className="btn-gold"
-        >
-          Add
-        </Button>
+      {/* Product Search */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Add Product</label>
+        <ProductSearchInput
+          products={products.filter(p => p.quantity > 0)}
+          onSelect={handleAddProduct}
+        />
+        <p className="text-xs text-muted-foreground">
+          Live Rate: {formatCurrency(defaultRate)}/gram
+        </p>
       </div>
 
       {/* Items Table */}
@@ -129,12 +134,8 @@ export function InvoiceItemsTable({
                 <th className="px-3 py-3 text-center font-medium">Qty</th>
                 <th className="px-3 py-3 text-right font-medium">Rate/g</th>
                 <th className="px-3 py-3 text-right font-medium">Base Price</th>
-                {isAdmin && (
-                  <>
-                    <th className="px-3 py-3 text-right font-medium">Making</th>
-                    <th className="px-3 py-3 text-right font-medium">Discount</th>
-                  </>
-                )}
+                <th className="px-3 py-3 text-right font-medium">Labour</th>
+                <th className="px-3 py-3 text-right font-medium">Discount</th>
                 <th className="px-3 py-3 text-right font-medium">Line Total</th>
                 <th className="px-3 py-3 text-center font-medium w-12"></th>
               </tr>
@@ -165,26 +166,23 @@ export function InvoiceItemsTable({
                       min="0"
                       step="0.01"
                       value={item.rate_per_gram}
-                      onChange={(e) => handleRateChange(index, parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleRateInputChange(index, parseFloat(e.target.value) || 0)}
                       className="w-24 h-8 text-right"
                     />
                   </td>
                   <td className="px-3 py-3 text-right">{formatCurrency(item.base_price)}</td>
-                  {isAdmin && (
-                    <>
-                      <td className="px-3 py-3 text-right">{formatCurrency(item.making_charges)}</td>
-                      <td className="px-3 py-3 text-right">
-                        <Input
-                          type="number"
-                          min="0"
-                          max={item.making_charges}
-                          value={item.discount}
-                          onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
-                          className="w-24 h-8 text-right"
-                        />
-                      </td>
-                    </>
-                  )}
+                  <td className="px-3 py-3 text-right">{formatCurrency(item.making_charges)}</td>
+                  <td className="px-3 py-3 text-right">
+                    <Input
+                      type="number"
+                      min="0"
+                      max={item.making_charges}
+                      value={item.discount}
+                      onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
+                      className="w-24 h-8 text-right"
+                      title="Discount applies only on labour charges"
+                    />
+                  </td>
                   <td className="px-3 py-3 text-right font-medium">{formatCurrency(item.line_total)}</td>
                   <td className="px-3 py-3 text-center">
                     <Button
@@ -205,9 +203,19 @@ export function InvoiceItemsTable({
 
       {items.length === 0 && (
         <div className="border border-dashed rounded-lg p-8 text-center text-muted-foreground">
-          No products added yet. Select a product above to add to invoice.
+          No products added yet. Search for a product above to add to invoice.
         </div>
       )}
+
+      {/* Rate Edit Confirmation Dialog */}
+      <RateEditConfirmDialog
+        open={rateConfirmDialog.open}
+        onOpenChange={(open) => setRateConfirmDialog({ ...rateConfirmDialog, open })}
+        originalRate={rateConfirmDialog.originalRate}
+        newRate={rateConfirmDialog.newRate}
+        productName={rateConfirmDialog.productName}
+        onConfirm={confirmRateChange}
+      />
     </div>
   );
 }
