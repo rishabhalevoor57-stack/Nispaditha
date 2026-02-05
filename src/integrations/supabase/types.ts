@@ -294,59 +294,80 @@ export type Database = {
       }
       products: {
         Row: {
+          bangle_size: string | null
           category_id: string | null
           created_at: string
+          date_ordered: string | null
+          description: string | null
           gst_percentage: number
           id: string
           image_url: string | null
           low_stock_alert: number
           making_charges: number
           metal_type: string | null
+          mrp: number | null
           name: string
+          price_per_gram: number | null
           purchase_price: number
           purity: string | null
           quantity: number
           selling_price: number
           sku: string
+          status: string | null
           supplier_id: string | null
+          type_of_work: string | null
           updated_at: string
           weight_grams: number
         }
         Insert: {
+          bangle_size?: string | null
           category_id?: string | null
           created_at?: string
+          date_ordered?: string | null
+          description?: string | null
           gst_percentage?: number
           id?: string
           image_url?: string | null
           low_stock_alert?: number
           making_charges?: number
           metal_type?: string | null
+          mrp?: number | null
           name: string
+          price_per_gram?: number | null
           purchase_price?: number
           purity?: string | null
           quantity?: number
           selling_price?: number
           sku: string
+          status?: string | null
           supplier_id?: string | null
+          type_of_work?: string | null
           updated_at?: string
           weight_grams?: number
         }
         Update: {
+          bangle_size?: string | null
           category_id?: string | null
           created_at?: string
+          date_ordered?: string | null
+          description?: string | null
           gst_percentage?: number
           id?: string
           image_url?: string | null
           low_stock_alert?: number
           making_charges?: number
           metal_type?: string | null
+          mrp?: number | null
           name?: string
+          price_per_gram?: number | null
           purchase_price?: number
           purity?: string | null
           quantity?: number
           selling_price?: number
           sku?: string
+          status?: string | null
           supplier_id?: string | null
+          type_of_work?: string | null
           updated_at?: string
           weight_grams?: number
         }
