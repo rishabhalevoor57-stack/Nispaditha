@@ -537,6 +537,30 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          gold_rate_per_gram: number
+          id: string
+          silver_rate_per_gram: number
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          gold_rate_per_gram: number
+          id?: string
+          silver_rate_per_gram: number
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          gold_rate_per_gram?: number
+          id?: string
+          silver_rate_per_gram?: number
+        }
+        Relationships: []
+      }
       stock_history: {
         Row: {
           created_at: string

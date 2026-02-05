@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,8 +9,20 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Edit, Trash2, Eye, Package } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Edit, Trash2, Eye, Package, Coins } from 'lucide-react';
 import { Product, STATUS_OPTIONS } from '@/types/inventory';
+import { supabase } from '@/integrations/supabase/client';
+
+interface MetalRates {
+  gold_rate_per_gram: number;
+  silver_rate_per_gram: number;
+}
 
 interface InventoryTableProps {
   products: Product[];
@@ -26,6 +39,36 @@ export function InventoryTable({
   onEdit,
   onDelete,
 }: InventoryTableProps) {
+  const [metalRates, setMetalRates] = useState<MetalRates | null>(null);
+
+  useEffect(() => {
+    fetchMetalRates();
+  }, []);
+
+  const fetchMetalRates = async () => {
+    const { data } = await supabase
+      .from('business_settings')
+      .select('gold_rate_per_gram, silver_rate_per_gram')
+      .limit(1)
+      .single();
+    
+    if (data) {
+      setMetalRates(data);
+    }
+  };
+
+  const getCurrentRate = (metalType: string | null) => {
+    if (!metalRates || !metalType) return null;
+    const type = metalType.toLowerCase();
+    if (type.includes('gold')) {
+      return { rate: metalRates.gold_rate_per_gram, type: 'Gold' };
+    }
+    if (type.includes('silver')) {
+      return { rate: metalRates.silver_rate_per_gram, type: 'Silver' };
+    }
+    return null;
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -133,8 +176,25 @@ export function InventoryTable({
                   <TableCell>{product.categories?.name || '-'}</TableCell>
                   <TableCell className="text-right">{product.weight_grams}g</TableCell>
                   <TableCell className="text-right font-medium">{product.quantity}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCurrency(product.selling_price)}
+                  <TableCell className="text-right">
+                    <div className="space-y-1">
+                      <p className="font-medium">{formatCurrency(product.selling_price)}</p>
+                      {getCurrentRate(product.metal_type) && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center gap-1 text-xs text-gold cursor-help">
+                                <Coins className="w-3 h-3" />
+                                {formatCurrency(getCurrentRate(product.metal_type)?.rate || 0)}/g
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Current {getCurrentRate(product.metal_type)?.type} Rate Applied</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {getStatusBadge(product.status, product.quantity, product.low_stock_alert)}
