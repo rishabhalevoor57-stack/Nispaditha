@@ -76,26 +76,26 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
   
   // Table columns based on whether showing making charges (admin view)
   const columns = showMakingCharges
-    ? ['SKU', 'Description', 'Weight (g)', 'Qty', 'Rate/g', 'Base Price', 'Making', 'Discount', 'Total']
-    : ['SKU', 'Description', 'Weight (g)', 'Qty', 'Rate/g', 'Amount'];
+    ? ['#', 'Description', 'Wt(g)', 'Qty', 'Rate/g', 'Gold Value', 'MC', 'Disc', 'Total']
+    : ['#', 'Description', 'Weight (g)', 'Qty', 'Rate/g', 'Amount'];
   
-  const rows = data.items.map(item => {
+  const rows = data.items.map((item, index) => {
     if (showMakingCharges) {
       return [
-        item.sku,
-        item.product_name,
+        (index + 1).toString(),
+        `${item.product_name}\n${item.sku}`,
         item.weight_grams.toFixed(2),
         item.quantity.toString(),
         formatCurrency(item.rate_per_gram),
         formatCurrency(item.base_price),
         formatCurrency(item.making_charges),
-        formatCurrency(item.discount),
+        item.discount > 0 ? `-${formatCurrency(item.discount)}` : '-',
         formatCurrency(item.line_total),
       ];
     }
     return [
-      item.sku,
-      item.product_name,
+      (index + 1).toString(),
+      `${item.product_name}\n${item.sku}`,
       item.weight_grams.toFixed(2),
       item.quantity.toString(),
       formatCurrency(item.rate_per_gram),
@@ -108,37 +108,43 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
     body: rows,
     startY: tableStartY,
     styles: {
-      fontSize: 9,
-      cellPadding: 3,
+      fontSize: 8,
+      cellPadding: 2,
+      overflow: 'linebreak',
+      lineWidth: 0.1,
     },
     headStyles: {
       fillColor: [30, 41, 59], // slate-800
       textColor: [255, 255, 255],
       fontStyle: 'bold',
+      fontSize: 7,
+      halign: 'center',
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252], // slate-50
     },
     columnStyles: showMakingCharges
       ? {
-          0: { cellWidth: 20 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 18, halign: 'right' },
-          3: { cellWidth: 12, halign: 'center' },
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 38 },
+          2: { cellWidth: 16, halign: 'right' },
+          3: { cellWidth: 10, halign: 'center' },
           4: { cellWidth: 22, halign: 'right' },
-          5: { cellWidth: 22, halign: 'right' },
+          5: { cellWidth: 24, halign: 'right' },
           6: { cellWidth: 20, halign: 'right' },
           7: { cellWidth: 18, halign: 'right' },
-          8: { cellWidth: 22, halign: 'right' },
+          8: { cellWidth: 26, halign: 'right' },
         }
       : {
-          0: { cellWidth: 25 },
-          1: { cellWidth: 60 },
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 70 },
           2: { cellWidth: 25, halign: 'right' },
           3: { cellWidth: 15, halign: 'center' },
           4: { cellWidth: 30, halign: 'right' },
-          5: { cellWidth: 30, halign: 'right' },
+          5: { cellWidth: 35, halign: 'right' },
         },
+    margin: { left: 14, right: 14 },
+    tableWidth: 'auto',
   });
   
   // Get the final Y position after the table
