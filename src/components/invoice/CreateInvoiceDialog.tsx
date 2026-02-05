@@ -19,9 +19,10 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, Download, Printer } from 'lucide-react';
+import { Calculator, Download, Printer, Eye } from 'lucide-react';
 import { InvoiceItemsTable } from './InvoiceItemsTable';
 import { InvoiceTotalsSection } from './InvoiceTotalsSection';
+import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
 import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
@@ -49,6 +50,7 @@ export function CreateInvoiceDialog({
   const [paymentMode, setPaymentMode] = useState('cash');
   const [notes, setNotes] = useState('');
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -160,7 +162,7 @@ export function CreateInvoiceDialog({
           .eq('id', finalClientId);
       }
 
-      // Create invoice
+      // Create invoice with status = 'draft'
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert([{
@@ -174,6 +176,7 @@ export function CreateInvoiceDialog({
           payment_mode: paymentMode,
           notes: notes || null,
           created_by: user?.id,
+          status: 'draft', // New invoices always start as draft
         }])
         .select()
         .single();
@@ -254,6 +257,7 @@ export function CreateInvoiceDialog({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(isOpen) => {
       onOpenChange(isOpen);
       if (!isOpen) resetForm();
@@ -354,11 +358,19 @@ export function CreateInvoiceDialog({
           <div className="flex flex-wrap justify-end gap-3">
             <Button
               variant="outline"
+              onClick={() => setShowPreview(true)}
+              disabled={invoiceItems.length === 0}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Preview Invoice
+            </Button>
+            <Button
+              variant="outline"
               onClick={handlePrintPreview}
               disabled={invoiceItems.length === 0}
             >
               <Printer className="w-4 h-4 mr-2" />
-              Print Preview
+              Print
             </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
@@ -375,5 +387,24 @@ export function CreateInvoiceDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Invoice Preview Modal */}
+    {businessSettings && (
+      <InvoicePreviewModal
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        invoiceNumber="PREVIEW"
+        invoiceDate={new Date().toISOString()}
+        clientName={clientName || 'Walk-in Customer'}
+        clientPhone={clientPhone}
+        paymentMode={paymentMode}
+        items={invoiceItems}
+        totals={totals}
+        businessSettings={businessSettings}
+        notes={notes}
+        showMakingCharges={true}
+      />
+    )}
+  </>
   );
 }

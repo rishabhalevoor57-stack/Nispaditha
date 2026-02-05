@@ -31,6 +31,8 @@ export interface BusinessSettings {
   silver_rate_per_gram: number;
 }
 
+export type InvoiceStatus = 'draft' | 'sent' | 'paid';
+
 export interface Invoice {
   id: string;
   invoice_number: string;
@@ -45,6 +47,9 @@ export interface Invoice {
   created_at: string;
   client_id: string | null;
   clients?: { name: string; phone: string | null } | null;
+  status: InvoiceStatus;
+  sent_at: string | null;
+  paid_at: string | null;
 }
 
 export interface InvoiceItem {

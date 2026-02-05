@@ -4,15 +4,16 @@ import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Eye, Trash2, Download, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { CreateInvoiceDialog } from '@/components/invoice/CreateInvoiceDialog';
 import { ViewInvoiceDialog } from '@/components/invoice/ViewInvoiceDialog';
+import { InvoiceFilters, type InvoiceStatusFilter } from '@/components/invoice/InvoiceFilters';
+import { InvoiceStatusBadge, InvoiceStatusActions } from '@/components/invoice/InvoiceStatusActions';
 import { downloadInvoicePdf } from '@/utils/invoicePdf';
-import type { Invoice, BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
+import type { Invoice, BusinessSettings, InvoiceItem, InvoiceTotals, InvoiceStatus } from '@/types/invoice';
 
 export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -21,6 +22,7 @@ export default function Invoices() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -36,7 +38,16 @@ export default function Invoices() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setInvoices((data as Invoice[]) || []);
+      
+      // Map the data to ensure status has a default value
+      const mappedData = (data || []).map((inv: Record<string, unknown>) => ({
+        ...inv,
+        status: (inv.status as InvoiceStatus) || 'draft',
+        sent_at: inv.sent_at as string | null,
+        paid_at: inv.paid_at as string | null,
+      })) as Invoice[];
+      
+      setInvoices(mappedData);
     } catch (error) {
       console.error('Error fetching invoices:', error);
     } finally {
@@ -74,7 +85,6 @@ export default function Invoices() {
       return;
     }
 
-    // Fetch invoice items
     const { data: itemsData } = await supabase
       .from('invoice_items')
       .select('*, products(sku)')
@@ -128,13 +138,27 @@ export default function Invoices() {
       totals,
       businessSettings,
       notes: invoice.notes || undefined,
-    }, true); // All users are admin
+    }, true);
   };
 
-  const filteredInvoices = invoices.filter((invoice) =>
-    invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    invoice.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Calculate counts for each status
+  const statusCounts = {
+    all: invoices.length,
+    draft: invoices.filter(inv => inv.status === 'draft').length,
+    sent: invoices.filter(inv => inv.status === 'sent').length,
+    paid: invoices.filter(inv => inv.status === 'paid').length,
+  };
+
+  // Filter invoices by search term and status
+  const filteredInvoices = invoices.filter((invoice) => {
+    const matchesSearch = 
+      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      invoice.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -171,21 +195,23 @@ export default function Invoices() {
       )
     },
     { 
-      key: 'payment_status', 
+      key: 'status', 
       header: 'Status',
       cell: (item: Invoice) => (
-        <Badge 
-          variant="outline"
-          className={
-            item.payment_status === 'paid' 
-              ? 'bg-success/10 text-success border-success/20' 
-              : item.payment_status === 'partial'
-              ? 'bg-warning/10 text-warning border-warning/20'
-              : 'bg-muted text-muted-foreground'
-          }
-        >
-          {item.payment_status}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <InvoiceStatusBadge status={item.status} />
+        </div>
+      )
+    },
+    { 
+      key: 'status_actions', 
+      header: 'Update Status',
+      cell: (item: Invoice) => (
+        <InvoiceStatusActions
+          invoiceId={item.id}
+          currentStatus={item.status}
+          onStatusChange={fetchInvoices}
+        />
       )
     },
     { 
@@ -243,6 +269,13 @@ export default function Invoices() {
         }
       />
 
+      {/* Filters */}
+      <InvoiceFilters
+        activeFilter={statusFilter}
+        onFilterChange={setStatusFilter}
+        counts={statusCounts}
+      />
+
       {/* Search */}
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -261,7 +294,6 @@ export default function Invoices() {
         emptyMessage="No invoices found. Create your first invoice to get started."
       />
 
-      {/* Create Invoice Dialog */}
       <CreateInvoiceDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
@@ -270,11 +302,11 @@ export default function Invoices() {
         }}
       />
 
-      {/* View Invoice Dialog */}
       <ViewInvoiceDialog
         invoiceId={viewInvoiceId}
         open={!!viewInvoiceId}
         onOpenChange={(open) => !open && setViewInvoiceId(null)}
+        onStatusChange={fetchInvoices}
       />
     </AppLayout>
   );
