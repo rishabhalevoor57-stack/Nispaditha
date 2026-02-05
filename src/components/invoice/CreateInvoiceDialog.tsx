@@ -54,8 +54,8 @@ export function CreateInvoiceDialog({
   const { user } = useAuth();
   const { totals } = useInvoiceCalculations(invoiceItems);
 
-  // Get the default rate (gold rate) from settings
-  const defaultRate = businessSettings?.gold_rate_per_gram || 7500;
+  // Get the default silver rate from settings
+  const defaultRate = businessSettings?.silver_rate_per_gram || 95;
 
   useEffect(() => {
     if (open) {
