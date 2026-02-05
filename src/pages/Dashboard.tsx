@@ -5,6 +5,7 @@ import { StatCard } from '@/components/ui/stat-card';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { LiveMetalRatesCard } from '@/components/dashboard/LiveMetalRatesCard';
+import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   IndianRupee, 
@@ -239,6 +240,11 @@ export default function Dashboard() {
           icon={Package}
           variant="default"
         />
+      </div>
+
+      {/* Calendar Widget */}
+      <div className="mb-8">
+        <CalendarWidget />
       </div>
 
       {/* Tables */}

@@ -63,6 +63,64 @@ export const useOrderNotes = () => {
     };
   };
 
+  const createCalendarEvents = async (
+    orderNoteId: string,
+    customerName: string,
+    orderDate: string,
+    deliveryDate: string | null,
+    createdBy: string | null
+  ) => {
+    const events: Array<{
+      title: string;
+      event_date: string;
+      event_type: string;
+      order_note_id: string;
+      customer_name: string;
+      created_by: string | null;
+    }> = [];
+
+    // Order Start Event
+    events.push({
+      title: `Order Started - ${customerName}`,
+      event_date: orderDate,
+      event_type: 'order_start',
+      order_note_id: orderNoteId,
+      customer_name: customerName,
+      created_by: createdBy,
+    });
+
+    // Delivery Event (if date is set)
+    if (deliveryDate) {
+      events.push({
+        title: `Delivery Due - ${customerName}`,
+        event_date: deliveryDate,
+        event_type: 'delivery',
+        order_note_id: orderNoteId,
+        customer_name: customerName,
+        created_by: createdBy,
+      });
+    }
+
+    await supabase.from('calendar_events').insert(events);
+  };
+
+  const updateCalendarEvents = async (
+    orderNoteId: string,
+    customerName: string,
+    orderDate: string,
+    deliveryDate: string | null,
+    createdBy: string | null
+  ) => {
+    // Delete existing events
+    await supabase
+      .from('calendar_events')
+      .delete()
+      .eq('order_note_id', orderNoteId);
+
+    // Create new events
+    await createCalendarEvents(orderNoteId, customerName, orderDate, deliveryDate, createdBy);
+  };
+
   const createOrderNote = useMutation({
     mutationFn: async (data: {
       note: Omit<OrderNote, 'id' | 'balance' | 'created_at' | 'updated_at'>;
@@ -89,10 +147,20 @@ export const useOrderNotes = () => {
         if (itemsError) throw itemsError;
       }
 
+      // Create calendar events
+      await createCalendarEvents(
+        noteData.id,
+        data.note.customer_name,
+        data.note.order_date,
+        data.note.expected_delivery_date || null,
+        data.note.created_by || null
+      );
+
       return noteData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-notes'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       toast({ title: 'Order note created successfully' });
     },
     onError: (error: Error) => {
@@ -136,9 +204,21 @@ export const useOrderNotes = () => {
 
         if (itemsError) throw itemsError;
       }
+
+      // Update calendar events
+      if (data.note.customer_name && data.note.order_date) {
+        await updateCalendarEvents(
+          data.id,
+          data.note.customer_name,
+          data.note.order_date,
+          data.note.expected_delivery_date || null,
+          data.note.created_by || null
+        );
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-notes'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       toast({ title: 'Order note updated successfully' });
     },
     onError: (error: Error) => {
