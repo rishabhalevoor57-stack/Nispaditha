@@ -212,6 +212,39 @@ export function downloadInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
 
 export function printInvoice(data: InvoicePdfData, showMakingCharges = false) {
   const doc = generateInvoicePdf(data, showMakingCharges);
-  doc.autoPrint();
-  window.open(doc.output('bloburl'), '_blank');
+  
+  // Create blob and open in new window for print preview
+  const pdfBlob = doc.output('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  
+  // Create an iframe to handle the print preview
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  iframe.src = pdfUrl;
+  
+  document.body.appendChild(iframe);
+  
+  iframe.onload = () => {
+    setTimeout(() => {
+      iframe.contentWindow?.print();
+    }, 100);
+  };
+  
+  // Clean up after printing
+  window.addEventListener('afterprint', () => {
+    document.body.removeChild(iframe);
+    URL.revokeObjectURL(pdfUrl);
+  }, { once: true });
+  
+  // Fallback: Also open in new tab for browsers that block iframe printing
+  const newWindow = window.open(pdfUrl, '_blank');
+  if (!newWindow) {
+    // If popup is blocked, just download the PDF
+    doc.save(`${data.invoiceNumber}-preview.pdf`);
+  }
 }
