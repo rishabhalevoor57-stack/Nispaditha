@@ -51,9 +51,11 @@ export function CreateInvoiceDialog({
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   
   const { toast } = useToast();
-  const { user, userRole } = useAuth();
-  const isAdmin = userRole === 'admin';
+  const { user } = useAuth();
   const { totals } = useInvoiceCalculations(invoiceItems);
+
+  // Get the default rate (gold rate) from settings
+  const defaultRate = businessSettings?.gold_rate_per_gram || 7500;
 
   useEffect(() => {
     if (open) {
@@ -184,7 +186,7 @@ export function CreateInvoiceDialog({
           totals,
           businessSettings,
           notes,
-        }, isAdmin);
+        }, true); // Always admin view since all users are admin
       }
 
       toast({ title: 'Invoice created and downloaded!' });
@@ -215,7 +217,7 @@ export function CreateInvoiceDialog({
       totals,
       businessSettings,
       notes,
-    }, isAdmin);
+    }, true); // Always admin view
   };
 
   return (
@@ -295,13 +297,13 @@ export function CreateInvoiceDialog({
           <InvoiceItemsTable
             items={invoiceItems}
             products={products}
-            isAdmin={isAdmin}
+            defaultRate={defaultRate}
             onItemsChange={setInvoiceItems}
           />
 
           {/* Totals */}
           {invoiceItems.length > 0 && (
-            <InvoiceTotalsSection totals={totals} isAdmin={isAdmin} />
+            <InvoiceTotalsSection totals={totals} isAdmin={true} />
           )}
 
           {/* Notes */}

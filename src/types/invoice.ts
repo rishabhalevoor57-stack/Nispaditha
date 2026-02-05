@@ -27,6 +27,8 @@ export interface BusinessSettings {
   email: string | null;
   invoice_prefix: string;
   default_gst: number;
+  gold_rate_per_gram: number;
+  silver_rate_per_gram: number;
 }
 
 export interface Invoice {

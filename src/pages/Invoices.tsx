@@ -11,8 +11,7 @@ import { Plus, Search, Eye, Trash2, Download, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { CreateInvoiceDialog } from '@/components/invoice/CreateInvoiceDialog';
 import { ViewInvoiceDialog } from '@/components/invoice/ViewInvoiceDialog';
-import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
-import { useAuth } from '@/contexts/AuthContext';
+import { downloadInvoicePdf } from '@/utils/invoicePdf';
 import type { Invoice, BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
 
 export default function Invoices() {
@@ -23,8 +22,6 @@ export default function Invoices() {
   const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
-  const { userRole } = useAuth();
-  const isAdmin = userRole === 'admin';
 
   useEffect(() => {
     fetchInvoices();
@@ -131,7 +128,7 @@ export default function Invoices() {
       totals,
       businessSettings,
       notes: invoice.notes || undefined,
-    }, isAdmin);
+    }, true); // All users are admin
   };
 
   const filteredInvoices = invoices.filter((invoice) =>
