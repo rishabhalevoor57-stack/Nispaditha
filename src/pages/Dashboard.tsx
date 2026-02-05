@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
+import { LiveMetalRatesCard } from '@/components/dashboard/LiveMetalRatesCard';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   IndianRupee, 
@@ -218,7 +219,8 @@ export default function Dashboard() {
       </div>
 
       {/* Secondary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <LiveMetalRatesCard />
         <StatCard
           title="Low Stock Alerts"
           value={stats.lowStockCount}

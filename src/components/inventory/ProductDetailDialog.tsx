@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,8 +8,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Edit, Trash2, Package } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Edit, Trash2, Package, Coins } from 'lucide-react';
 import { Product, STATUS_OPTIONS } from '@/types/inventory';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
 interface ProductDetailDialogProps {
@@ -19,6 +22,11 @@ interface ProductDetailDialogProps {
   onDelete: () => void;
 }
 
+interface MetalRates {
+  gold_rate_per_gram: number;
+  silver_rate_per_gram: number;
+}
+
 export function ProductDetailDialog({
   open,
   onOpenChange,
@@ -26,6 +34,37 @@ export function ProductDetailDialog({
   onEdit,
   onDelete,
 }: ProductDetailDialogProps) {
+  const [metalRates, setMetalRates] = useState<MetalRates | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      fetchMetalRates();
+    }
+  }, [open]);
+
+  const fetchMetalRates = async () => {
+    const { data } = await supabase
+      .from('business_settings')
+      .select('gold_rate_per_gram, silver_rate_per_gram')
+      .limit(1)
+      .single();
+    
+    if (data) {
+      setMetalRates(data);
+    }
+  };
+
+  const getCurrentRate = () => {
+    if (!metalRates || !product?.metal_type) return null;
+    const metalType = product.metal_type.toLowerCase();
+    if (metalType.includes('gold')) {
+      return { rate: metalRates.gold_rate_per_gram, type: 'Gold' };
+    }
+    if (metalType.includes('silver')) {
+      return { rate: metalRates.silver_rate_per_gram, type: 'Silver' };
+    }
+    return null;
+  };
   if (!product) return null;
 
   const formatCurrency = (amount: number) => {
@@ -114,6 +153,17 @@ export function ProductDetailDialog({
           </div>
 
           <Separator />
+
+          {/* Current Rate Applied */}
+          {getCurrentRate() && (
+            <Alert className="border-gold/20 bg-gold/5">
+              <Coins className="h-4 w-4 text-gold" />
+              <AlertDescription className="text-sm">
+                <span className="font-medium">Current {getCurrentRate()?.type} Rate Applied: </span>
+                {formatCurrency(getCurrentRate()?.rate || 0)} per gram
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Pricing */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
