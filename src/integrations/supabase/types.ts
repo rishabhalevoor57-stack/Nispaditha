@@ -304,8 +304,11 @@ export type Database = {
           invoice_date: string
           invoice_number: string
           notes: string | null
+          paid_at: string | null
           payment_mode: string | null
           payment_status: string
+          sent_at: string | null
+          status: string
           subtotal: number
           updated_at: string
         }
@@ -320,8 +323,11 @@ export type Database = {
           invoice_date?: string
           invoice_number: string
           notes?: string | null
+          paid_at?: string | null
           payment_mode?: string | null
           payment_status?: string
+          sent_at?: string | null
+          status?: string
           subtotal?: number
           updated_at?: string
         }
@@ -336,8 +342,11 @@ export type Database = {
           invoice_date?: string
           invoice_number?: string
           notes?: string | null
+          paid_at?: string | null
           payment_mode?: string | null
           payment_status?: string
+          sent_at?: string | null
+          status?: string
           subtotal?: number
           updated_at?: string
         }
