@@ -127,12 +127,45 @@ export function CreateInvoiceDialog({
       // Generate invoice number
       const { data: invoiceNum } = await supabase.rpc('generate_invoice_number');
 
+      // Auto-create or update client if phone number is provided
+      let finalClientId = selectedClient && selectedClient !== 'walk-in' ? selectedClient : null;
+      
+      if (clientPhone && clientPhone.trim()) {
+        // Use the upsert function to create or update client
+        const { data: clientId, error: clientError } = await supabase.rpc('upsert_client_on_invoice', {
+          p_phone: clientPhone.trim(),
+          p_name: clientName || 'Walk-in Customer',
+          p_amount: totals.grandTotal,
+        });
+        
+        if (clientError) {
+          console.error('Error upserting client:', clientError);
+        } else if (clientId) {
+          finalClientId = clientId;
+        }
+      } else if (finalClientId) {
+        // Update existing selected client's purchase history using raw update
+        const { data: currentClient } = await supabase
+          .from('clients')
+          .select('total_purchases')
+          .eq('id', finalClientId)
+          .single();
+
+        await supabase
+          .from('clients')
+          .update({
+            last_invoice_date: new Date().toISOString(),
+            total_purchases: (currentClient?.total_purchases || 0) + totals.grandTotal,
+          })
+          .eq('id', finalClientId);
+      }
+
       // Create invoice
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert([{
           invoice_number: invoiceNum,
-          client_id: selectedClient && selectedClient !== 'walk-in' ? selectedClient : null,
+          client_id: finalClientId,
           subtotal: totals.subtotal,
           discount_amount: totals.discountAmount,
           gst_amount: totals.gstAmount,

@@ -65,6 +65,53 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_name: string | null
+          event_date: string
+          event_type: string
+          id: string
+          notes: string | null
+          order_note_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string | null
+          event_date: string
+          event_type: string
+          id?: string
+          notes?: string | null
+          order_note_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          notes?: string | null
+          order_note_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_order_note_id_fkey"
+            columns: ["order_note_id"]
+            isOneToOne: false
+            referencedRelation: "order_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -96,9 +143,11 @@ export type Database = {
           email: string | null
           gst_number: string | null
           id: string
+          last_invoice_date: string | null
           name: string
           outstanding_balance: number
           phone: string | null
+          total_purchases: number
           updated_at: string
         }
         Insert: {
@@ -107,9 +156,11 @@ export type Database = {
           email?: string | null
           gst_number?: string | null
           id?: string
+          last_invoice_date?: string | null
           name: string
           outstanding_balance?: number
           phone?: string | null
+          total_purchases?: number
           updated_at?: string
         }
         Update: {
@@ -118,9 +169,11 @@ export type Database = {
           email?: string | null
           gst_number?: string | null
           id?: string
+          last_invoice_date?: string | null
           name?: string
           outstanding_balance?: number
           phone?: string | null
+          total_purchases?: number
           updated_at?: string
         }
         Relationships: []
@@ -674,6 +727,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      upsert_client_on_invoice: {
+        Args: { p_amount: number; p_name: string; p_phone: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "staff"
