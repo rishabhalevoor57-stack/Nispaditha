@@ -10,7 +10,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Building, FileText, Tags, Loader2 } from 'lucide-react';
+import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface BusinessSettings {
   id: string;
@@ -37,6 +48,8 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [isResettingOrders, setIsResettingOrders] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
   const { toast } = useToast();
   const { userRole } = useAuth();
 
@@ -108,6 +121,40 @@ export default function Settings() {
     }
   };
 
+  const handleResetAllOrders = async () => {
+    if (confirmText !== 'DELETE ALL ORDERS') {
+      toast({ variant: 'destructive', title: 'Error', description: 'Please type the confirmation text correctly' });
+      return;
+    }
+
+    setIsResettingOrders(true);
+    try {
+      // First delete all invoice items
+      const { error: itemsError } = await supabase
+        .from('invoice_items')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (itemsError) throw itemsError;
+
+      // Then delete all invoices
+      const { error: invoicesError } = await supabase
+        .from('invoices')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (invoicesError) throw invoicesError;
+
+      toast({ title: 'All orders have been deleted successfully!' });
+      setConfirmText('');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      toast({ variant: 'destructive', title: 'Error', description: message });
+    } finally {
+      setIsResettingOrders(false);
+    }
+  };
+
   const handleDeleteCategory = async (id: string) => {
     if (!confirm('Are you sure? Products in this category will lose their category.')) return;
 
@@ -153,6 +200,12 @@ export default function Settings() {
             <Tags className="w-4 h-4" />
             Categories
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="data" className="flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />
+              Data Management
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="business">
@@ -355,6 +408,86 @@ export default function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="data">
+            <Card className="shadow-card border-destructive/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="w-5 h-5" />
+                  Danger Zone
+                </CardTitle>
+                <CardDescription>
+                  Irreversible actions that affect your data. Please be careful.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Reset All Orders */}
+                <div className="p-4 border border-destructive/30 rounded-lg bg-destructive/5">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h4 className="font-semibold text-foreground">Reset All Orders</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Permanently delete all invoices and invoice items. This action cannot be undone.
+                        Stock quantities will NOT be restored.
+                      </p>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="shrink-0">
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Reset Orders
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="w-5 h-5 text-destructive" />
+                            Are you absolutely sure?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-3">
+                            <span className="block">
+                              This will permanently delete <strong>ALL invoices</strong> and their items from your database.
+                            </span>
+                            <span className="block text-destructive font-medium">
+                              This action cannot be undone. Stock quantities will NOT be restored.
+                            </span>
+                            <span className="block mt-4">
+                              Type <strong className="font-mono bg-muted px-1 py-0.5 rounded">DELETE ALL ORDERS</strong> to confirm:
+                            </span>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <Input
+                          value={confirmText}
+                          onChange={(e) => setConfirmText(e.target.value)}
+                          placeholder="Type DELETE ALL ORDERS"
+                          className="font-mono"
+                        />
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={() => setConfirmText('')}>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleResetAllOrders}
+                            disabled={confirmText !== 'DELETE ALL ORDERS' || isResettingOrders}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {isResettingOrders ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              'Delete All Orders'
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </AppLayout>
   );
