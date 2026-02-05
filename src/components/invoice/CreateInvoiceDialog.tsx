@@ -135,7 +135,7 @@ export function CreateInvoiceDialog({
           discount_amount: totals.discountAmount,
           gst_amount: totals.gstAmount,
           grand_total: totals.grandTotal,
-          payment_status: 'paid',
+          payment_status: paymentMode === 'pay_later' ? 'pending' : 'paid',
           payment_mode: paymentMode,
           notes: notes || null,
           created_by: user?.id,
@@ -169,6 +169,36 @@ export function CreateInvoiceDialog({
         .insert(itemsToInsert);
 
       if (itemsError) throw itemsError;
+
+      // Reduce inventory quantity for each sold item
+      for (const item of invoiceItems) {
+        // Get current product quantity
+        const { data: productData } = await supabase
+          .from('products')
+          .select('quantity')
+          .eq('id', item.product_id)
+          .single();
+
+        if (productData) {
+          const newQuantity = Math.max(0, productData.quantity - item.quantity);
+          
+          // Update product quantity
+          await supabase
+            .from('products')
+            .update({ quantity: newQuantity })
+            .eq('id', item.product_id);
+
+          // Log stock history
+          await supabase.from('stock_history').insert({
+            product_id: item.product_id,
+            type: 'sale',
+            quantity_change: -item.quantity,
+            reason: `Sold via Invoice ${invoiceNum}`,
+            reference_id: invoice.id,
+            created_by: user?.id,
+          });
+        }
+      }
 
       // Generate PDF for download
       if (businessSettings) {
@@ -283,6 +313,7 @@ export function CreateInvoiceDialog({
                   <SelectItem value="upi">UPI</SelectItem>
                   <SelectItem value="card">Card</SelectItem>
                   <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="pay_later">Pay Later</SelectItem>
                 </SelectContent>
               </Select>
             </div>
