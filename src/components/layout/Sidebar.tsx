@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Gem,
-  Menu
+  Menu,
+  ClipboardList
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: Package, label: 'Inventory', path: '/inventory' },
   { icon: FileText, label: 'Invoices', path: '/invoices' },
+  { icon: ClipboardList, label: 'Order Notes', path: '/order-notes' },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Wallet, label: 'Expenses', path: '/expenses' },
   { icon: Settings, label: 'Settings', path: '/settings' },

@@ -292,6 +292,110 @@ export type Database = {
           },
         ]
       }
+      order_note_items: {
+        Row: {
+          created_at: string
+          customization_notes: string | null
+          expected_price: number | null
+          id: string
+          item_description: string
+          order_note_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          customization_notes?: string | null
+          expected_price?: number | null
+          id?: string
+          item_description: string
+          order_note_id: string
+          quantity?: number
+        }
+        Update: {
+          created_at?: string
+          customization_notes?: string | null
+          expected_price?: number | null
+          id?: string
+          item_description?: string
+          order_note_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_note_items_order_note_id_fkey"
+            columns: ["order_note_id"]
+            isOneToOne: false
+            referencedRelation: "order_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_notes: {
+        Row: {
+          address: string | null
+          advance_received: number | null
+          balance: number | null
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          delivery_type: Database["public"]["Enums"]["delivery_type"] | null
+          expected_delivery_date: string | null
+          handled_by: string | null
+          id: string
+          order_date: string
+          order_reference: string
+          payment_mode: string | null
+          phone_number: string | null
+          quoted_estimate: number | null
+          special_instructions: string | null
+          status: Database["public"]["Enums"]["order_note_status"] | null
+          time_slot: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          advance_received?: number | null
+          balance?: number | null
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          delivery_type?: Database["public"]["Enums"]["delivery_type"] | null
+          expected_delivery_date?: string | null
+          handled_by?: string | null
+          id?: string
+          order_date?: string
+          order_reference: string
+          payment_mode?: string | null
+          phone_number?: string | null
+          quoted_estimate?: number | null
+          special_instructions?: string | null
+          status?: Database["public"]["Enums"]["order_note_status"] | null
+          time_slot?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          advance_received?: number | null
+          balance?: number | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          delivery_type?: Database["public"]["Enums"]["delivery_type"] | null
+          expected_delivery_date?: string | null
+          handled_by?: string | null
+          id?: string
+          order_date?: string
+          order_reference?: string
+          payment_mode?: string | null
+          phone_number?: string | null
+          quoted_estimate?: number | null
+          special_instructions?: string | null
+          status?: Database["public"]["Enums"]["order_note_status"] | null
+          time_slot?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           bangle_size: string | null
@@ -531,6 +635,7 @@ export type Database = {
     }
     Functions: {
       generate_invoice_number: { Args: never; Returns: string }
+      generate_order_reference: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -542,6 +647,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "staff"
+      delivery_type: "pickup" | "home_delivery"
+      order_note_status:
+        | "order_noted"
+        | "design_approved"
+        | "in_production"
+        | "ready"
+        | "delivered"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -670,6 +782,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff"],
+      delivery_type: ["pickup", "home_delivery"],
+      order_note_status: [
+        "order_noted",
+        "design_approved",
+        "in_production",
+        "ready",
+        "delivered",
+      ],
     },
   },
 } as const

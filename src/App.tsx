@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Invoices from "./pages/Invoices";
+import OrderNotes from "./pages/OrderNotes";
 import Clients from "./pages/Clients";
 import Expenses from "./pages/Expenses";
 import Settings from "./pages/Settings";
@@ -61,6 +62,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Invoices />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/order-notes"
+        element={
+          <ProtectedRoute>
+            <OrderNotes />
           </ProtectedRoute>
         }
       />
