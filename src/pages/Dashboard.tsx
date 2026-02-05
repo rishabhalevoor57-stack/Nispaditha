@@ -6,6 +6,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { LiveMetalRatesCard } from '@/components/dashboard/LiveMetalRatesCard';
 import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
+import { CategoryStockValuation } from '@/components/dashboard/CategoryStockValuation';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   IndianRupee, 
@@ -245,6 +246,11 @@ export default function Dashboard() {
       {/* Calendar Widget */}
       <div className="mb-8">
         <CalendarWidget />
+      </div>
+
+      {/* Category Stock Valuation */}
+      <div className="mb-8">
+        <CategoryStockValuation />
       </div>
 
       {/* Tables */}
