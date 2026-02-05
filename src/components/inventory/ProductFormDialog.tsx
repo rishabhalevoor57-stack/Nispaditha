@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -91,6 +91,19 @@ export function ProductFormDialog({
     }
     setImageFile(null);
   }, [product, open]);
+
+  // Auto-calculate selling price from price per gram and making charges
+  const calculatedSellingPrice = useMemo(() => {
+    const goldValue = formData.weight_grams * formData.price_per_gram;
+    return goldValue + formData.making_charges;
+  }, [formData.weight_grams, formData.price_per_gram, formData.making_charges]);
+
+  // Update selling price when components change
+  useEffect(() => {
+    if (calculatedSellingPrice > 0) {
+      setFormData(prev => ({ ...prev, selling_price: calculatedSellingPrice }));
+    }
+  }, [calculatedSellingPrice]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -344,57 +357,67 @@ export function ProductFormDialog({
             </div>
           </div>
 
-          {/* Pricing */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price_per_gram">Price Per Gram (₹)</Label>
-              <Input
-                id="price_per_gram"
-                type="number"
-                value={formData.price_per_gram}
-                onChange={(e) => updateField('price_per_gram', parseFloat(e.target.value) || 0)}
-              />
+          {/* Pricing - Selling Price Components */}
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <h4 className="text-sm font-semibold mb-3">Selling Price Calculation</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="price_per_gram">Price Per Gram (₹) *</Label>
+                  <Input
+                    id="price_per_gram"
+                    type="number"
+                    value={formData.price_per_gram}
+                    onChange={(e) => updateField('price_per_gram', parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="making_charges">Making Charges (₹) *</Label>
+                  <Input
+                    id="making_charges"
+                    type="number"
+                    value={formData.making_charges}
+                    onChange={(e) => updateField('making_charges', parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Calculated Selling Price</Label>
+                  <div className="h-10 px-3 py-2 rounded-md border bg-background flex items-center">
+                    <span className="text-sm text-muted-foreground mr-1">₹</span>
+                    <span className="font-semibold">{calculatedSellingPrice.toLocaleString('en-IN')}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    ({formData.weight_grams}g × ₹{formData.price_per_gram}) + ₹{formData.making_charges} MC
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="making_charges">Making Charges (₹)</Label>
-              <Input
-                id="making_charges"
-                type="number"
-                value={formData.making_charges}
-                onChange={(e) => updateField('making_charges', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="mrp">MRP (₹)</Label>
-              <Input
-                id="mrp"
-                type="number"
-                value={formData.mrp}
-                onChange={(e) => updateField('mrp', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="selling_price">Selling Price (₹) *</Label>
-              <Input
-                id="selling_price"
-                type="number"
-                value={formData.selling_price}
-                onChange={(e) => updateField('selling_price', parseFloat(e.target.value) || 0)}
-                required
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="mrp">MRP (₹)</Label>
+                <Input
+                  id="mrp"
+                  type="number"
+                  value={formData.mrp}
+                  onChange={(e) => updateField('mrp', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="purchase_price">Purchase Price (₹)</Label>
+                <Input
+                  id="purchase_price"
+                  type="number"
+                  value={formData.purchase_price}
+                  onChange={(e) => updateField('purchase_price', parseFloat(e.target.value) || 0)}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="purchase_price">Purchase Price (₹)</Label>
-              <Input
-                id="purchase_price"
-                type="number"
-                value={formData.purchase_price}
-                onChange={(e) => updateField('purchase_price', parseFloat(e.target.value) || 0)}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="gst">GST %</Label>
               <Input
