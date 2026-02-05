@@ -40,6 +40,18 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
   
   let yPos = margin;
 
+  // ================== LOGO SECTION ==================
+  // Add the Nispaditha logo at the top center
+  try {
+    const logoWidth = 50;
+    const logoHeight = 25;
+    const logoX = (pageWidth - logoWidth) / 2;
+    doc.addImage('/images/nispaditha-logo.png', 'PNG', logoX, yPos, logoWidth, logoHeight);
+    yPos += logoHeight + 5;
+  } catch (error) {
+    console.warn('Could not load logo image:', error);
+  }
+
   // ================== HEADER SECTION ==================
   // Shop Name - Centered & Bold
   doc.setFontSize(18);
