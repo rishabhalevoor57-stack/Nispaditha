@@ -25,6 +25,8 @@ export interface Product {
   price_per_gram: number;
   status: ProductStatus;
   mrp: number;
+  purchase_price_per_gram: number;
+  purchase_making_charges: number;
   created_at: string;
   updated_at: string;
   categories?: { name: string } | null;
@@ -52,6 +54,8 @@ export interface ProductFormData {
   price_per_gram: number;
   status: ProductStatus;
   mrp: number;
+  purchase_price_per_gram: number;
+  purchase_making_charges: number;
 }
 
 export const TYPE_OF_WORK_OPTIONS: TypeOfWork[] = ['Casting', 'Handmade', 'Polishing', 'Repair', 'Custom', 'Others'];
@@ -83,4 +87,6 @@ export const initialProductForm: ProductFormData = {
   price_per_gram: 0,
   status: 'in_stock',
   mrp: 0,
+  purchase_price_per_gram: 0,
+  purchase_making_charges: 0,
 };
