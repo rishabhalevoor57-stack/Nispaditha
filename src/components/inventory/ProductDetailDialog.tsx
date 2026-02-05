@@ -22,11 +22,6 @@ interface ProductDetailDialogProps {
   onDelete: () => void;
 }
 
-interface MetalRates {
-  gold_rate_per_gram: number;
-  silver_rate_per_gram: number;
-}
-
 export function ProductDetailDialog({
   open,
   onOpenChange,
@@ -34,37 +29,26 @@ export function ProductDetailDialog({
   onEdit,
   onDelete,
 }: ProductDetailDialogProps) {
-  const [metalRates, setMetalRates] = useState<MetalRates | null>(null);
+  const [silverRate, setSilverRate] = useState<number>(0);
 
   useEffect(() => {
     if (open) {
-      fetchMetalRates();
+      fetchSilverRate();
     }
   }, [open]);
 
-  const fetchMetalRates = async () => {
+  const fetchSilverRate = async () => {
     const { data } = await supabase
       .from('business_settings')
-      .select('gold_rate_per_gram, silver_rate_per_gram')
+      .select('silver_rate_per_gram')
       .limit(1)
       .single();
     
     if (data) {
-      setMetalRates(data);
+      setSilverRate(data.silver_rate_per_gram);
     }
   };
 
-  const getCurrentRate = () => {
-    if (!metalRates || !product?.metal_type) return null;
-    const metalType = product.metal_type.toLowerCase();
-    if (metalType.includes('gold')) {
-      return { rate: metalRates.gold_rate_per_gram, type: 'Gold' };
-    }
-    if (metalType.includes('silver')) {
-      return { rate: metalRates.silver_rate_per_gram, type: 'Silver' };
-    }
-    return null;
-  };
   if (!product) return null;
 
   const formatCurrency = (amount: number) => {
@@ -137,7 +121,7 @@ export function ProductDetailDialog({
 
           {/* Details Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <DetailItem label="Metal Type" value={product.metal_type || '-'} />
+            <DetailItem label="Metal Type" value="Silver" />
             <DetailItem label="Purity" value={product.purity || '-'} />
             <DetailItem label="Weight" value={`${product.weight_grams}g`} />
             <DetailItem label="Quantity" value={product.quantity.toString()} />
@@ -155,15 +139,13 @@ export function ProductDetailDialog({
           <Separator />
 
           {/* Current Rate Applied */}
-          {getCurrentRate() && (
-            <Alert className="border-gold/20 bg-gold/5">
-              <Coins className="h-4 w-4 text-gold" />
-              <AlertDescription className="text-sm">
-                <span className="font-medium">Current {getCurrentRate()?.type} Rate Applied: </span>
-                {formatCurrency(getCurrentRate()?.rate || 0)} per gram
-              </AlertDescription>
-            </Alert>
-          )}
+          <Alert className="border-primary/20 bg-primary/5">
+            <Coins className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-sm">
+              <span className="font-medium">Current Silver Rate Applied: </span>
+              {formatCurrency(silverRate)} per gram
+            </AlertDescription>
+          </Alert>
 
           {/* Pricing */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -186,7 +168,7 @@ export function ProductDetailDialog({
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </Button>
-            <Button onClick={onEdit} className="btn-gold">
+            <Button onClick={onEdit}>
               <Edit className="w-4 h-4 mr-2" />
               Edit Product
             </Button>
