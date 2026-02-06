@@ -692,8 +692,13 @@ export type Database = {
           email: string | null
           gst_number: string | null
           id: string
+          last_purchase_date: string | null
           name: string
+          notes: string | null
+          outstanding_balance: number
           phone: string | null
+          total_paid: number
+          total_purchases: number
           updated_at: string
         }
         Insert: {
@@ -703,8 +708,13 @@ export type Database = {
           email?: string | null
           gst_number?: string | null
           id?: string
+          last_purchase_date?: string | null
           name: string
+          notes?: string | null
+          outstanding_balance?: number
           phone?: string | null
+          total_paid?: number
+          total_purchases?: number
           updated_at?: string
         }
         Update: {
@@ -714,8 +724,13 @@ export type Database = {
           email?: string | null
           gst_number?: string | null
           id?: string
+          last_purchase_date?: string | null
           name?: string
+          notes?: string | null
+          outstanding_balance?: number
           phone?: string | null
+          total_paid?: number
+          total_purchases?: number
           updated_at?: string
         }
         Relationships: []
@@ -740,6 +755,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vendor_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_mode: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_mode?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_mode?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_payments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
