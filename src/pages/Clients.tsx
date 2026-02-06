@@ -33,7 +33,6 @@ const initialClient = {
   phone: '',
   email: '',
   address: '',
-  gst_number: '',
 };
 
 export default function Clients() {
@@ -103,7 +102,6 @@ export default function Clients() {
       phone: client.phone || '',
       email: client.email || '',
       address: client.address || '',
-      gst_number: client.gst_number || '',
     });
     setIsDialogOpen(true);
   };
@@ -157,11 +155,6 @@ export default function Clients() {
           <span className="truncate max-w-[200px]">{item.email}</span>
         </div>
       ) : '-'
-    },
-    { 
-      key: 'gst_number', 
-      header: 'GST Number',
-      cell: (item: Client) => item.gst_number || '-'
     },
     { 
       key: 'outstanding_balance', 
@@ -251,15 +244,6 @@ export default function Clients() {
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="gst_number">GST Number</Label>
-                  <Input
-                    id="gst_number"
-                    value={formData.gst_number}
-                    onChange={(e) => setFormData({ ...formData, gst_number: e.target.value })}
-                  />
                 </div>
 
                 <div className="space-y-2">
