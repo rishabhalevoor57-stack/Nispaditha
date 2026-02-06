@@ -23,8 +23,8 @@ interface Client {
   phone: string | null;
   email: string | null;
   address: string | null;
-  gst_number: string | null;
   outstanding_balance: number;
+  comments: string | null;
   created_at: string;
 }
 
@@ -33,6 +33,8 @@ const initialClient = {
   phone: '',
   email: '',
   address: '',
+  outstanding_balance: '',
+  comments: '',
 };
 
 export default function Clients() {
@@ -68,10 +70,19 @@ export default function Clients() {
     e.preventDefault();
     
     try {
+      const dataToSubmit = {
+        name: formData.name,
+        phone: formData.phone || null,
+        email: formData.email || null,
+        address: formData.address || null,
+        outstanding_balance: parseFloat(formData.outstanding_balance) || 0,
+        comments: formData.comments || null,
+      };
+
       if (editingClient) {
         const { error } = await supabase
           .from('clients')
-          .update(formData)
+          .update(dataToSubmit)
           .eq('id', editingClient.id);
         
         if (error) throw error;
@@ -79,7 +90,7 @@ export default function Clients() {
       } else {
         const { error } = await supabase
           .from('clients')
-          .insert([formData]);
+          .insert([dataToSubmit]);
         
         if (error) throw error;
         toast({ title: 'Client added successfully' });
@@ -102,6 +113,8 @@ export default function Clients() {
       phone: client.phone || '',
       email: client.email || '',
       address: client.address || '',
+      outstanding_balance: client.outstanding_balance.toString(),
+      comments: client.comments || '',
     });
     setIsDialogOpen(true);
   };
@@ -162,6 +175,15 @@ export default function Clients() {
       cell: (item: Client) => (
         <span className={item.outstanding_balance > 0 ? 'text-destructive font-medium' : 'text-muted-foreground'}>
           {formatCurrency(item.outstanding_balance)}
+        </span>
+      )
+    },
+    { 
+      key: 'comments', 
+      header: 'Comments',
+      cell: (item: Client) => (
+        <span className="truncate max-w-[150px] block text-muted-foreground">
+          {item.comments || '-'}
         </span>
       )
     },
@@ -247,11 +269,33 @@ export default function Clients() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="outstanding_balance">Outstanding Balance (₹)</Label>
+                  <Input
+                    id="outstanding_balance"
+                    type="number"
+                    value={formData.outstanding_balance}
+                    onChange={(e) => setFormData({ ...formData, outstanding_balance: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="address">Address</Label>
                   <Textarea
                     id="address"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="comments">Comments</Label>
+                  <Textarea
+                    id="comments"
+                    value={formData.comments}
+                    onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
+                    placeholder="Add notes about this client..."
                     rows={3}
                   />
                 </div>
