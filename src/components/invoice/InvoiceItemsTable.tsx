@@ -67,13 +67,22 @@ export function InvoiceItemsTable({
 
   const handleDiscountChange = (index: number, value: number, type?: DiscountType) => {
     const item = items[index];
-    if (item.pricing_mode === 'flat_price') return; // No discount on flat price
     const discountType = type || item.discount_type;
     let clampedValue = Math.max(0, value);
-    if (discountType === 'percentage') {
-      clampedValue = Math.min(100, clampedValue);
+    if (item.pricing_mode === 'flat_price') {
+      // Flat price: discount on total amount
+      const grossTotal = (item.selling_price || item.base_price) * item.quantity;
+      if (discountType === 'percentage') {
+        clampedValue = Math.min(100, clampedValue);
+      } else {
+        clampedValue = Math.min(grossTotal, clampedValue);
+      }
     } else {
-      clampedValue = Math.min(item.making_charges, clampedValue);
+      if (discountType === 'percentage') {
+        clampedValue = Math.min(100, clampedValue);
+      } else {
+        clampedValue = Math.min(item.making_charges, clampedValue);
+      }
     }
     const updatedItems = [...items];
     updatedItems[index] = updateItemDiscount(updatedItems[index], clampedValue, discountType);
@@ -207,31 +216,32 @@ export function InvoiceItemsTable({
                       {isFlat ? '-' : `${formatCurrency(item.making_charges_per_gram)}/g`}
                     </td>
                     <td className="px-3 py-3 text-right">
-                      {isFlat ? '-' : (
-                        <div className="flex items-center gap-1">
-                          <Select
-                            value={item.discount_type}
-                            onValueChange={(val) => handleDiscountTypeChange(index, val as DiscountType)}
-                          >
-                            <SelectTrigger className="w-14 h-8 text-xs px-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="fixed">₹</SelectItem>
-                              <SelectItem value="percentage">%</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            type="number"
-                            min="0"
-                            max={item.discount_type === 'percentage' ? 100 : item.making_charges}
-                            value={item.discount_value}
-                            onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
-                            className="w-20 h-8 text-right"
-                            title="Discount applies only on MC"
-                          />
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <Select
+                          value={item.discount_type}
+                          onValueChange={(val) => handleDiscountTypeChange(index, val as DiscountType)}
+                        >
+                          <SelectTrigger className="w-14 h-8 text-xs px-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fixed">₹</SelectItem>
+                            <SelectItem value="percentage">%</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          min="0"
+                          max={isFlat
+                            ? (item.discount_type === 'percentage' ? 100 : (item.selling_price || item.base_price) * item.quantity)
+                            : (item.discount_type === 'percentage' ? 100 : item.making_charges)
+                          }
+                          value={item.discount_value}
+                          onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
+                          className="w-20 h-8 text-right"
+                          title={isFlat ? "Discount on total amount" : "Discount applies only on MC"}
+                        />
+                      </div>
                     </td>
                     <td className="px-3 py-3 text-right font-medium">{formatCurrency(item.line_total)}</td>
                     <td className="px-3 py-3 text-center">

@@ -337,7 +337,7 @@ export function ViewInvoiceDialog({
                               {isFlat ? '-' : (Number(item.weight_grams) > 0 ? formatCurrency(Number(item.making_charges) / Number(item.weight_grams)) + '/g' : '-')}
                             </td>
                             <td className="px-3 py-3 text-right text-destructive">
-                              {isFlat ? '-' : (Number(item.discount) > 0 ? `-${formatCurrency(Number(item.discount))}` : '-')}
+                              {Number(item.discount) > 0 ? `-${formatCurrency(Number(item.discount))}` : '-'}
                             </td>
                           </>
                         )}
