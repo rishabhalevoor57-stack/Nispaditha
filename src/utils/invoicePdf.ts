@@ -145,6 +145,7 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
         { header: 'MC', dataKey: 'mc' },
         { header: 'MC/g', dataKey: 'mcpg' },
         { header: 'Disc', dataKey: 'discount' },
+        { header: 'MRP', dataKey: 'mrp' },
         { header: 'Total', dataKey: 'total' },
       ]
     : [
@@ -154,6 +155,7 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
         { header: 'Wt(G)', dataKey: 'weight' },
         { header: 'Qty', dataKey: 'qty' },
         { header: 'Rate/g', dataKey: 'rate' },
+        { header: 'MRP', dataKey: 'mrp' },
         { header: 'Total', dataKey: 'total' },
       ];
 
@@ -167,6 +169,7 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
       weight: isFlat ? '-' : item.weight_grams.toFixed(2),
       qty: item.quantity.toString(),
       rate: isFlat ? '-' : formatCurrency(item.rate_per_gram),
+      mrp: item.mrp > 0 ? formatCurrency(item.mrp) : '-',
       total: formatCurrency(item.line_total),
     };
 
@@ -184,25 +187,27 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
   // Column styles with fixed widths
   const adminColumnStyles: Record<number, { cellWidth: number; halign: 'left' | 'center' | 'right' }> = {
     0: { cellWidth: contentWidth * 0.04, halign: 'center' },  // Sr No
-    1: { cellWidth: contentWidth * 0.19, halign: 'left' },     // Description
-    2: { cellWidth: contentWidth * 0.09, halign: 'left' },     // SKU
-    3: { cellWidth: contentWidth * 0.09, halign: 'right' },    // Weight
+    1: { cellWidth: contentWidth * 0.17, halign: 'left' },     // Description
+    2: { cellWidth: contentWidth * 0.08, halign: 'left' },     // SKU
+    3: { cellWidth: contentWidth * 0.07, halign: 'right' },    // Weight
     4: { cellWidth: contentWidth * 0.05, halign: 'center' },   // Qty
-    5: { cellWidth: contentWidth * 0.11, halign: 'right' },    // Rate
-    6: { cellWidth: contentWidth * 0.10, halign: 'right' },    // MC
-    7: { cellWidth: contentWidth * 0.09, halign: 'right' },    // MC/g
-    8: { cellWidth: contentWidth * 0.07, halign: 'right' },    // Discount
-    9: { cellWidth: contentWidth * 0.17, halign: 'right' },    // Total
+    5: { cellWidth: contentWidth * 0.10, halign: 'right' },    // Rate
+    6: { cellWidth: contentWidth * 0.09, halign: 'right' },    // MC
+    7: { cellWidth: contentWidth * 0.08, halign: 'right' },    // MC/g
+    8: { cellWidth: contentWidth * 0.06, halign: 'right' },    // Discount
+    9: { cellWidth: contentWidth * 0.10, halign: 'right' },    // MRP
+    10: { cellWidth: contentWidth * 0.16, halign: 'right' },   // Total
   };
 
   const customerColumnStyles: Record<number, { cellWidth: number; halign: 'left' | 'center' | 'right' }> = {
     0: { cellWidth: contentWidth * 0.06, halign: 'center' },   // Sr No
-    1: { cellWidth: contentWidth * 0.32, halign: 'left' },     // Description
-    2: { cellWidth: contentWidth * 0.12, halign: 'left' },     // SKU
-    3: { cellWidth: contentWidth * 0.12, halign: 'right' },    // Weight
+    1: { cellWidth: contentWidth * 0.28, halign: 'left' },     // Description
+    2: { cellWidth: contentWidth * 0.10, halign: 'left' },     // SKU
+    3: { cellWidth: contentWidth * 0.10, halign: 'right' },    // Weight
     4: { cellWidth: contentWidth * 0.08, halign: 'center' },   // Qty
-    5: { cellWidth: contentWidth * 0.14, halign: 'right' },    // Rate
-    6: { cellWidth: contentWidth * 0.16, halign: 'right' },    // Total
+    5: { cellWidth: contentWidth * 0.12, halign: 'right' },    // Rate
+    6: { cellWidth: contentWidth * 0.10, halign: 'right' },    // MRP
+    7: { cellWidth: contentWidth * 0.16, halign: 'right' },    // Total
   };
 
   autoTable(doc, {

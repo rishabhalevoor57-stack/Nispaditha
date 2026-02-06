@@ -10,6 +10,7 @@ export interface Product {
   making_charges: number;
   gst_percentage: number;
   pricing_mode: PricingMode;
+  mrp: number;
   categories?: { name: string } | null;
 }
 
@@ -76,6 +77,7 @@ export interface InvoiceItem {
   gst_percentage: number;
   pricing_mode: PricingMode;
   selling_price?: number; // used for flat_price mode
+  mrp: number; // display-only, from product
 }
 
 export interface InvoiceTotals {

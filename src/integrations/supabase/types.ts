@@ -243,6 +243,7 @@ export type Database = {
           id: string
           invoice_id: string
           making_charges: number
+          mrp: number
           product_id: string | null
           product_name: string
           quantity: number
@@ -262,6 +263,7 @@ export type Database = {
           id?: string
           invoice_id: string
           making_charges?: number
+          mrp?: number
           product_id?: string | null
           product_name: string
           quantity?: number
@@ -281,6 +283,7 @@ export type Database = {
           id?: string
           invoice_id?: string
           making_charges?: number
+          mrp?: number
           product_id?: string | null
           product_name?: string
           quantity?: number

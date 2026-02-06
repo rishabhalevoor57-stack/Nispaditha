@@ -105,6 +105,7 @@ export default function Invoices() {
       discounted_making: number;
       subtotal: number;
       gst_percentage: number;
+      mrp: number;
     }) => ({
       product_id: '',
       sku: item.products?.sku || 'N/A',
@@ -123,6 +124,7 @@ export default function Invoices() {
       line_total: Number(item.subtotal),
       gst_percentage: Number(item.gst_percentage),
       pricing_mode: (Number(item.rate_per_gram) === 0 && Number(item.making_charges) === 0) ? 'flat_price' as const : 'weight_based' as const,
+      mrp: Number(item.mrp) || 0,
     }));
 
     const totals: InvoiceTotals = {
