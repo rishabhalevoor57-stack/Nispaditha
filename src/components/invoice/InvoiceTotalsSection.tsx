@@ -22,7 +22,7 @@ export function InvoiceTotalsSection({ totals, isAdmin }: InvoiceTotalsSectionPr
       </div>
       {isAdmin && totals.discountAmount > 0 && (
         <div className="flex justify-between text-destructive">
-          <span>Total Discount (on Making Charges)</span>
+          <span>Total Discount (on MC)</span>
           <span>-{formatCurrency(totals.discountAmount)}</span>
         </div>
       )}
