@@ -285,15 +285,29 @@ export function CreateInvoiceDialog({
               <Label>Select Client</Label>
               <Select value={selectedClient} onValueChange={handleClientChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Walk-in Customer" />
+                  <SelectValue placeholder="Select client type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="walk-in">Walk-in Customer</SelectItem>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="walk-in">
+                    <span className="text-muted-foreground">New / Walk-in Customer</span>
+                  </SelectItem>
+                  {clients.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
+                        Existing Clients
+                      </div>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          <div className="flex flex-col">
+                            <span>{client.name}</span>
+                            {client.phone && (
+                              <span className="text-xs text-muted-foreground">{client.phone}</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

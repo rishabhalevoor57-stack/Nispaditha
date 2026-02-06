@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Edit, Trash2, Phone, Mail } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Phone, Mail, Download } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -147,6 +147,32 @@ export default function Clients() {
     }).format(amount);
   };
 
+  const downloadClientsCSV = () => {
+    const headers = ['Name', 'Phone', 'Email', 'Address', 'Outstanding Balance', 'Comments'];
+    const rows = filteredClients.map(client => [
+      client.name,
+      client.phone || '',
+      client.email || '',
+      client.address?.replace(/,/g, ';') || '',
+      client.outstanding_balance.toString(),
+      client.comments?.replace(/,/g, ';') || '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `clients_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    
+    toast({ title: 'Clients exported successfully' });
+  };
+
   const columns = [
     { key: 'name', header: 'Name' },
     { 
@@ -218,19 +244,24 @@ export default function Clients() {
         title="Clients" 
         description="Manage your customer database"
         actions={
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) {
-              setEditingClient(null);
-              setFormData(initialClient);
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button className="btn-gold">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Client
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={downloadClientsCSV}>
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) {
+                setEditingClient(null);
+                setFormData(initialClient);
+              }
+            }}>
+              <DialogTrigger asChild>
+                <Button className="btn-gold">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Client
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>
@@ -310,7 +341,8 @@ export default function Clients() {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         }
       />
 
