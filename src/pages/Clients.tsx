@@ -24,6 +24,8 @@ interface Client {
   email: string | null;
   address: string | null;
   outstanding_balance: number;
+  total_purchases: number;
+  last_invoice_date: string | null;
   comments: string | null;
   created_at: string;
 }
@@ -148,12 +150,14 @@ export default function Clients() {
   };
 
   const downloadClientsCSV = () => {
-    const headers = ['Name', 'Phone', 'Email', 'Address', 'Outstanding Balance', 'Comments'];
+    const headers = ['Name', 'Phone', 'Email', 'Address', 'Total Purchases', 'Last Invoice', 'Outstanding Balance', 'Comments'];
     const rows = filteredClients.map(client => [
       client.name,
       client.phone || '',
       client.email || '',
       client.address?.replace(/,/g, ';') || '',
+      client.total_purchases.toString(),
+      client.last_invoice_date ? new Date(client.last_invoice_date).toLocaleDateString('en-IN') : '',
       client.outstanding_balance.toString(),
       client.comments?.replace(/,/g, ';') || '',
     ]);
@@ -173,6 +177,15 @@ export default function Clients() {
     toast({ title: 'Clients exported successfully' });
   };
 
+  const formatDate = (date: string | null) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
   const columns = [
     { key: 'name', header: 'Name' },
     { 
@@ -186,14 +199,22 @@ export default function Clients() {
       ) : '-'
     },
     { 
-      key: 'email', 
-      header: 'Email',
-      cell: (item: Client) => item.email ? (
-        <div className="flex items-center gap-2">
-          <Mail className="w-3 h-3 text-muted-foreground" />
-          <span className="truncate max-w-[200px]">{item.email}</span>
-        </div>
-      ) : '-'
+      key: 'total_purchases', 
+      header: 'Total Purchases',
+      cell: (item: Client) => (
+        <span className="font-medium text-primary">
+          {formatCurrency(item.total_purchases)}
+        </span>
+      )
+    },
+    { 
+      key: 'last_invoice_date', 
+      header: 'Last Invoice',
+      cell: (item: Client) => (
+        <span className="text-muted-foreground text-sm">
+          {formatDate(item.last_invoice_date)}
+        </span>
+      )
     },
     { 
       key: 'outstanding_balance', 
