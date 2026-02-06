@@ -6,6 +6,7 @@ import type { Product, ProductFormData, ProductStatus, TypeOfWork } from '@/type
 interface Category {
   id: string;
   name: string;
+  parent_id: string | null;
 }
 
 interface Supplier {

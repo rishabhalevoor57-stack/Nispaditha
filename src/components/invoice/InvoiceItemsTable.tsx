@@ -138,7 +138,7 @@ export function InvoiceItemsTable({
               <tr>
                 <th className="px-3 py-3 text-left font-medium">SKU</th>
                 <th className="px-3 py-3 text-left font-medium">Description</th>
-                <th className="px-3 py-3 text-right font-medium">Weight (g)</th>
+                <th className="px-3 py-3 text-right font-medium">Wt(G)</th>
                 <th className="px-3 py-3 text-center font-medium">Qty</th>
                 <th className="px-3 py-3 text-right font-medium">Rate/g</th>
                 <th className="px-3 py-3 text-right font-medium">Metal Price</th>

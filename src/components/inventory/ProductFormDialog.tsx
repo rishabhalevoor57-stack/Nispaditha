@@ -30,6 +30,7 @@ import {
 interface Category {
   id: string;
   name: string;
+  parent_id?: string | null;
 }
 
 interface Supplier {
@@ -96,29 +97,39 @@ export function ProductFormDialog({
 
   // Auto-calculate selling price from price per gram and making charges
   const calculatedSellingPrice = useMemo(() => {
-    const goldValue = formData.weight_grams * formData.price_per_gram;
-    return goldValue + formData.making_charges;
+    const metalValue = formData.weight_grams * formData.price_per_gram;
+    return metalValue + formData.making_charges;
   }, [formData.weight_grams, formData.price_per_gram, formData.making_charges]);
 
   // Auto-calculate purchase price from purchase price per gram and purchase making charges
   const calculatedPurchasePrice = useMemo(() => {
-    const goldValue = formData.weight_grams * formData.purchase_price_per_gram;
-    return goldValue + formData.purchase_making_charges;
+    const metalValue = formData.weight_grams * formData.purchase_price_per_gram;
+    return metalValue + formData.purchase_making_charges;
   }, [formData.weight_grams, formData.purchase_price_per_gram, formData.purchase_making_charges]);
 
-  // Update selling price when components change
+  // Track whether user has manually overridden prices
+  const [sellingPriceManual, setSellingPriceManual] = useState(false);
+  const [purchasePriceManual, setPurchasePriceManual] = useState(false);
+
+  // Reset manual override flags when dialog opens
   useEffect(() => {
-    if (calculatedSellingPrice > 0) {
+    setSellingPriceManual(false);
+    setPurchasePriceManual(false);
+  }, [open]);
+
+  // Update selling price when components change (only if not manually overridden)
+  useEffect(() => {
+    if (!sellingPriceManual && calculatedSellingPrice > 0) {
       setFormData(prev => ({ ...prev, selling_price: calculatedSellingPrice }));
     }
-  }, [calculatedSellingPrice]);
+  }, [calculatedSellingPrice, sellingPriceManual]);
 
-  // Update purchase price when components change
+  // Update purchase price when components change (only if not manually overridden)
   useEffect(() => {
-    if (calculatedPurchasePrice > 0) {
+    if (!purchasePriceManual && calculatedPurchasePrice > 0) {
       setFormData(prev => ({ ...prev, purchase_price: calculatedPurchasePrice }));
     }
-  }, [calculatedPurchasePrice]);
+  }, [calculatedPurchasePrice, purchasePriceManual]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -252,11 +263,25 @@ export function ProductFormDialog({
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
+                  {categories.filter(c => !c.parent_id).map((cat) => {
+                    const subs = categories.filter(c => c.parent_id === cat.id);
+                    return (
+                      <div key={cat.id}>
+                        <SelectItem value={cat.id}>{cat.name}</SelectItem>
+                        {subs.map((sub) => {
+                          const subSubs = categories.filter(c => c.parent_id === sub.id);
+                          return (
+                            <div key={sub.id}>
+                              <SelectItem value={sub.id}>↳ {sub.name}</SelectItem>
+                              {subSubs.map((subSub) => (
+                                <SelectItem key={subSub.id} value={subSub.id}>↳↳ {subSub.name}</SelectItem>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -398,13 +423,23 @@ export function ProductFormDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Calculated Selling Price</Label>
-                  <div className="h-10 px-3 py-2 rounded-md border bg-background flex items-center">
-                    <span className="text-sm text-muted-foreground mr-1">₹</span>
-                    <span className="font-semibold">{calculatedSellingPrice.toLocaleString('en-IN')}</span>
-                  </div>
+                  <Label htmlFor="selling_price">Selling Price (₹) {sellingPriceManual && <span className="text-xs text-warning">(Manual)</span>}</Label>
+                  <Input
+                    id="selling_price"
+                    type="number"
+                    value={formData.selling_price}
+                    onChange={(e) => {
+                      setSellingPriceManual(true);
+                      updateField('selling_price', parseFloat(e.target.value) || 0);
+                    }}
+                  />
                   <p className="text-xs text-muted-foreground">
-                    ({formData.weight_grams}g × ₹{formData.price_per_gram}) + ₹{formData.making_charges} MC
+                    Auto: ({formData.weight_grams}g × ₹{formData.price_per_gram}) + ₹{formData.making_charges} MC = ₹{calculatedSellingPrice.toLocaleString('en-IN')}
+                    {sellingPriceManual && (
+                      <button type="button" className="ml-2 text-primary underline" onClick={() => { setSellingPriceManual(false); updateField('selling_price', calculatedSellingPrice); }}>
+                        Reset to auto
+                      </button>
+                    )}
                   </p>
                 </div>
               </div>
@@ -433,13 +468,23 @@ export function ProductFormDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Calculated Purchase Price</Label>
-                  <div className="h-10 px-3 py-2 rounded-md border bg-background flex items-center">
-                    <span className="text-sm text-muted-foreground mr-1">₹</span>
-                    <span className="font-semibold">{calculatedPurchasePrice.toLocaleString('en-IN')}</span>
-                  </div>
+                  <Label htmlFor="purchase_price">Purchase Price (₹) {purchasePriceManual && <span className="text-xs text-warning">(Manual)</span>}</Label>
+                  <Input
+                    id="purchase_price"
+                    type="number"
+                    value={formData.purchase_price}
+                    onChange={(e) => {
+                      setPurchasePriceManual(true);
+                      updateField('purchase_price', parseFloat(e.target.value) || 0);
+                    }}
+                  />
                   <p className="text-xs text-muted-foreground">
-                    ({formData.weight_grams}g × ₹{formData.purchase_price_per_gram}) + ₹{formData.purchase_making_charges} MC
+                    Auto: ({formData.weight_grams}g × ₹{formData.purchase_price_per_gram}) + ₹{formData.purchase_making_charges} MC = ₹{calculatedPurchasePrice.toLocaleString('en-IN')}
+                    {purchasePriceManual && (
+                      <button type="button" className="ml-2 text-primary underline" onClick={() => { setPurchasePriceManual(false); updateField('purchase_price', calculatedPurchasePrice); }}>
+                        Reset to auto
+                      </button>
+                    )}
                   </p>
                 </div>
               </div>
