@@ -134,7 +134,6 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
 
   // ================== PRODUCT TABLE ==================
   // Column widths as percentages of content width
-  // Sr(5%), Description(25%), SKU(10%), Weight(10%), Qty(5%), Rate(10%), Labour(10%), Discount(5%), Total(20%)
   const tableColumns = showMakingCharges
     ? [
         { header: 'Sr', dataKey: 'sr' },
@@ -143,9 +142,10 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
         { header: 'Weight(g)', dataKey: 'weight' },
         { header: 'Qty', dataKey: 'qty' },
         { header: 'Rate/g', dataKey: 'rate' },
-        { header: 'Labour', dataKey: 'labour' },
+        { header: 'MC', dataKey: 'mc' },
+        { header: 'MC/g', dataKey: 'mcpg' },
         { header: 'Disc', dataKey: 'discount' },
-        { header: 'Line Total', dataKey: 'total' },
+        { header: 'Total', dataKey: 'total' },
       ]
     : [
         { header: 'Sr', dataKey: 'sr' },
@@ -154,10 +154,11 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
         { header: 'Weight(g)', dataKey: 'weight' },
         { header: 'Qty', dataKey: 'qty' },
         { header: 'Rate/g', dataKey: 'rate' },
-        { header: 'Line Total', dataKey: 'total' },
+        { header: 'Total', dataKey: 'total' },
       ];
 
   const tableRows = data.items.map((item, index) => {
+    const mcPerGram = item.weight_grams > 0 ? item.making_charges / item.weight_grams : 0;
     const baseRow = {
       sr: (index + 1).toString(),
       description: item.product_name,
@@ -171,7 +172,8 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
     if (showMakingCharges) {
       return {
         ...baseRow,
-        labour: formatCurrency(item.making_charges),
+        mc: formatCurrency(item.making_charges),
+        mcpg: formatCurrency(mcPerGram),
         discount: item.discount > 0 ? formatCurrency(item.discount) : '-',
       };
     }
@@ -180,15 +182,16 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
 
   // Column styles with fixed widths
   const adminColumnStyles: Record<number, { cellWidth: number; halign: 'left' | 'center' | 'right' }> = {
-    0: { cellWidth: contentWidth * 0.05, halign: 'center' },  // Sr No
-    1: { cellWidth: contentWidth * 0.23, halign: 'left' },     // Description
-    2: { cellWidth: contentWidth * 0.10, halign: 'left' },     // SKU
-    3: { cellWidth: contentWidth * 0.10, halign: 'right' },    // Weight
+    0: { cellWidth: contentWidth * 0.04, halign: 'center' },  // Sr No
+    1: { cellWidth: contentWidth * 0.19, halign: 'left' },     // Description
+    2: { cellWidth: contentWidth * 0.09, halign: 'left' },     // SKU
+    3: { cellWidth: contentWidth * 0.09, halign: 'right' },    // Weight
     4: { cellWidth: contentWidth * 0.05, halign: 'center' },   // Qty
-    5: { cellWidth: contentWidth * 0.12, halign: 'right' },    // Rate
-    6: { cellWidth: contentWidth * 0.10, halign: 'right' },    // Labour
-    7: { cellWidth: contentWidth * 0.05, halign: 'right' },    // Discount
-    8: { cellWidth: contentWidth * 0.20, halign: 'right' },    // Total
+    5: { cellWidth: contentWidth * 0.11, halign: 'right' },    // Rate
+    6: { cellWidth: contentWidth * 0.10, halign: 'right' },    // MC
+    7: { cellWidth: contentWidth * 0.09, halign: 'right' },    // MC/g
+    8: { cellWidth: contentWidth * 0.07, halign: 'right' },    // Discount
+    9: { cellWidth: contentWidth * 0.17, halign: 'right' },    // Total
   };
 
   const customerColumnStyles: Record<number, { cellWidth: number; halign: 'left' | 'center' | 'right' }> = {

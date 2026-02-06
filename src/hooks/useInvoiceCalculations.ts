@@ -1,7 +1,14 @@
 import { useMemo, useCallback } from 'react';
-import type { InvoiceItem, InvoiceTotals, Product } from '@/types/invoice';
+import type { InvoiceItem, InvoiceTotals, Product, DiscountType } from '@/types/invoice';
 
 const GST_PERCENTAGE = 3;
+
+function calculateDiscount(makingCharges: number, discountType: DiscountType, discountValue: number): number {
+  if (discountType === 'percentage') {
+    return Math.min(makingCharges, makingCharges * (discountValue / 100));
+  }
+  return Math.min(makingCharges, discountValue);
+}
 
 export function useInvoiceCalculations(items: InvoiceItem[]) {
   const totals = useMemo<InvoiceTotals>(() => {
@@ -14,12 +21,11 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
   }, [items]);
 
   const createInvoiceItem = useCallback((product: Product, ratePerGram: number): InvoiceItem => {
-    // Base Price = Weight × Rate × Quantity
-    const basePrice = product.weight_grams * ratePerGram * 1; // quantity starts at 1
+    const basePrice = product.weight_grams * ratePerGram * 1;
     const makingCharges = product.making_charges;
+    const makingChargesPerGram = product.weight_grams > 0 ? makingCharges / product.weight_grams : 0;
     const discount = 0;
     const discountedMaking = makingCharges - discount;
-    // Line Total = Base Price + Discounted Making Charges
     const lineTotal = basePrice + discountedMaking;
 
     return {
@@ -32,20 +38,26 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
       rate_per_gram: ratePerGram,
       base_price: basePrice,
       making_charges: makingCharges,
+      making_charges_per_gram: makingChargesPerGram,
       discount: discount,
+      discount_type: 'fixed' as DiscountType,
+      discount_value: 0,
       discounted_making: discountedMaking,
       line_total: lineTotal,
       gst_percentage: GST_PERCENTAGE,
     };
   }, []);
 
-  const updateItemDiscount = useCallback((item: InvoiceItem, discount: number): InvoiceItem => {
+  const updateItemDiscount = useCallback((item: InvoiceItem, discountValue: number, discountType: DiscountType): InvoiceItem => {
+    const discount = calculateDiscount(item.making_charges, discountType, discountValue);
     const discountedMaking = Math.max(0, item.making_charges - discount);
     const lineTotal = item.base_price + discountedMaking;
 
     return {
       ...item,
       discount,
+      discount_type: discountType,
+      discount_value: discountValue,
       discounted_making: discountedMaking,
       line_total: lineTotal,
     };

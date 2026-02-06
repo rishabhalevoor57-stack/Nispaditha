@@ -143,7 +143,10 @@ export function ViewInvoiceDialog({
       rate_per_gram: Number(item.rate_per_gram),
       base_price: Number(item.gold_value),
       making_charges: Number(item.making_charges),
+      making_charges_per_gram: Number(item.weight_grams) > 0 ? Number(item.making_charges) / Number(item.weight_grams) : 0,
       discount: Number(item.discount),
+      discount_type: 'fixed' as const,
+      discount_value: Number(item.discount),
       discounted_making: Number(item.discounted_making),
       line_total: Number(item.subtotal),
       gst_percentage: Number(item.gst_percentage),
@@ -303,11 +306,12 @@ export function ViewInvoiceDialog({
                     <th className="px-3 py-3 text-right font-medium">Rate/g</th>
                     {isAdmin && (
                       <>
-                        <th className="px-3 py-3 text-right font-medium">Making</th>
+                        <th className="px-3 py-3 text-right font-medium">MC</th>
+                        <th className="px-3 py-3 text-right font-medium">MC/g</th>
                         <th className="px-3 py-3 text-right font-medium">Discount</th>
                       </>
                     )}
-                    <th className="px-3 py-3 text-right font-medium">Amount</th>
+                    <th className="px-3 py-3 text-right font-medium">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -326,6 +330,9 @@ export function ViewInvoiceDialog({
                       {isAdmin && (
                         <>
                           <td className="px-3 py-3 text-right">{formatCurrency(Number(item.making_charges))}</td>
+                          <td className="px-3 py-3 text-right text-xs text-muted-foreground">
+                            {Number(item.weight_grams) > 0 ? formatCurrency(Number(item.making_charges) / Number(item.weight_grams)) + '/g' : '-'}
+                          </td>
                           <td className="px-3 py-3 text-right text-destructive">
                             {Number(item.discount) > 0 ? `-${formatCurrency(Number(item.discount))}` : '-'}
                           </td>

@@ -52,6 +52,8 @@ export interface Invoice {
   paid_at: string | null;
 }
 
+export type DiscountType = 'fixed' | 'percentage';
+
 export interface InvoiceItem {
   product_id: string;
   sku: string;
@@ -62,7 +64,10 @@ export interface InvoiceItem {
   rate_per_gram: number;
   base_price: number;
   making_charges: number;
+  making_charges_per_gram: number;
   discount: number;
+  discount_type: DiscountType;
+  discount_value: number; // the raw input value (fixed amount or percentage)
   discounted_making: number;
   line_total: number;
   gst_percentage: number;

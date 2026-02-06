@@ -142,18 +142,19 @@ export function InvoicePreviewModal({
                 <thead className="bg-gray-800 text-white">
                   <tr>
                     <th className="px-2 py-2 text-center w-[5%]">Sr</th>
-                    <th className="px-2 py-2 text-left w-[25%]">Description</th>
+                    <th className="px-2 py-2 text-left w-[22%]">Description</th>
                     <th className="px-2 py-2 text-left w-[10%]">SKU</th>
-                    <th className="px-2 py-2 text-right w-[10%]">Weight(g)</th>
+                    <th className="px-2 py-2 text-right w-[8%]">Weight(g)</th>
                     <th className="px-2 py-2 text-center w-[5%]">Qty</th>
                     <th className="px-2 py-2 text-right w-[10%]">Rate/g</th>
                     {showMakingCharges && (
                       <>
-                        <th className="px-2 py-2 text-right w-[10%]">Labour</th>
+                        <th className="px-2 py-2 text-right w-[10%]">MC</th>
+                        <th className="px-2 py-2 text-right w-[8%]">MC/g</th>
                         <th className="px-2 py-2 text-right w-[5%]">Disc</th>
                       </>
                     )}
-                    <th className="px-2 py-2 text-right w-[15%]">Line Total</th>
+                    <th className="px-2 py-2 text-right w-[15%]">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -168,6 +169,9 @@ export function InvoicePreviewModal({
                       {showMakingCharges && (
                         <>
                           <td className="px-2 py-2 text-right border-t border-gray-200">{formatCurrency(item.making_charges)}</td>
+                          <td className="px-2 py-2 text-right border-t border-gray-200 text-gray-500">
+                            {formatCurrency(item.making_charges_per_gram)}/g
+                          </td>
                           <td className="px-2 py-2 text-right border-t border-gray-200">
                             {item.discount > 0 ? formatCurrency(item.discount) : '-'}
                           </td>
