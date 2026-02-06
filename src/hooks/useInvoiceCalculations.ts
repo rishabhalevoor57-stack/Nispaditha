@@ -21,6 +21,34 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
   }, [items]);
 
   const createInvoiceItem = useCallback((product: Product, ratePerGram: number): InvoiceItem => {
+    const pricingMode = product.pricing_mode || 'weight_based';
+
+    if (pricingMode === 'flat_price') {
+      // Flat price: use selling_price directly, no weight/rate/MC calculations
+      const lineTotal = product.selling_price;
+      return {
+        product_id: product.id,
+        sku: product.sku,
+        product_name: product.name,
+        category: product.categories?.name || '',
+        weight_grams: product.weight_grams || 0,
+        quantity: 1,
+        rate_per_gram: 0,
+        base_price: product.selling_price,
+        making_charges: 0,
+        making_charges_per_gram: 0,
+        discount: 0,
+        discount_type: 'fixed' as DiscountType,
+        discount_value: 0,
+        discounted_making: 0,
+        line_total: lineTotal,
+        gst_percentage: GST_PERCENTAGE,
+        pricing_mode: 'flat_price',
+        selling_price: product.selling_price,
+      };
+    }
+
+    // Weight based pricing
     const basePrice = product.weight_grams * ratePerGram * 1;
     const makingCharges = product.making_charges;
     const makingChargesPerGram = product.weight_grams > 0 ? makingCharges / product.weight_grams : 0;
@@ -45,10 +73,14 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
       discounted_making: discountedMaking,
       line_total: lineTotal,
       gst_percentage: GST_PERCENTAGE,
+      pricing_mode: 'weight_based',
     };
   }, []);
 
   const updateItemDiscount = useCallback((item: InvoiceItem, discountValue: number, discountType: DiscountType): InvoiceItem => {
+    // Prevent discount on flat price items
+    if (item.pricing_mode === 'flat_price') return item;
+
     const discount = calculateDiscount(item.making_charges, discountType, discountValue);
     const discountedMaking = Math.max(0, item.making_charges - discount);
     const lineTotal = item.base_price + discountedMaking;
@@ -64,6 +96,16 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
   }, []);
 
   const updateItemQuantity = useCallback((item: InvoiceItem, quantity: number): InvoiceItem => {
+    if (item.pricing_mode === 'flat_price') {
+      const lineTotal = (item.selling_price || item.base_price) * quantity;
+      return {
+        ...item,
+        quantity,
+        base_price: lineTotal,
+        line_total: lineTotal,
+      };
+    }
+
     const basePrice = item.weight_grams * item.rate_per_gram * quantity;
     const lineTotal = basePrice + item.discounted_making;
 
@@ -76,6 +118,9 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
   }, []);
 
   const updateItemRate = useCallback((item: InvoiceItem, rate: number): InvoiceItem => {
+    // No rate change for flat price items
+    if (item.pricing_mode === 'flat_price') return item;
+
     const basePrice = item.weight_grams * rate * item.quantity;
     const lineTotal = basePrice + item.discounted_making;
 

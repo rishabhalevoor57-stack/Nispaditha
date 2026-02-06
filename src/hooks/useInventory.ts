@@ -56,6 +56,7 @@ export function useInventory() {
         ...item,
         type_of_work: (item.type_of_work || 'Others') as TypeOfWork,
         status: (item.status || 'in_stock') as ProductStatus,
+        pricing_mode: (item.pricing_mode || 'weight_based') as import('@/types/inventory').PricingMode,
       })) as Product[];
       
       setProducts(typedProducts);

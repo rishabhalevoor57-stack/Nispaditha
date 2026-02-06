@@ -106,6 +106,7 @@ export function InventoryTable({
               <TableHead className="text-xs font-semibold uppercase">Category</TableHead>
               <TableHead className="text-xs font-semibold uppercase text-right">Weight</TableHead>
               <TableHead className="text-xs font-semibold uppercase text-right">Qty</TableHead>
+              <TableHead className="text-xs font-semibold uppercase text-center">Mode</TableHead>
               <TableHead className="text-xs font-semibold uppercase text-right">Selling Price</TableHead>
               <TableHead className="text-xs font-semibold uppercase">Status</TableHead>
               <TableHead className="text-xs font-semibold uppercase">Vendor</TableHead>
@@ -115,7 +116,7 @@ export function InventoryTable({
           <TableBody>
             {products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="h-32 text-center text-muted-foreground">
+                <TableCell colSpan={13} className="h-32 text-center text-muted-foreground">
                   No products found. Add your first product to get started.
                 </TableCell>
               </TableRow>
@@ -159,22 +160,29 @@ export function InventoryTable({
                   <TableCell>{product.categories?.name || '-'}</TableCell>
                   <TableCell className="text-right">{product.weight_grams}g</TableCell>
                   <TableCell className="text-right font-medium">{product.quantity}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant={product.pricing_mode === 'flat_price' ? 'secondary' : 'outline'} className="text-xs">
+                      {product.pricing_mode === 'flat_price' ? 'Flat' : 'Weight'}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="space-y-1">
                       <p className="font-medium">{formatCurrency(product.selling_price)}</p>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-1 text-xs text-primary cursor-help">
-                              <Coins className="w-3 h-3" />
-                              {formatCurrency(silverRate)}/g
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Current Silver Rate Applied</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      {product.pricing_mode === 'weight_based' && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center gap-1 text-xs text-primary cursor-help">
+                                <Coins className="w-3 h-3" />
+                                {formatCurrency(silverRate)}/g
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Current Silver Rate Applied</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>

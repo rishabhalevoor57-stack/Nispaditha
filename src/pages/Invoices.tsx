@@ -122,6 +122,7 @@ export default function Invoices() {
       discounted_making: Number(item.discounted_making),
       line_total: Number(item.subtotal),
       gst_percentage: Number(item.gst_percentage),
+      pricing_mode: (Number(item.rate_per_gram) === 0 && Number(item.making_charges) === 0) ? 'flat_price' as const : 'weight_based' as const,
     }));
 
     const totals: InvoiceTotals = {

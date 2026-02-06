@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import {
   Select,
@@ -51,6 +52,9 @@ export function InvoiceItemsTable({
     productName: '',
   });
 
+  const hasWeightBasedItems = items.some(item => item.pricing_mode !== 'flat_price');
+  const hasFlatPriceItems = items.some(item => item.pricing_mode === 'flat_price');
+
   const handleAddProduct = (product: Product) => {
     const existingIndex = items.findIndex(item => item.product_id === product.id);
     if (existingIndex >= 0) {
@@ -63,6 +67,7 @@ export function InvoiceItemsTable({
 
   const handleDiscountChange = (index: number, value: number, type?: DiscountType) => {
     const item = items[index];
+    if (item.pricing_mode === 'flat_price') return; // No discount on flat price
     const discountType = type || item.discount_type;
     let clampedValue = Math.max(0, value);
     if (discountType === 'percentage') {
@@ -89,6 +94,7 @@ export function InvoiceItemsTable({
 
   const handleRateInputChange = (index: number, rate: number) => {
     const item = items[index];
+    if (item.pricing_mode === 'flat_price') return;
     if (rate < 0) return;
     if (rate !== item.rate_per_gram && rate !== defaultRate) {
       setRateConfirmDialog({
@@ -138,6 +144,7 @@ export function InvoiceItemsTable({
               <tr>
                 <th className="px-3 py-3 text-left font-medium">SKU</th>
                 <th className="px-3 py-3 text-left font-medium">Description</th>
+                <th className="px-3 py-3 text-center font-medium">Mode</th>
                 <th className="px-3 py-3 text-right font-medium">Wt(G)</th>
                 <th className="px-3 py-3 text-center font-medium">Qty</th>
                 <th className="px-3 py-3 text-right font-medium">Rate/g</th>
@@ -150,78 +157,96 @@ export function InvoiceItemsTable({
               </tr>
             </thead>
             <tbody>
-              {items.map((item, index) => (
-                <tr key={index} className="border-t">
-                  <td className="px-3 py-3 font-mono text-xs">{item.sku}</td>
-                  <td className="px-3 py-3">
-                    <div>
-                      <p className="font-medium">{item.product_name}</p>
-                      <p className="text-xs text-muted-foreground">{item.category}</p>
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 text-right">{item.weight_grams.toFixed(2)}</td>
-                  <td className="px-3 py-3 text-center">
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
-                      className="w-16 h-8 text-center"
-                    />
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.rate_per_gram}
-                      onChange={(e) => handleRateInputChange(index, parseFloat(e.target.value) || 0)}
-                      className="w-24 h-8 text-right"
-                    />
-                  </td>
-                  <td className="px-3 py-3 text-right">{formatCurrency(item.base_price)}</td>
-                  <td className="px-3 py-3 text-right">{formatCurrency(item.making_charges)}</td>
-                  <td className="px-3 py-3 text-right text-xs text-muted-foreground">
-                    {formatCurrency(item.making_charges_per_gram)}/g
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    <div className="flex items-center gap-1">
-                      <Select
-                        value={item.discount_type}
-                        onValueChange={(val) => handleDiscountTypeChange(index, val as DiscountType)}
-                      >
-                        <SelectTrigger className="w-14 h-8 text-xs px-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="fixed">₹</SelectItem>
-                          <SelectItem value="percentage">%</SelectItem>
-                        </SelectContent>
-                      </Select>
+              {items.map((item, index) => {
+                const isFlat = item.pricing_mode === 'flat_price';
+                return (
+                  <tr key={index} className="border-t">
+                    <td className="px-3 py-3 font-mono text-xs">{item.sku}</td>
+                    <td className="px-3 py-3">
+                      <div>
+                        <p className="font-medium">{item.product_name}</p>
+                        <p className="text-xs text-muted-foreground">{item.category}</p>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <Badge variant={isFlat ? 'secondary' : 'outline'} className="text-xs">
+                        {isFlat ? 'Flat' : 'Wt'}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      {isFlat ? '-' : item.weight_grams.toFixed(2)}
+                    </td>
+                    <td className="px-3 py-3 text-center">
                       <Input
                         type="number"
-                        min="0"
-                        max={item.discount_type === 'percentage' ? 100 : item.making_charges}
-                        value={item.discount_value}
-                        onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
-                        className="w-20 h-8 text-right"
-                        title="Discount applies only on MC"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
+                        className="w-16 h-8 text-center"
                       />
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 text-right font-medium">{formatCurrency(item.line_total)}</td>
-                  <td className="px-3 py-3 text-center">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => handleRemoveItem(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      {isFlat ? '-' : (
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.rate_per_gram}
+                          onChange={(e) => handleRateInputChange(index, parseFloat(e.target.value) || 0)}
+                          className="w-24 h-8 text-right"
+                        />
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      {isFlat ? formatCurrency(item.selling_price || item.base_price) : formatCurrency(item.base_price)}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      {isFlat ? '-' : formatCurrency(item.making_charges)}
+                    </td>
+                    <td className="px-3 py-3 text-right text-xs text-muted-foreground">
+                      {isFlat ? '-' : `${formatCurrency(item.making_charges_per_gram)}/g`}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      {isFlat ? '-' : (
+                        <div className="flex items-center gap-1">
+                          <Select
+                            value={item.discount_type}
+                            onValueChange={(val) => handleDiscountTypeChange(index, val as DiscountType)}
+                          >
+                            <SelectTrigger className="w-14 h-8 text-xs px-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="fixed">₹</SelectItem>
+                              <SelectItem value="percentage">%</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            min="0"
+                            max={item.discount_type === 'percentage' ? 100 : item.making_charges}
+                            value={item.discount_value}
+                            onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
+                            className="w-20 h-8 text-right"
+                            title="Discount applies only on MC"
+                          />
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-right font-medium">{formatCurrency(item.line_total)}</td>
+                    <td className="px-3 py-3 text-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        onClick={() => handleRemoveItem(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

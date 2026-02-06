@@ -1,6 +1,7 @@
 export type TypeOfWork = 'Casting' | 'Handmade' | 'Polishing' | 'Repair' | 'Custom' | 'Others';
 export type ProductStatus = 'sold' | 'in_stock' | 'for_repair';
 export type ProductCategory = 'Ring' | 'Chain' | 'Necklace' | 'Bangle' | 'Earring' | 'Bracelet' | 'Pendant' | 'Coin' | 'Others';
+export type PricingMode = 'weight_based' | 'flat_price';
 
 export interface Product {
   id: string;
@@ -27,6 +28,7 @@ export interface Product {
   mrp: number;
   purchase_price_per_gram: number;
   purchase_making_charges: number;
+  pricing_mode: PricingMode;
   created_at: string;
   updated_at: string;
   categories?: { name: string } | null;
@@ -56,6 +58,7 @@ export interface ProductFormData {
   mrp: number;
   purchase_price_per_gram: number;
   purchase_making_charges: number;
+  pricing_mode: PricingMode;
 }
 
 export const TYPE_OF_WORK_OPTIONS: TypeOfWork[] = ['Casting', 'Handmade', 'Polishing', 'Repair', 'Custom', 'Others'];
@@ -65,6 +68,10 @@ export const STATUS_OPTIONS: { value: ProductStatus; label: string }[] = [
   { value: 'for_repair', label: 'For Repair' },
 ];
 export const CATEGORY_OPTIONS: ProductCategory[] = ['Ring', 'Chain', 'Necklace', 'Bangle', 'Earring', 'Bracelet', 'Pendant', 'Coin', 'Others'];
+export const PRICING_MODE_OPTIONS: { value: PricingMode; label: string }[] = [
+  { value: 'weight_based', label: 'Weight Based' },
+  { value: 'flat_price', label: 'Flat Price' },
+];
 
 export const initialProductForm: ProductFormData = {
   sku: '',
@@ -89,4 +96,5 @@ export const initialProductForm: ProductFormData = {
   mrp: 0,
   purchase_price_per_gram: 0,
   purchase_making_charges: 0,
+  pricing_mode: 'weight_based',
 };

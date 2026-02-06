@@ -150,6 +150,7 @@ export function ViewInvoiceDialog({
       discounted_making: Number(item.discounted_making),
       line_total: Number(item.subtotal),
       gst_percentage: Number(item.gst_percentage),
+      pricing_mode: (Number(item.rate_per_gram) === 0 && Number(item.making_charges) === 0) ? 'flat_price' as const : 'weight_based' as const,
     }));
   };
 
@@ -315,32 +316,35 @@ export function ViewInvoiceDialog({
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item) => (
-                    <tr key={item.id} className="border-t">
-                      <td className="px-3 py-3 font-mono text-xs">{item.products?.sku || 'N/A'}</td>
-                      <td className="px-3 py-3">
-                        <div>
-                          <p className="font-medium">{item.product_name}</p>
-                          {item.category && <p className="text-xs text-muted-foreground">{item.category}</p>}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 text-right">{Number(item.weight_grams).toFixed(2)}</td>
-                      <td className="px-3 py-3 text-center">{item.quantity}</td>
-                      <td className="px-3 py-3 text-right">{formatCurrency(Number(item.rate_per_gram))}</td>
-                      {isAdmin && (
-                        <>
-                          <td className="px-3 py-3 text-right">{formatCurrency(Number(item.making_charges))}</td>
-                          <td className="px-3 py-3 text-right text-xs text-muted-foreground">
-                            {Number(item.weight_grams) > 0 ? formatCurrency(Number(item.making_charges) / Number(item.weight_grams)) + '/g' : '-'}
-                          </td>
-                          <td className="px-3 py-3 text-right text-destructive">
-                            {Number(item.discount) > 0 ? `-${formatCurrency(Number(item.discount))}` : '-'}
-                          </td>
-                        </>
-                      )}
-                      <td className="px-3 py-3 text-right font-medium">{formatCurrency(Number(item.subtotal))}</td>
-                    </tr>
-                  ))}
+                  {items.map((item) => {
+                    const isFlat = Number(item.rate_per_gram) === 0 && Number(item.making_charges) === 0;
+                    return (
+                      <tr key={item.id} className="border-t">
+                        <td className="px-3 py-3 font-mono text-xs">{item.products?.sku || 'N/A'}</td>
+                        <td className="px-3 py-3">
+                          <div>
+                            <p className="font-medium">{item.product_name}</p>
+                            {item.category && <p className="text-xs text-muted-foreground">{item.category}</p>}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-right">{isFlat ? '-' : Number(item.weight_grams).toFixed(2)}</td>
+                        <td className="px-3 py-3 text-center">{item.quantity}</td>
+                        <td className="px-3 py-3 text-right">{isFlat ? '-' : formatCurrency(Number(item.rate_per_gram))}</td>
+                        {isAdmin && (
+                          <>
+                            <td className="px-3 py-3 text-right">{isFlat ? '-' : formatCurrency(Number(item.making_charges))}</td>
+                            <td className="px-3 py-3 text-right text-xs text-muted-foreground">
+                              {isFlat ? '-' : (Number(item.weight_grams) > 0 ? formatCurrency(Number(item.making_charges) / Number(item.weight_grams)) + '/g' : '-')}
+                            </td>
+                            <td className="px-3 py-3 text-right text-destructive">
+                              {isFlat ? '-' : (Number(item.discount) > 0 ? `-${formatCurrency(Number(item.discount))}` : '-')}
+                            </td>
+                          </>
+                        )}
+                        <td className="px-3 py-3 text-right font-medium">{formatCurrency(Number(item.subtotal))}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

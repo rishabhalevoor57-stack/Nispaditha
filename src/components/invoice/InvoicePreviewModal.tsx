@@ -158,28 +158,31 @@ export function InvoicePreviewModal({
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item, index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-2 py-2 text-center border-t border-gray-200">{index + 1}</td>
-                      <td className="px-2 py-2 text-left border-t border-gray-200">{item.product_name}</td>
-                      <td className="px-2 py-2 text-left border-t border-gray-200 font-mono">{item.sku}</td>
-                      <td className="px-2 py-2 text-right border-t border-gray-200">{item.weight_grams.toFixed(2)}</td>
-                      <td className="px-2 py-2 text-center border-t border-gray-200">{item.quantity}</td>
-                      <td className="px-2 py-2 text-right border-t border-gray-200">{formatCurrency(item.rate_per_gram)}</td>
-                      {showMakingCharges && (
-                        <>
-                          <td className="px-2 py-2 text-right border-t border-gray-200">{formatCurrency(item.making_charges)}</td>
-                          <td className="px-2 py-2 text-right border-t border-gray-200 text-gray-500">
-                            {formatCurrency(item.making_charges_per_gram)}/g
-                          </td>
-                          <td className="px-2 py-2 text-right border-t border-gray-200">
-                            {item.discount > 0 ? formatCurrency(item.discount) : '-'}
-                          </td>
-                        </>
-                      )}
-                      <td className="px-2 py-2 text-right border-t border-gray-200 font-medium">{formatCurrency(item.line_total)}</td>
-                    </tr>
-                  ))}
+                  {items.map((item, index) => {
+                    const isFlat = item.pricing_mode === 'flat_price';
+                    return (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-2 py-2 text-center border-t border-gray-200">{index + 1}</td>
+                        <td className="px-2 py-2 text-left border-t border-gray-200">{item.product_name}</td>
+                        <td className="px-2 py-2 text-left border-t border-gray-200 font-mono">{item.sku}</td>
+                        <td className="px-2 py-2 text-right border-t border-gray-200">{isFlat ? '-' : item.weight_grams.toFixed(2)}</td>
+                        <td className="px-2 py-2 text-center border-t border-gray-200">{item.quantity}</td>
+                        <td className="px-2 py-2 text-right border-t border-gray-200">{isFlat ? '-' : formatCurrency(item.rate_per_gram)}</td>
+                        {showMakingCharges && (
+                          <>
+                            <td className="px-2 py-2 text-right border-t border-gray-200">{isFlat ? '-' : formatCurrency(item.making_charges)}</td>
+                            <td className="px-2 py-2 text-right border-t border-gray-200 text-gray-500">
+                              {isFlat ? '-' : `${formatCurrency(item.making_charges_per_gram)}/g`}
+                            </td>
+                            <td className="px-2 py-2 text-right border-t border-gray-200">
+                              {isFlat ? '-' : (item.discount > 0 ? formatCurrency(item.discount) : '-')}
+                            </td>
+                          </>
+                        )}
+                        <td className="px-2 py-2 text-right border-t border-gray-200 font-medium">{formatCurrency(item.line_total)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

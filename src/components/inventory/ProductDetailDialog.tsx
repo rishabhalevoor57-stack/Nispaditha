@@ -121,9 +121,14 @@ export function ProductDetailDialog({
 
           {/* Details Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <DetailItem label="Metal Type" value="Silver" />
-            <DetailItem label="Purity" value={product.purity || '-'} />
-            <DetailItem label="Weight" value={`${product.weight_grams}g`} />
+            <DetailItem label="Pricing Mode" value={product.pricing_mode === 'flat_price' ? 'Flat Price' : 'Weight Based'} />
+            {product.pricing_mode === 'weight_based' && (
+              <>
+                <DetailItem label="Metal Type" value="Silver" />
+                <DetailItem label="Purity" value={product.purity || '-'} />
+                <DetailItem label="Weight" value={`${product.weight_grams}g`} />
+              </>
+            )}
             <DetailItem label="Quantity" value={product.quantity.toString()} />
             <DetailItem label="Low Stock Alert" value={product.low_stock_alert.toString()} />
             {product.bangle_size && (
@@ -138,19 +143,25 @@ export function ProductDetailDialog({
 
           <Separator />
 
-          {/* Current Rate Applied */}
-          <Alert className="border-primary/20 bg-primary/5">
-            <Coins className="h-4 w-4 text-primary" />
-            <AlertDescription className="text-sm">
-              <span className="font-medium">Current Silver Rate Applied: </span>
-              {formatCurrency(silverRate)} per gram
-            </AlertDescription>
-          </Alert>
+          {/* Current Rate Applied - only for weight based */}
+          {product.pricing_mode === 'weight_based' && (
+            <Alert className="border-primary/20 bg-primary/5">
+              <Coins className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-sm">
+                <span className="font-medium">Current Silver Rate Applied: </span>
+                {formatCurrency(silverRate)} per gram
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Pricing */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <DetailItem label="Price Per Gram" value={formatCurrency(product.price_per_gram)} />
-            <DetailItem label="Making Charges" value={formatCurrency(product.making_charges)} />
+            {product.pricing_mode === 'weight_based' && (
+              <>
+                <DetailItem label="Price Per Gram" value={formatCurrency(product.price_per_gram)} />
+                <DetailItem label="Making Charges" value={formatCurrency(product.making_charges)} />
+              </>
+            )}
             <DetailItem label="MRP" value={formatCurrency(product.mrp)} />
             <DetailItem label="Selling Price" value={formatCurrency(product.selling_price)} highlight />
           </div>
