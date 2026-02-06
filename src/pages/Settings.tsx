@@ -41,6 +41,7 @@ interface Category {
   id: string;
   name: string;
   description: string | null;
+  parent_id: string | null;
 }
 
 export default function Settings() {
@@ -49,6 +50,8 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [newSubCategory, setNewSubCategory] = useState('');
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [isResettingOrders, setIsResettingOrders] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const { toast } = useToast();
@@ -101,17 +104,22 @@ export default function Settings() {
     }
   };
 
-  const handleAddCategory = async () => {
-    if (!newCategory.trim()) return;
+  const handleAddCategory = async (parentId?: string | null) => {
+    const name = parentId ? newSubCategory.trim() : newCategory.trim();
+    if (!name) return;
 
     try {
       const { error } = await supabase
         .from('categories')
-        .insert([{ name: newCategory.trim() }]);
+        .insert([{ name, parent_id: parentId || null }]);
 
       if (error) throw error;
-      toast({ title: 'Category added' });
-      setNewCategory('');
+      toast({ title: parentId ? 'Sub-category added' : 'Category added' });
+      if (parentId) {
+        setNewSubCategory('');
+      } else {
+        setNewCategory('');
+      }
       fetchCategories();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'An error occurred';
@@ -370,6 +378,7 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Add top-level category */}
               <div className="flex gap-3 mb-6">
                 <Input
                   placeholder="New category name..."
@@ -377,28 +386,118 @@ export default function Settings() {
                   onChange={(e) => setNewCategory(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
                 />
-                <Button onClick={handleAddCategory} className="btn-gold">
+                <Button onClick={() => handleAddCategory()} className="btn-gold">
                   Add
                 </Button>
               </div>
 
               <div className="space-y-2">
-                {categories.map((cat) => (
-                  <div 
-                    key={cat.id} 
-                    className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
-                  >
-                    <span className="font-medium">{cat.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteCategory(cat.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                ))}
+                {categories.filter(c => !c.parent_id).map((cat) => {
+                  const subCats = categories.filter(c => c.parent_id === cat.id);
+                  const subSubGetter = (parentId: string) => categories.filter(c => c.parent_id === parentId);
+                  return (
+                    <div key={cat.id} className="rounded-lg border bg-muted/30">
+                      {/* Parent Category */}
+                      <div className="flex items-center justify-between p-3">
+                        <span className="font-medium">{cat.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedParentId(selectedParentId === cat.id ? null : cat.id)}
+                          >
+                            + Sub
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteCategory(cat.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Add sub-category input */}
+                      {selectedParentId === cat.id && (
+                        <div className="flex gap-2 px-3 pb-3">
+                          <Input
+                            placeholder="Sub-category name..."
+                            value={newSubCategory}
+                            onChange={(e) => setNewSubCategory(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCategory(cat.id))}
+                            className="h-8 text-sm"
+                          />
+                          <Button size="sm" onClick={() => handleAddCategory(cat.id)}>Add</Button>
+                        </div>
+                      )}
+
+                      {/* Sub-categories */}
+                      {subCats.length > 0 && (
+                        <div className="border-t">
+                          {subCats.map((sub) => {
+                            const subSubs = subSubGetter(sub.id);
+                            return (
+                              <div key={sub.id}>
+                                <div className="flex items-center justify-between pl-8 pr-3 py-2 bg-muted/20">
+                                  <span className="text-sm">↳ {sub.name}</span>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-6 text-xs"
+                                      onClick={() => setSelectedParentId(selectedParentId === sub.id ? null : sub.id)}
+                                    >
+                                      + Sub
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive h-6 text-xs"
+                                      onClick={() => handleDeleteCategory(sub.id)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {/* Add sub-sub-category input */}
+                                {selectedParentId === sub.id && (
+                                  <div className="flex gap-2 pl-8 pr-3 py-2">
+                                    <Input
+                                      placeholder="Sub-sub-category name..."
+                                      value={newSubCategory}
+                                      onChange={(e) => setNewSubCategory(e.target.value)}
+                                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCategory(sub.id))}
+                                      className="h-8 text-sm"
+                                    />
+                                    <Button size="sm" onClick={() => handleAddCategory(sub.id)}>Add</Button>
+                                  </div>
+                                )}
+
+                                {/* Sub-sub-categories */}
+                                {subSubs.map((subSub) => (
+                                  <div key={subSub.id} className="flex items-center justify-between pl-14 pr-3 py-2 bg-muted/10">
+                                    <span className="text-xs">↳ {subSub.name}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive h-6 text-xs"
+                                      onClick={() => handleDeleteCategory(subSub.id)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {categories.length === 0 && (

@@ -144,8 +144,8 @@ export function InvoicePreviewModal({
                     <th className="px-2 py-2 text-center w-[5%]">Sr</th>
                     <th className="px-2 py-2 text-left w-[22%]">Description</th>
                     <th className="px-2 py-2 text-left w-[10%]">SKU</th>
-                    <th className="px-2 py-2 text-right w-[8%]">Weight(g)</th>
-                    <th className="px-2 py-2 text-center w-[5%]">Qty</th>
+                     <th className="px-2 py-2 text-right w-[8%]">Wt(G)</th>
+                     <th className="px-2 py-2 text-center w-[5%]">Qty</th>
                     <th className="px-2 py-2 text-right w-[10%]">Rate/g</th>
                     {showMakingCharges && (
                       <>

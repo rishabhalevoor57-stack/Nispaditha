@@ -12,6 +12,7 @@ import { TYPE_OF_WORK_OPTIONS, STATUS_OPTIONS } from '@/types/inventory';
 interface Category {
   id: string;
   name: string;
+  parent_id?: string | null;
 }
 
 interface Filters {
@@ -50,11 +51,25 @@ export function InventoryFilters({ filters, onFiltersChange, categories }: Inven
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Categories</SelectItem>
-          {categories.map((cat) => (
-            <SelectItem key={cat.id} value={cat.id}>
-              {cat.name}
-            </SelectItem>
-          ))}
+          {categories.filter(c => !c.parent_id).map((cat) => {
+            const subs = categories.filter(c => c.parent_id === cat.id);
+            return (
+              <div key={cat.id}>
+                <SelectItem value={cat.id}>{cat.name}</SelectItem>
+                {subs.map((sub) => {
+                  const subSubs = categories.filter(c => c.parent_id === sub.id);
+                  return (
+                    <div key={sub.id}>
+                      <SelectItem value={sub.id}>↳ {sub.name}</SelectItem>
+                      {subSubs.map((subSub) => (
+                        <SelectItem key={subSub.id} value={subSub.id}>↳↳ {subSub.name}</SelectItem>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </SelectContent>
       </Select>
       
