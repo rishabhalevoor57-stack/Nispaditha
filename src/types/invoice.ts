@@ -1,3 +1,5 @@
+export type PricingMode = 'weight_based' | 'flat_price';
+
 export interface Product {
   id: string;
   sku: string;
@@ -7,6 +9,7 @@ export interface Product {
   selling_price: number;
   making_charges: number;
   gst_percentage: number;
+  pricing_mode: PricingMode;
   categories?: { name: string } | null;
 }
 
@@ -71,6 +74,8 @@ export interface InvoiceItem {
   discounted_making: number;
   line_total: number;
   gst_percentage: number;
+  pricing_mode: PricingMode;
+  selling_price?: number; // used for flat_price mode
 }
 
 export interface InvoiceTotals {

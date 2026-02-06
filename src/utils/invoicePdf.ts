@@ -158,23 +158,24 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
       ];
 
   const tableRows = data.items.map((item, index) => {
+    const isFlat = item.pricing_mode === 'flat_price';
     const mcPerGram = item.weight_grams > 0 ? item.making_charges / item.weight_grams : 0;
     const baseRow = {
       sr: (index + 1).toString(),
       description: item.product_name,
       sku: item.sku,
-      weight: item.weight_grams.toFixed(2),
+      weight: isFlat ? '-' : item.weight_grams.toFixed(2),
       qty: item.quantity.toString(),
-      rate: formatCurrency(item.rate_per_gram),
+      rate: isFlat ? '-' : formatCurrency(item.rate_per_gram),
       total: formatCurrency(item.line_total),
     };
 
     if (showMakingCharges) {
       return {
         ...baseRow,
-        mc: formatCurrency(item.making_charges),
-        mcpg: formatCurrency(mcPerGram),
-        discount: item.discount > 0 ? formatCurrency(item.discount) : '-',
+        mc: isFlat ? '-' : formatCurrency(item.making_charges),
+        mcpg: isFlat ? '-' : formatCurrency(mcPerGram),
+        discount: isFlat ? '-' : (item.discount > 0 ? formatCurrency(item.discount) : '-'),
       };
     }
     return baseRow;

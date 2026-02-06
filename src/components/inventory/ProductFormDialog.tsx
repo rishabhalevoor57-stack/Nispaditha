@@ -22,9 +22,11 @@ import {
   Product, 
   TYPE_OF_WORK_OPTIONS, 
   STATUS_OPTIONS, 
+  PRICING_MODE_OPTIONS,
   initialProductForm,
   TypeOfWork,
   ProductStatus,
+  PricingMode,
 } from '@/types/inventory';
 
 interface Category {
@@ -86,6 +88,7 @@ export function ProductFormDialog({
         mrp: product.mrp,
         purchase_price_per_gram: product.purchase_price_per_gram || 0,
         purchase_making_charges: product.purchase_making_charges || 0,
+        pricing_mode: product.pricing_mode || 'weight_based',
       });
       setImagePreview(product.image_url);
     } else {
@@ -95,17 +98,19 @@ export function ProductFormDialog({
     setImageFile(null);
   }, [product, open]);
 
-  // Auto-calculate selling price from price per gram and making charges
+  // Auto-calculate selling price from price per gram and making charges (weight_based only)
   const calculatedSellingPrice = useMemo(() => {
+    if (formData.pricing_mode === 'flat_price') return formData.selling_price;
     const metalValue = formData.weight_grams * formData.price_per_gram;
     return metalValue + formData.making_charges;
-  }, [formData.weight_grams, formData.price_per_gram, formData.making_charges]);
+  }, [formData.weight_grams, formData.price_per_gram, formData.making_charges, formData.pricing_mode, formData.selling_price]);
 
-  // Auto-calculate purchase price from purchase price per gram and purchase making charges
+  // Auto-calculate purchase price from purchase price per gram and purchase making charges (weight_based only)
   const calculatedPurchasePrice = useMemo(() => {
+    if (formData.pricing_mode === 'flat_price') return formData.purchase_price;
     const metalValue = formData.weight_grams * formData.purchase_price_per_gram;
     return metalValue + formData.purchase_making_charges;
-  }, [formData.weight_grams, formData.purchase_price_per_gram, formData.purchase_making_charges]);
+  }, [formData.weight_grams, formData.purchase_price_per_gram, formData.purchase_making_charges, formData.pricing_mode, formData.purchase_price]);
 
   // Track whether user has manually overridden prices
   const [sellingPriceManual, setSellingPriceManual] = useState(false);
@@ -251,8 +256,8 @@ export function ProductFormDialog({
             />
           </div>
 
-          {/* Category & Type */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Category, Type & Pricing Mode */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>Category</Label>
               <Select
@@ -321,9 +326,28 @@ export function ProductFormDialog({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Pricing Mode</Label>
+              <Select
+                value={formData.pricing_mode}
+                onValueChange={(v) => updateField('pricing_mode', v as PricingMode)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRICING_MODE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Metal Details */}
+          {/* Metal Details - only for weight_based */}
+          {formData.pricing_mode === 'weight_based' && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="metal_type">Metal Type</Label>
@@ -364,6 +388,7 @@ export function ProductFormDialog({
               />
             </div>
           </div>
+          )}
 
           {/* Quantity & Stock */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -397,98 +422,130 @@ export function ProductFormDialog({
             </div>
           </div>
 
-          {/* Pricing - Selling Price Components */}
+          {/* Pricing */}
           <div className="space-y-4">
-            <div className="p-4 border rounded-lg bg-muted/30">
-              <h4 className="text-sm font-semibold mb-3">Selling Price Calculation</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price_per_gram">Price Per Gram (₹) *</Label>
-                  <Input
-                    id="price_per_gram"
-                    type="number"
-                    value={formData.price_per_gram}
-                    onChange={(e) => updateField('price_per_gram', parseFloat(e.target.value) || 0)}
-                    required
-                  />
+            {formData.pricing_mode === 'weight_based' ? (
+              <>
+                {/* Weight Based Selling Price */}
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <h4 className="text-sm font-semibold mb-3">Selling Price Calculation (Weight Based)</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="price_per_gram">Price Per Gram (₹) *</Label>
+                      <Input
+                        id="price_per_gram"
+                        type="number"
+                        value={formData.price_per_gram}
+                        onChange={(e) => updateField('price_per_gram', parseFloat(e.target.value) || 0)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="making_charges">Making Charges (₹) *</Label>
+                      <Input
+                        id="making_charges"
+                        type="number"
+                        value={formData.making_charges}
+                        onChange={(e) => updateField('making_charges', parseFloat(e.target.value) || 0)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="selling_price">Selling Price (₹) {sellingPriceManual && <span className="text-xs text-warning">(Manual)</span>}</Label>
+                      <Input
+                        id="selling_price"
+                        type="number"
+                        value={formData.selling_price}
+                        onChange={(e) => {
+                          setSellingPriceManual(true);
+                          updateField('selling_price', parseFloat(e.target.value) || 0);
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Auto: ({formData.weight_grams}g × ₹{formData.price_per_gram}) + ₹{formData.making_charges} MC = ₹{calculatedSellingPrice.toLocaleString('en-IN')}
+                        {sellingPriceManual && (
+                          <button type="button" className="ml-2 text-primary underline" onClick={() => { setSellingPriceManual(false); updateField('selling_price', calculatedSellingPrice); }}>
+                            Reset to auto
+                          </button>
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="making_charges">Making Charges (₹) *</Label>
-                  <Input
-                    id="making_charges"
-                    type="number"
-                    value={formData.making_charges}
-                    onChange={(e) => updateField('making_charges', parseFloat(e.target.value) || 0)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="selling_price">Selling Price (₹) {sellingPriceManual && <span className="text-xs text-warning">(Manual)</span>}</Label>
-                  <Input
-                    id="selling_price"
-                    type="number"
-                    value={formData.selling_price}
-                    onChange={(e) => {
-                      setSellingPriceManual(true);
-                      updateField('selling_price', parseFloat(e.target.value) || 0);
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Auto: ({formData.weight_grams}g × ₹{formData.price_per_gram}) + ₹{formData.making_charges} MC = ₹{calculatedSellingPrice.toLocaleString('en-IN')}
-                    {sellingPriceManual && (
-                      <button type="button" className="ml-2 text-primary underline" onClick={() => { setSellingPriceManual(false); updateField('selling_price', calculatedSellingPrice); }}>
-                        Reset to auto
-                      </button>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            {/* Purchase Price Calculation */}
-            <div className="p-4 border rounded-lg bg-muted/30">
-              <h4 className="text-sm font-semibold mb-3">Purchase Price Calculation</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="purchase_price_per_gram">Purchase Price Per Gram (₹)</Label>
-                  <Input
-                    id="purchase_price_per_gram"
-                    type="number"
-                    value={formData.purchase_price_per_gram}
-                    onChange={(e) => updateField('purchase_price_per_gram', parseFloat(e.target.value) || 0)}
-                  />
+                {/* Weight Based Purchase Price */}
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <h4 className="text-sm font-semibold mb-3">Purchase Price Calculation</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="purchase_price_per_gram">Purchase Price Per Gram (₹)</Label>
+                      <Input
+                        id="purchase_price_per_gram"
+                        type="number"
+                        value={formData.purchase_price_per_gram}
+                        onChange={(e) => updateField('purchase_price_per_gram', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="purchase_making_charges">Purchase Making Charges (₹)</Label>
+                      <Input
+                        id="purchase_making_charges"
+                        type="number"
+                        value={formData.purchase_making_charges}
+                        onChange={(e) => updateField('purchase_making_charges', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="purchase_price">Purchase Price (₹) {purchasePriceManual && <span className="text-xs text-warning">(Manual)</span>}</Label>
+                      <Input
+                        id="purchase_price"
+                        type="number"
+                        value={formData.purchase_price}
+                        onChange={(e) => {
+                          setPurchasePriceManual(true);
+                          updateField('purchase_price', parseFloat(e.target.value) || 0);
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Auto: ({formData.weight_grams}g × ₹{formData.purchase_price_per_gram}) + ₹{formData.purchase_making_charges} MC = ₹{calculatedPurchasePrice.toLocaleString('en-IN')}
+                        {purchasePriceManual && (
+                          <button type="button" className="ml-2 text-primary underline" onClick={() => { setPurchasePriceManual(false); updateField('purchase_price', calculatedPurchasePrice); }}>
+                            Reset to auto
+                          </button>
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="purchase_making_charges">Purchase Making Charges (₹)</Label>
-                  <Input
-                    id="purchase_making_charges"
-                    type="number"
-                    value={formData.purchase_making_charges}
-                    onChange={(e) => updateField('purchase_making_charges', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="purchase_price">Purchase Price (₹) {purchasePriceManual && <span className="text-xs text-warning">(Manual)</span>}</Label>
-                  <Input
-                    id="purchase_price"
-                    type="number"
-                    value={formData.purchase_price}
-                    onChange={(e) => {
-                      setPurchasePriceManual(true);
-                      updateField('purchase_price', parseFloat(e.target.value) || 0);
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Auto: ({formData.weight_grams}g × ₹{formData.purchase_price_per_gram}) + ₹{formData.purchase_making_charges} MC = ₹{calculatedPurchasePrice.toLocaleString('en-IN')}
-                    {purchasePriceManual && (
-                      <button type="button" className="ml-2 text-primary underline" onClick={() => { setPurchasePriceManual(false); updateField('purchase_price', calculatedPurchasePrice); }}>
-                        Reset to auto
-                      </button>
-                    )}
-                  </p>
+              </>
+            ) : (
+              /* Flat Price Mode */
+              <div className="p-4 border rounded-lg bg-muted/30">
+                <h4 className="text-sm font-semibold mb-3">Flat Pricing</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="purchase_price_flat">Purchase Price (₹) *</Label>
+                    <Input
+                      id="purchase_price_flat"
+                      type="number"
+                      value={formData.purchase_price}
+                      onChange={(e) => updateField('purchase_price', parseFloat(e.target.value) || 0)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="selling_price_flat">Selling Price (₹) *</Label>
+                    <Input
+                      id="selling_price_flat"
+                      type="number"
+                      value={formData.selling_price}
+                      onChange={(e) => updateField('selling_price', parseFloat(e.target.value) || 0)}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

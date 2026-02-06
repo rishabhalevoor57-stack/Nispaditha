@@ -73,7 +73,12 @@ export function CreateInvoiceDialog({
       .select('*, categories(name)')
       .gt('quantity', 0)
       .order('name');
-    setProducts((data as Product[]) || []);
+    // Map pricing_mode to the Product type
+    const mapped = (data || []).map(p => ({
+      ...p,
+      pricing_mode: (p.pricing_mode || 'weight_based') as 'weight_based' | 'flat_price',
+    }));
+    setProducts(mapped as Product[]);
   };
 
   const fetchClients = async () => {
@@ -189,13 +194,13 @@ export function CreateInvoiceDialog({
         product_id: item.product_id,
         product_name: item.product_name,
         category: item.category,
-        weight_grams: item.weight_grams,
+        weight_grams: item.pricing_mode === 'flat_price' ? 0 : item.weight_grams,
         quantity: item.quantity,
-        rate_per_gram: item.rate_per_gram,
+        rate_per_gram: item.pricing_mode === 'flat_price' ? 0 : item.rate_per_gram,
         gold_value: item.base_price,
-        making_charges: item.making_charges,
-        discount: item.discount,
-        discounted_making: item.discounted_making,
+        making_charges: item.pricing_mode === 'flat_price' ? 0 : item.making_charges,
+        discount: item.pricing_mode === 'flat_price' ? 0 : item.discount,
+        discounted_making: item.pricing_mode === 'flat_price' ? 0 : item.discounted_making,
         subtotal: item.line_total,
         gst_percentage: item.gst_percentage,
         gst_amount: item.line_total * (item.gst_percentage / 100),
