@@ -161,6 +161,7 @@ export function InvoiceItemsTable({
                 <th className="px-3 py-3 text-right font-medium">MC</th>
                 <th className="px-3 py-3 text-right font-medium">MC/g</th>
                 <th className="px-3 py-3 text-right font-medium">Discount</th>
+                <th className="px-3 py-3 text-right font-medium">MRP</th>
                 <th className="px-3 py-3 text-right font-medium">Total</th>
                 <th className="px-3 py-3 text-center font-medium w-12"></th>
               </tr>
@@ -243,6 +244,7 @@ export function InvoiceItemsTable({
                         />
                       </div>
                     </td>
+                    <td className="px-3 py-3 text-right text-muted-foreground">{item.mrp > 0 ? formatCurrency(item.mrp) : '-'}</td>
                     <td className="px-3 py-3 text-right font-medium">{formatCurrency(item.line_total)}</td>
                     <td className="px-3 py-3 text-center">
                       <Button

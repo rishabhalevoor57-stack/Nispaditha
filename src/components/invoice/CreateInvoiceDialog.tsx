@@ -77,6 +77,7 @@ export function CreateInvoiceDialog({
     const mapped = (data || []).map(p => ({
       ...p,
       pricing_mode: (p.pricing_mode || 'weight_based') as 'weight_based' | 'flat_price',
+      mrp: Number(p.mrp) || 0,
     }));
     setProducts(mapped as Product[]);
   };
@@ -199,12 +200,13 @@ export function CreateInvoiceDialog({
         rate_per_gram: item.pricing_mode === 'flat_price' ? 0 : item.rate_per_gram,
         gold_value: item.base_price,
         making_charges: item.pricing_mode === 'flat_price' ? 0 : item.making_charges,
-        discount: item.pricing_mode === 'flat_price' ? 0 : item.discount,
+        discount: item.discount,
         discounted_making: item.pricing_mode === 'flat_price' ? 0 : item.discounted_making,
         subtotal: item.line_total,
         gst_percentage: item.gst_percentage,
         gst_amount: item.line_total * (item.gst_percentage / 100),
         total: item.line_total + (item.line_total * (item.gst_percentage / 100)),
+        mrp: item.mrp || 0,
       }));
 
       const { error: itemsError } = await supabase

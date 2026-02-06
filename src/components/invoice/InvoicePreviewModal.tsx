@@ -152,9 +152,10 @@ export function InvoicePreviewModal({
                         <th className="px-2 py-2 text-right w-[10%]">MC</th>
                         <th className="px-2 py-2 text-right w-[8%]">MC/g</th>
                         <th className="px-2 py-2 text-right w-[5%]">Disc</th>
-                      </>
-                    )}
-                    <th className="px-2 py-2 text-right w-[15%]">Total</th>
+                       </>
+                     )}
+                     <th className="px-2 py-2 text-right w-[8%]">MRP</th>
+                     <th className="px-2 py-2 text-right w-[12%]">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -178,7 +179,10 @@ export function InvoicePreviewModal({
                               {item.discount > 0 ? formatCurrency(item.discount) : '-'}
                             </td>
                           </>
-                        )}
+                         )}
+                        <td className="px-2 py-2 text-right border-t border-gray-200 text-gray-500">
+                          {item.mrp > 0 ? formatCurrency(item.mrp) : '-'}
+                        </td>
                         <td className="px-2 py-2 text-right border-t border-gray-200 font-medium">{formatCurrency(item.line_total)}</td>
                       </tr>
                     );

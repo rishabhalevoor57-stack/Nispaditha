@@ -45,6 +45,7 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
         gst_percentage: GST_PERCENTAGE,
         pricing_mode: 'flat_price',
         selling_price: product.selling_price,
+        mrp: product.mrp || 0,
       };
     }
 
@@ -74,6 +75,7 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
       line_total: lineTotal,
       gst_percentage: GST_PERCENTAGE,
       pricing_mode: 'weight_based',
+      mrp: product.mrp || 0,
     };
   }, []);
 

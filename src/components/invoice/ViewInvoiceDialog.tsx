@@ -56,6 +56,7 @@ interface InvoiceItemRow {
   gst_percentage: number;
   gst_amount: number;
   total: number;
+  mrp: number;
   products: { sku: string } | null;
 }
 
@@ -151,6 +152,7 @@ export function ViewInvoiceDialog({
       line_total: Number(item.subtotal),
       gst_percentage: Number(item.gst_percentage),
       pricing_mode: (Number(item.rate_per_gram) === 0 && Number(item.making_charges) === 0) ? 'flat_price' as const : 'weight_based' as const,
+      mrp: Number(item.mrp) || 0,
     }));
   };
 
@@ -312,6 +314,7 @@ export function ViewInvoiceDialog({
                         <th className="px-3 py-3 text-right font-medium">Discount</th>
                       </>
                     )}
+                    <th className="px-3 py-3 text-right font-medium">MRP</th>
                     <th className="px-3 py-3 text-right font-medium">Total</th>
                   </tr>
                 </thead>
@@ -341,6 +344,7 @@ export function ViewInvoiceDialog({
                             </td>
                           </>
                         )}
+                        <td className="px-3 py-3 text-right text-muted-foreground">{Number(item.mrp) > 0 ? formatCurrency(Number(item.mrp)) : '-'}</td>
                         <td className="px-3 py-3 text-right font-medium">{formatCurrency(Number(item.subtotal))}</td>
                       </tr>
                     );

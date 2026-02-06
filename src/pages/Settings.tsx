@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle, Pencil, Check, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,11 +54,15 @@ export default function Settings() {
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [isResettingOrders, setIsResettingOrders] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [categoryProductCounts, setCategoryProductCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSettings();
     fetchCategories();
+    fetchCategoryProductCounts();
   }, []);
 
   const fetchSettings = async () => {
@@ -81,6 +85,21 @@ export default function Settings() {
   const fetchCategories = async () => {
     const { data } = await supabase.from('categories').select('*').order('name');
     setCategories(data || []);
+  };
+
+  const fetchCategoryProductCounts = async () => {
+    const { data } = await supabase
+      .from('products')
+      .select('category_id');
+    if (data) {
+      const counts: Record<string, number> = {};
+      data.forEach((p) => {
+        if (p.category_id) {
+          counts[p.category_id] = (counts[p.category_id] || 0) + 1;
+        }
+      });
+      setCategoryProductCounts(counts);
+    }
   };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -162,17 +181,62 @@ export default function Settings() {
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm('Are you sure? Products in this category will lose their category.')) return;
+    // Check if products exist in this category
+    const productCount = categoryProductCounts[id] || 0;
+    // Also check child categories
+    const childIds = categories.filter(c => c.parent_id === id).map(c => c.id);
+    const childProductCount = childIds.reduce((sum, cid) => sum + (categoryProductCounts[cid] || 0), 0);
+    const grandChildIds = childIds.flatMap(cid => categories.filter(c => c.parent_id === cid).map(c => c.id));
+    const grandChildProductCount = grandChildIds.reduce((sum, cid) => sum + (categoryProductCounts[cid] || 0), 0);
+    const totalProducts = productCount + childProductCount + grandChildProductCount;
+
+    if (totalProducts > 0) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Cannot delete', 
+        description: `This category has ${totalProducts} product(s) assigned. Remove or reassign them first.` 
+      });
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this category?')) return;
 
     try {
       const { error } = await supabase.from('categories').delete().eq('id', id);
       if (error) throw error;
       toast({ title: 'Category deleted' });
       fetchCategories();
+      fetchCategoryProductCounts();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'An error occurred';
       toast({ variant: 'destructive', title: 'Error', description: message });
     }
+  };
+
+  const handleEditCategory = async (id: string) => {
+    const trimmedName = editCategoryName.trim();
+    if (!trimmedName) return;
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({ name: trimmedName })
+        .eq('id', id);
+
+      if (error) throw error;
+      toast({ title: 'Category renamed' });
+      setEditingCategoryId(null);
+      setEditCategoryName('');
+      fetchCategories();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      toast({ variant: 'destructive', title: 'Error', description: message });
+    }
+  };
+
+  const startEditCategory = (cat: Category) => {
+    setEditingCategoryId(cat.id);
+    setEditCategoryName(cat.name);
   };
 
   if (isLoading) {
@@ -395,28 +459,57 @@ export default function Settings() {
                 {categories.filter(c => !c.parent_id).map((cat) => {
                   const subCats = categories.filter(c => c.parent_id === cat.id);
                   const subSubGetter = (parentId: string) => categories.filter(c => c.parent_id === parentId);
+                  const catProductCount = categoryProductCounts[cat.id] || 0;
                   return (
                     <div key={cat.id} className="rounded-lg border bg-muted/30">
                       {/* Parent Category */}
                       <div className="flex items-center justify-between p-3">
-                        <span className="font-medium">{cat.name}</span>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedParentId(selectedParentId === cat.id ? null : cat.id)}
-                          >
-                            + Sub
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteCategory(cat.id)}
-                          >
-                            Delete
-                          </Button>
-                        </div>
+                        {editingCategoryId === cat.id ? (
+                          <div className="flex items-center gap-2 flex-1 mr-2">
+                            <Input
+                              value={editCategoryName}
+                              onChange={(e) => setEditCategoryName(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleEditCategory(cat.id)}
+                              className="h-8 text-sm"
+                              autoFocus
+                            />
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleEditCategory(cat.id)}>
+                              <Check className="w-4 h-4 text-green-600" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setEditingCategoryId(null)}>
+                              <X className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{cat.name}</span>
+                            {catProductCount > 0 && (
+                              <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">{catProductCount}</span>
+                            )}
+                          </div>
+                        )}
+                        {editingCategoryId !== cat.id && (
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => startEditCategory(cat)} title="Rename">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedParentId(selectedParentId === cat.id ? null : cat.id)}
+                            >
+                              + Sub
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteCategory(cat.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Add sub-category input */}
@@ -438,28 +531,57 @@ export default function Settings() {
                         <div className="border-t">
                           {subCats.map((sub) => {
                             const subSubs = subSubGetter(sub.id);
+                            const subProductCount = categoryProductCounts[sub.id] || 0;
                             return (
                               <div key={sub.id}>
                                 <div className="flex items-center justify-between pl-8 pr-3 py-2 bg-muted/20">
-                                  <span className="text-sm">↳ {sub.name}</span>
-                                  <div className="flex items-center gap-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-6 text-xs"
-                                      onClick={() => setSelectedParentId(selectedParentId === sub.id ? null : sub.id)}
-                                    >
-                                      + Sub
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive hover:text-destructive h-6 text-xs"
-                                      onClick={() => handleDeleteCategory(sub.id)}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </div>
+                                  {editingCategoryId === sub.id ? (
+                                    <div className="flex items-center gap-2 flex-1 mr-2">
+                                      <Input
+                                        value={editCategoryName}
+                                        onChange={(e) => setEditCategoryName(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleEditCategory(sub.id)}
+                                        className="h-7 text-sm"
+                                        autoFocus
+                                      />
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleEditCategory(sub.id)}>
+                                        <Check className="w-3.5 h-3.5 text-green-600" />
+                                      </Button>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingCategoryId(null)}>
+                                        <X className="w-3.5 h-3.5 text-destructive" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">↳ {sub.name}</span>
+                                      {subProductCount > 0 && (
+                                        <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">{subProductCount}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {editingCategoryId !== sub.id && (
+                                    <div className="flex items-center gap-2">
+                                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => startEditCategory(sub)} title="Rename">
+                                        <Pencil className="w-3 h-3" />
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-6 text-xs"
+                                        onClick={() => setSelectedParentId(selectedParentId === sub.id ? null : sub.id)}
+                                      >
+                                        + Sub
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive h-6 text-xs"
+                                        onClick={() => handleDeleteCategory(sub.id)}
+                                      >
+                                        Delete
+                                      </Button>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {/* Add sub-sub-category input */}
@@ -477,19 +599,52 @@ export default function Settings() {
                                 )}
 
                                 {/* Sub-sub-categories */}
-                                {subSubs.map((subSub) => (
-                                  <div key={subSub.id} className="flex items-center justify-between pl-14 pr-3 py-2 bg-muted/10">
-                                    <span className="text-xs">↳ {subSub.name}</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive hover:text-destructive h-6 text-xs"
-                                      onClick={() => handleDeleteCategory(subSub.id)}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </div>
-                                ))}
+                                {subSubs.map((subSub) => {
+                                  const subSubProductCount = categoryProductCounts[subSub.id] || 0;
+                                  return (
+                                    <div key={subSub.id} className="flex items-center justify-between pl-14 pr-3 py-2 bg-muted/10">
+                                      {editingCategoryId === subSub.id ? (
+                                        <div className="flex items-center gap-2 flex-1 mr-2">
+                                          <Input
+                                            value={editCategoryName}
+                                            onChange={(e) => setEditCategoryName(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleEditCategory(subSub.id)}
+                                            className="h-7 text-xs"
+                                            autoFocus
+                                          />
+                                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleEditCategory(subSub.id)}>
+                                            <Check className="w-3 h-3 text-green-600" />
+                                          </Button>
+                                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setEditingCategoryId(null)}>
+                                            <X className="w-3 h-3 text-destructive" />
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xs">↳ {subSub.name}</span>
+                                          {subSubProductCount > 0 && (
+                                            <span className="text-xs bg-primary/10 text-primary px-1 py-0.5 rounded">{subSubProductCount}</span>
+                                          )}
+                                        </div>
+                                      )}
+                                      {editingCategoryId !== subSub.id && (
+                                        <div className="flex items-center gap-1">
+                                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => startEditCategory(subSub)} title="Rename">
+                                            <Pencil className="w-3 h-3" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-destructive hover:text-destructive h-6 text-xs"
+                                            onClick={() => handleDeleteCategory(subSub.id)}
+                                          >
+                                            Delete
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             );
                           })}
