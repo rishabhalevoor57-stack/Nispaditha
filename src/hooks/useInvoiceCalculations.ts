@@ -78,8 +78,22 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
   }, []);
 
   const updateItemDiscount = useCallback((item: InvoiceItem, discountValue: number, discountType: DiscountType): InvoiceItem => {
-    // Prevent discount on flat price items
-    if (item.pricing_mode === 'flat_price') return item;
+    if (item.pricing_mode === 'flat_price') {
+      // Flat price: discount applies on total amount (selling_price * quantity)
+      const grossTotal = (item.selling_price || item.base_price) * item.quantity;
+      const discount = discountType === 'percentage'
+        ? Math.min(grossTotal, grossTotal * (discountValue / 100))
+        : Math.min(grossTotal, discountValue);
+      const lineTotal = grossTotal - discount;
+
+      return {
+        ...item,
+        discount,
+        discount_type: discountType,
+        discount_value: discountValue,
+        line_total: lineTotal,
+      };
+    }
 
     const discount = calculateDiscount(item.making_charges, discountType, discountValue);
     const discountedMaking = Math.max(0, item.making_charges - discount);
@@ -97,11 +111,19 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
 
   const updateItemQuantity = useCallback((item: InvoiceItem, quantity: number): InvoiceItem => {
     if (item.pricing_mode === 'flat_price') {
-      const lineTotal = (item.selling_price || item.base_price) * quantity;
+      const grossTotal = (item.selling_price || item.base_price / item.quantity) * quantity;
+      // Re-apply discount on new quantity
+      const discount = item.discount_value > 0
+        ? (item.discount_type === 'percentage'
+          ? Math.min(grossTotal, grossTotal * (item.discount_value / 100))
+          : Math.min(grossTotal, item.discount_value))
+        : 0;
+      const lineTotal = grossTotal - discount;
       return {
         ...item,
         quantity,
-        base_price: lineTotal,
+        base_price: grossTotal,
+        discount,
         line_total: lineTotal,
       };
     }

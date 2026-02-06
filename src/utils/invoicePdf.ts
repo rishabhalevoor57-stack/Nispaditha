@@ -175,7 +175,7 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
         ...baseRow,
         mc: isFlat ? '-' : formatCurrency(item.making_charges),
         mcpg: isFlat ? '-' : formatCurrency(mcPerGram),
-        discount: isFlat ? '-' : (item.discount > 0 ? formatCurrency(item.discount) : '-'),
+        discount: item.discount > 0 ? formatCurrency(item.discount) : '-',
       };
     }
     return baseRow;

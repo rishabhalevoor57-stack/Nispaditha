@@ -175,7 +175,7 @@ export function InvoicePreviewModal({
                               {isFlat ? '-' : `${formatCurrency(item.making_charges_per_gram)}/g`}
                             </td>
                             <td className="px-2 py-2 text-right border-t border-gray-200">
-                              {isFlat ? '-' : (item.discount > 0 ? formatCurrency(item.discount) : '-')}
+                              {item.discount > 0 ? formatCurrency(item.discount) : '-'}
                             </td>
                           </>
                         )}
