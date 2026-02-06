@@ -294,7 +294,7 @@ export function CreateInvoiceDialog({
                   {clients.length > 0 && (
                     <>
                       <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
-                        Existing Clients
+                        Old Customers
                       </div>
                       {clients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
