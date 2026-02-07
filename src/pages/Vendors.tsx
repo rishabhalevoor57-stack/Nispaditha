@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Edit, Trash2, Phone, Eye, Download } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Phone, Eye, Download, Hash } from 'lucide-react';
 import { useVendors } from '@/hooks/useVendors';
 import type { Vendor, VendorFormData } from '@/hooks/useVendors';
 import { VendorFormDialog } from '@/components/vendors/VendorFormDialog';
@@ -70,19 +70,14 @@ export default function Vendors() {
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 
-  const formatDate = (d: string | null) => {
-    if (!d) return '-';
-    return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
 
   const downloadCSV = () => {
-    const headers = ['Name', 'Contact Person', 'Phone', 'Email', 'GST Number', 'Total Purchases', 'Total Paid', 'Outstanding', 'Last Purchase'];
+    const headers = ['Vendor Code', 'Name', 'Phone', 'Address', 'Total Purchases', 'Total Paid', 'Outstanding', 'Last Purchase'];
     const rows = vendors.map((v) => [
+      v.vendor_code || '',
       v.name,
-      v.contact_person || '',
       v.phone || '',
-      v.email || '',
-      v.gst_number || '',
+      v.address || '',
       v.total_purchases.toString(),
       v.total_paid.toString(),
       v.outstanding_balance.toString(),
@@ -99,6 +94,13 @@ export default function Vendors() {
   };
 
   const columns = [
+    {
+      key: 'vendor_code',
+      header: 'Code',
+      cell: (v: Vendor) => (
+        <span className="font-mono text-xs text-muted-foreground">{v.vendor_code || '-'}</span>
+      ),
+    },
     { key: 'name', header: 'Vendor Name' },
     {
       key: 'phone',
@@ -114,24 +116,12 @@ export default function Vendors() {
         ),
     },
     {
-      key: 'email',
-      header: 'Email',
-      cell: (v: Vendor) => <span className="text-muted-foreground">{v.email || '-'}</span>,
-    },
-    {
       key: 'outstanding_balance',
       header: 'Outstanding',
       cell: (v: Vendor) => (
         <span className={v.outstanding_balance > 0 ? 'text-destructive font-medium' : 'text-muted-foreground'}>
           {formatCurrency(v.outstanding_balance)}
         </span>
-      ),
-    },
-    {
-      key: 'last_purchase_date',
-      header: 'Last Purchase',
-      cell: (v: Vendor) => (
-        <span className="text-muted-foreground text-sm">{formatDate(v.last_purchase_date)}</span>
       ),
     },
     {
@@ -181,7 +171,7 @@ export default function Vendors() {
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Search by name, phone, or contact person..."
+          placeholder="Search by name, phone, or vendor code..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10 max-w-md"

@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Phone, Mail, MapPin, Edit, Trash2, CreditCard } from 'lucide-react';
+import { Phone, MapPin, Edit, Trash2, CreditCard, Hash } from 'lucide-react';
 import type { Vendor, VendorPayment } from '@/hooks/useVendors';
 
 interface VendorProduct {
@@ -82,20 +82,14 @@ export function VendorProfileDialog({
         {/* Vendor Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg bg-muted/30 border">
           <div className="space-y-2 text-sm">
-            {vendor.contact_person && (
-              <p><span className="text-muted-foreground">Contact:</span> {vendor.contact_person}</p>
+            {vendor.vendor_code && (
+              <p className="flex items-center gap-2"><Hash className="w-3.5 h-3.5 text-muted-foreground" /> {vendor.vendor_code}</p>
             )}
             {vendor.phone && (
               <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-muted-foreground" /> {vendor.phone}</p>
             )}
-            {vendor.email && (
-              <p className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-muted-foreground" /> {vendor.email}</p>
-            )}
             {vendor.address && (
               <p className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-muted-foreground" /> {vendor.address}</p>
-            )}
-            {vendor.gst_number && (
-              <p><span className="text-muted-foreground">GST:</span> {vendor.gst_number}</p>
             )}
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -143,19 +137,13 @@ export function VendorProfileDialog({
         {/* Tabs: Products & Payments */}
         <Tabs defaultValue="products" className="mt-2">
           <TabsList className="w-full">
-            <TabsTrigger value="products" className="flex-1">
-              Purchase History ({products.length})
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="flex-1">
-              Payments ({payments.length})
-            </TabsTrigger>
+            <TabsTrigger value="products" className="flex-1">Purchase History ({products.length})</TabsTrigger>
+            <TabsTrigger value="payments" className="flex-1">Payments ({payments.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products">
             {loadingProducts ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-              </div>
+              <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
             ) : products.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">No products linked to this vendor.</p>
             ) : (
@@ -190,9 +178,7 @@ export function VendorProfileDialog({
 
           <TabsContent value="payments">
             {loadingPayments ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-              </div>
+              <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>
             ) : payments.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">No payments recorded yet.</p>
             ) : (

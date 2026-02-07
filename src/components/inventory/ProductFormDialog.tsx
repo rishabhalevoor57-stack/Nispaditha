@@ -17,14 +17,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Upload, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   ProductFormData, 
   Product, 
-  TYPE_OF_WORK_OPTIONS, 
   STATUS_OPTIONS, 
   PRICING_MODE_OPTIONS,
   initialProductForm,
-  TypeOfWork,
   ProductStatus,
   PricingMode,
 } from '@/types/inventory';
@@ -61,7 +60,16 @@ export function ProductFormDialog({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [typeOfWorkOptions, setTypeOfWorkOptions] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchTypes = async () => {
+      const { data } = await supabase.from('types_of_work').select('name').order('name');
+      setTypeOfWorkOptions((data || []).map(d => d.name));
+    };
+    fetchTypes();
+  }, [open]);
 
   useEffect(() => {
     if (product) {
@@ -294,13 +302,13 @@ export function ProductFormDialog({
               <Label>Type of Work</Label>
               <Select
                 value={formData.type_of_work}
-                onValueChange={(v) => updateField('type_of_work', v as TypeOfWork)}
+                onValueChange={(v) => updateField('type_of_work', v)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {TYPE_OF_WORK_OPTIONS.map((type) => (
+                  {typeOfWorkOptions.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -7,7 +8,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Search } from 'lucide-react';
-import { TYPE_OF_WORK_OPTIONS, STATUS_OPTIONS } from '@/types/inventory';
+import { STATUS_OPTIONS } from '@/types/inventory';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Category {
   id: string;
@@ -29,6 +31,16 @@ interface InventoryFiltersProps {
 }
 
 export function InventoryFilters({ filters, onFiltersChange, categories }: InventoryFiltersProps) {
+  const [typeOfWorkOptions, setTypeOfWorkOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchTypes = async () => {
+      const { data } = await supabase.from('types_of_work').select('name').order('name');
+      setTypeOfWorkOptions((data || []).map(d => d.name));
+    };
+    fetchTypes();
+  }, []);
+
   const updateFilter = (key: keyof Filters, value: string) => {
     onFiltersChange({ ...filters, [key]: value });
   };
@@ -93,7 +105,7 @@ export function InventoryFilters({ filters, onFiltersChange, categories }: Inven
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Types</SelectItem>
-          {TYPE_OF_WORK_OPTIONS.map((type) => (
+          {typeOfWorkOptions.map((type) => (
             <SelectItem key={type} value={type}>
               {type}
             </SelectItem>
