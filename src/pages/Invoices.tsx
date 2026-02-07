@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Eye, Trash2, Download, Printer } from 'lucide-react';
+import { Plus, Search, Eye, Trash2, Download, Printer, ArrowLeftRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { CreateInvoiceDialog } from '@/components/invoice/CreateInvoiceDialog';
 import { ViewInvoiceDialog } from '@/components/invoice/ViewInvoiceDialog';
 import { InvoiceFilters, type InvoiceStatusFilter } from '@/components/invoice/InvoiceFilters';
 import { InvoiceStatusBadge, InvoiceStatusActions } from '@/components/invoice/InvoiceStatusActions';
 import { downloadInvoicePdf } from '@/utils/invoicePdf';
+import { ReturnExchangeDialog } from '@/components/returns/ReturnExchangeDialog';
 import type { Invoice, BusinessSettings, InvoiceItem, InvoiceTotals, InvoiceStatus } from '@/types/invoice';
 
 export default function Invoices() {
@@ -23,6 +24,7 @@ export default function Invoices() {
   const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
+  const [returnInvoiceId, setReturnInvoiceId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -243,6 +245,14 @@ export default function Invoices() {
           <Button 
             variant="ghost" 
             size="icon"
+            onClick={(e) => { e.stopPropagation(); setReturnInvoiceId(item.id); }}
+            title="Return / Exchange"
+          >
+            <ArrowLeftRight className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
             onClick={(e) => { e.stopPropagation(); handleQuickDownload(item); }}
             title="Download PDF"
           >
@@ -313,6 +323,13 @@ export default function Invoices() {
         open={!!viewInvoiceId}
         onOpenChange={(open) => !open && setViewInvoiceId(null)}
         onStatusChange={fetchInvoices}
+      />
+
+      <ReturnExchangeDialog
+        open={!!returnInvoiceId}
+        onOpenChange={(open) => !open && setReturnInvoiceId(null)}
+        onComplete={fetchInvoices}
+        preselectedInvoiceId={returnInvoiceId}
       />
     </AppLayout>
   );

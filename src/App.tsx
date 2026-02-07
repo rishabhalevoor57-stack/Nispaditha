@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Invoices from "./pages/Invoices";
 import OrderNotes from "./pages/OrderNotes";
+import ReturnsExchanges from "./pages/ReturnsExchanges";
 import Clients from "./pages/Clients";
 import Vendors from "./pages/Vendors";
 import Expenses from "./pages/Expenses";
@@ -64,6 +65,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Invoices />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/returns"
+        element={
+          <ProtectedRoute>
+            <ReturnsExchanges />
           </ProtectedRoute>
         }
       />
