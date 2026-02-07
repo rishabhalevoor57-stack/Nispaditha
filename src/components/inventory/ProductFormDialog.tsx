@@ -134,17 +134,17 @@ export function ProductFormDialog({
 
   // Update selling price when components change (only if not manually overridden)
   useEffect(() => {
-    if (!sellingPriceManual && calculatedSellingPrice > 0) {
+    if (!sellingPriceManual && formData.pricing_mode === 'weight_based') {
       setFormData(prev => ({ ...prev, selling_price: calculatedSellingPrice }));
     }
-  }, [calculatedSellingPrice, sellingPriceManual]);
+  }, [calculatedSellingPrice, sellingPriceManual, formData.pricing_mode]);
 
   // Update purchase price when components change (only if not manually overridden)
   useEffect(() => {
-    if (!purchasePriceManual && calculatedPurchasePrice > 0) {
+    if (!purchasePriceManual && formData.pricing_mode === 'weight_based') {
       setFormData(prev => ({ ...prev, purchase_price: calculatedPurchasePrice }));
     }
-  }, [calculatedPurchasePrice, purchasePriceManual]);
+  }, [calculatedPurchasePrice, purchasePriceManual, formData.pricing_mode]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
