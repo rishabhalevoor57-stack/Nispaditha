@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Vendor {
   id: string;
+  vendor_code: string | null;
   name: string;
   contact_person: string | null;
   phone: string | null;
@@ -20,12 +21,10 @@ export interface Vendor {
 }
 
 export interface VendorFormData {
+  vendor_code: string;
   name: string;
-  contact_person: string;
   phone: string;
-  email: string;
   address: string;
-  gst_number: string;
   notes: string;
 }
 
@@ -47,12 +46,10 @@ export interface VendorPaymentFormData {
 }
 
 export const initialVendorForm: VendorFormData = {
+  vendor_code: '',
   name: '',
-  contact_person: '',
   phone: '',
-  email: '',
   address: '',
-  gst_number: '',
   notes: '',
 };
 
@@ -89,19 +86,17 @@ export function useVendors() {
       (v) =>
         v.name.toLowerCase().includes(term) ||
         v.phone?.includes(term) ||
-        v.contact_person?.toLowerCase().includes(term)
+        v.vendor_code?.toLowerCase().includes(term)
     );
   }, [vendors, searchTerm]);
 
   const createVendor = async (formData: VendorFormData) => {
     try {
       const { error } = await supabase.from('suppliers').insert([{
+        vendor_code: formData.vendor_code || null,
         name: formData.name,
-        contact_person: formData.contact_person || null,
         phone: formData.phone || null,
-        email: formData.email || null,
         address: formData.address || null,
-        gst_number: formData.gst_number || null,
         notes: formData.notes || null,
       }]);
       if (error) throw error;
@@ -120,12 +115,10 @@ export function useVendors() {
       const { error } = await supabase
         .from('suppliers')
         .update({
+          vendor_code: formData.vendor_code || null,
           name: formData.name,
-          contact_person: formData.contact_person || null,
           phone: formData.phone || null,
-          email: formData.email || null,
           address: formData.address || null,
-          gst_number: formData.gst_number || null,
           notes: formData.notes || null,
         })
         .eq('id', id);

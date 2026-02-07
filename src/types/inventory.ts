@@ -1,4 +1,4 @@
-export type TypeOfWork = 'Casting' | 'Handmade' | 'Polishing' | 'Repair' | 'Custom' | 'Others';
+export type TypeOfWork = string;
 export type ProductStatus = 'sold' | 'in_stock' | 'for_repair';
 export type ProductCategory = 'Ring' | 'Chain' | 'Necklace' | 'Bangle' | 'Earring' | 'Bracelet' | 'Pendant' | 'Coin' | 'Others';
 export type PricingMode = 'weight_based' | 'flat_price';
@@ -61,7 +61,8 @@ export interface ProductFormData {
   pricing_mode: PricingMode;
 }
 
-export const TYPE_OF_WORK_OPTIONS: TypeOfWork[] = ['Casting', 'Handmade', 'Polishing', 'Repair', 'Custom', 'Others'];
+// TYPE_OF_WORK_OPTIONS is now fetched from the database via useTypesOfWork hook
+export const TYPE_OF_WORK_OPTIONS: TypeOfWork[] = [];
 export const STATUS_OPTIONS: { value: ProductStatus; label: string }[] = [
   { value: 'in_stock', label: 'In Stock' },
   { value: 'sold', label: 'Sold' },

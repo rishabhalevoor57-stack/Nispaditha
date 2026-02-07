@@ -26,12 +26,10 @@ export function VendorFormDialog({ open, onOpenChange, vendor, onSubmit }: Vendo
   useEffect(() => {
     if (vendor) {
       setFormData({
+        vendor_code: vendor.vendor_code || '',
         name: vendor.name,
-        contact_person: vendor.contact_person || '',
         phone: vendor.phone || '',
-        email: vendor.email || '',
         address: vendor.address || '',
-        gst_number: vendor.gst_number || '',
         notes: vendor.notes || '',
       });
     } else {
@@ -54,54 +52,34 @@ export function VendorFormDialog({ open, onOpenChange, vendor, onSubmit }: Vendo
           <DialogTitle>{vendor ? 'Edit Vendor' : 'Add New Vendor'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="vendor-code">Vendor Code</Label>
+              <Input
+                id="vendor-code"
+                value={formData.vendor_code}
+                onChange={(e) => setFormData({ ...formData, vendor_code: e.target.value })}
+                placeholder="Auto-generated if empty"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vendor-name">Vendor Name *</Label>
+              <Input
+                id="vendor-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="vendor-name">Vendor Name *</Label>
+            <Label htmlFor="vendor-phone">Phone</Label>
             <Input
-              id="vendor-name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
+              id="vendor-phone"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="contact-person">Contact Person</Label>
-              <Input
-                id="contact-person"
-                value={formData.contact_person}
-                onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="vendor-phone">Phone</Label>
-              <Input
-                id="vendor-phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="vendor-email">Email</Label>
-              <Input
-                id="vendor-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="vendor-gst">GST Number</Label>
-              <Input
-                id="vendor-gst"
-                value={formData.gst_number}
-                onChange={(e) => setFormData({ ...formData, gst_number: e.target.value })}
-                placeholder="Optional"
-              />
-            </div>
           </div>
 
           <div className="space-y-2">

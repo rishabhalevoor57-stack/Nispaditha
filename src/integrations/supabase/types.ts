@@ -700,6 +700,7 @@ export type Database = {
           total_paid: number
           total_purchases: number
           updated_at: string
+          vendor_code: string | null
         }
         Insert: {
           address?: string | null
@@ -716,6 +717,7 @@ export type Database = {
           total_paid?: number
           total_purchases?: number
           updated_at?: string
+          vendor_code?: string | null
         }
         Update: {
           address?: string | null
@@ -731,6 +733,28 @@ export type Database = {
           phone?: string | null
           total_paid?: number
           total_purchases?: number
+          updated_at?: string
+          vendor_code?: string | null
+        }
+        Relationships: []
+      }
+      types_of_work: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
           updated_at?: string
         }
         Relationships: []
