@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useActivityLogger } from '@/hooks/useActivityLog';
 import type { Product, ProductFormData, ProductStatus, TypeOfWork } from '@/types/inventory';
 
 interface Category {
@@ -35,6 +36,7 @@ export function useInventory() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const { toast } = useToast();
+  const { logActivity } = useActivityLogger();
 
   useEffect(() => {
     fetchProducts();
@@ -118,7 +120,7 @@ export function useInventory() {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
         
-        const { error: uploadError, data: uploadData } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('product-images')
           .upload(fileName, imageFile);
         
@@ -138,9 +140,17 @@ export function useInventory() {
         image_url,
       };
 
-      const { error } = await supabase.from('products').insert([productData]);
+      const { data, error } = await supabase.from('products').insert([productData]).select().single();
       if (error) throw error;
       
+      logActivity({
+        module: 'inventory',
+        action: 'create',
+        recordId: data?.id,
+        recordLabel: formData.name,
+        newValue: { sku: formData.sku, name: formData.name, pricing_mode: formData.pricing_mode, weight_grams: formData.weight_grams, selling_price: formData.selling_price },
+      });
+
       toast({ title: 'Product added successfully' });
       fetchProducts();
       return true;
@@ -153,6 +163,7 @@ export function useInventory() {
 
   const updateProduct = async (id: string, formData: ProductFormData, imageFile?: File) => {
     try {
+      const oldProduct = products.find(p => p.id === id);
       let image_url = undefined;
       
       if (imageFile) {
@@ -182,6 +193,15 @@ export function useInventory() {
       const { error } = await supabase.from('products').update(productData).eq('id', id);
       if (error) throw error;
       
+      logActivity({
+        module: 'inventory',
+        action: 'update',
+        recordId: id,
+        recordLabel: formData.name,
+        oldValue: oldProduct ? { sku: oldProduct.sku, name: oldProduct.name, selling_price: oldProduct.selling_price, weight_grams: oldProduct.weight_grams } : null,
+        newValue: { sku: formData.sku, name: formData.name, selling_price: formData.selling_price, weight_grams: formData.weight_grams },
+      });
+
       toast({ title: 'Product updated successfully' });
       fetchProducts();
       return true;
@@ -194,8 +214,18 @@ export function useInventory() {
 
   const deleteProduct = async (id: string) => {
     try {
+      const oldProduct = products.find(p => p.id === id);
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) throw error;
+      
+      logActivity({
+        module: 'inventory',
+        action: 'delete',
+        recordId: id,
+        recordLabel: oldProduct?.name || id,
+        oldValue: oldProduct ? { sku: oldProduct.sku, name: oldProduct.name, selling_price: oldProduct.selling_price } : null,
+      });
+
       toast({ title: 'Product deleted' });
       fetchProducts();
       return true;

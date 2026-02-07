@@ -134,26 +134,33 @@ export function ViewInvoiceDialog({
   };
 
   const getInvoiceItems = (): InvoiceItem[] => {
-    return items.map(item => ({
-      product_id: '',
-      sku: item.products?.sku || 'N/A',
-      product_name: item.product_name,
-      category: item.category || '',
-      weight_grams: Number(item.weight_grams),
-      quantity: item.quantity,
-      rate_per_gram: Number(item.rate_per_gram),
-      base_price: Number(item.gold_value),
-      making_charges: Number(item.making_charges),
-      making_charges_per_gram: Number(item.weight_grams) > 0 ? Number(item.making_charges) / Number(item.weight_grams) : 0,
-      discount: Number(item.discount),
-      discount_type: 'fixed' as const,
-      discount_value: Number(item.discount),
-      discounted_making: Number(item.discounted_making),
-      line_total: Number(item.subtotal),
-      gst_percentage: Number(item.gst_percentage),
-      pricing_mode: (Number(item.rate_per_gram) === 0 && Number(item.making_charges) === 0) ? 'flat_price' as const : 'weight_based' as const,
-      mrp: Number(item.mrp) || 0,
-    }));
+    return items.map(item => {
+      const isFlat = Number(item.rate_per_gram) === 0 && Number(item.making_charges) === 0;
+      const weightGrams = Number(item.weight_grams);
+      const makingCharges = Number(item.making_charges);
+      // MC per gram: derive from stored total MC and weight
+      const makingChargesPerGram = weightGrams > 0 ? makingCharges / weightGrams : 0;
+      return {
+        product_id: '',
+        sku: item.products?.sku || 'N/A',
+        product_name: item.product_name,
+        category: item.category || '',
+        weight_grams: weightGrams,
+        quantity: item.quantity,
+        rate_per_gram: Number(item.rate_per_gram),
+        base_price: Number(item.gold_value),
+        making_charges: makingCharges,
+        making_charges_per_gram: makingChargesPerGram,
+        discount: Number(item.discount),
+        discount_type: 'fixed' as const,
+        discount_value: Number(item.discount),
+        discounted_making: Number(item.discounted_making),
+        line_total: Number(item.subtotal),
+        gst_percentage: Number(item.gst_percentage),
+        pricing_mode: isFlat ? 'flat_price' as const : 'weight_based' as const,
+        mrp: Number(item.mrp) || 0,
+      };
+    });
   };
 
   const getTotals = (): InvoiceTotals => {

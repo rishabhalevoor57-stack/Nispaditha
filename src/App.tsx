@@ -14,6 +14,7 @@ import OrderNotes from "./pages/OrderNotes";
 import Clients from "./pages/Clients";
 import Vendors from "./pages/Vendors";
 import Expenses from "./pages/Expenses";
+import ActivityLog from "./pages/ActivityLog";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -95,6 +96,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Expenses />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/activity-log"
+        element={
+          <ProtectedRoute>
+            <ActivityLog />
           </ProtectedRoute>
         }
       />

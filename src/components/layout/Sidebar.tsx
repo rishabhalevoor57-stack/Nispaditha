@@ -13,7 +13,8 @@ import {
   Gem,
   Menu,
   ClipboardList,
-  Truck
+  Truck,
+  History
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ const navItems = [
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Truck, label: 'Vendors', path: '/vendors' },
   { icon: Wallet, label: 'Expenses', path: '/expenses' },
+  { icon: History, label: 'Activity Log', path: '/activity-log' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 

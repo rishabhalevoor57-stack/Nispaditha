@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          module: string
+          new_value: Json | null
+          old_value: Json | null
+          record_id: string | null
+          record_label: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          module: string
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          record_label?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          module?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          record_label?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       business_settings: {
         Row: {
           address: string | null
