@@ -24,6 +24,7 @@ import { InvoiceItemsTable } from './InvoiceItemsTable';
 import { InvoiceTotalsSection } from './InvoiceTotalsSection';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
+import { useActivityLogger } from '@/hooks/useActivityLog';
 import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
 
@@ -55,6 +56,7 @@ export function CreateInvoiceDialog({
   const { toast } = useToast();
   const { user } = useAuth();
   const { totals } = useInvoiceCalculations(invoiceItems);
+  const { logActivity } = useActivityLogger();
 
   // Get the default silver rate from settings
   const defaultRate = businessSettings?.silver_rate_per_gram || 95;
@@ -231,6 +233,14 @@ export function CreateInvoiceDialog({
           notes,
         }, true); // Always admin view since all users are admin
       }
+
+      logActivity({
+        module: 'invoice',
+        action: 'create',
+        recordId: invoice.id,
+        recordLabel: invoiceNum,
+        newValue: { invoice_number: invoiceNum, client: clientName || 'Walk-in', grand_total: totals.grandTotal, items_count: invoiceItems.length },
+      });
 
       toast({ title: 'Invoice created and downloaded!' });
       onOpenChange(false);

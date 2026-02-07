@@ -49,10 +49,10 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
       };
     }
 
-    // Weight based pricing
+    // Weight based pricing — making_charges on product is MC per gram
+    const makingChargesPerGram = product.making_charges; // per gram value
     const basePrice = product.weight_grams * ratePerGram * 1;
-    const makingCharges = product.making_charges;
-    const makingChargesPerGram = product.weight_grams > 0 ? makingCharges / product.weight_grams : 0;
+    const makingCharges = makingChargesPerGram * product.weight_grams * 1;
     const discount = 0;
     const discountedMaking = makingCharges - discount;
     const lineTotal = basePrice + discountedMaking;
@@ -130,13 +130,21 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
       };
     }
 
+    // Weight based: MC also scales with quantity
     const basePrice = item.weight_grams * item.rate_per_gram * quantity;
-    const lineTotal = basePrice + item.discounted_making;
+    const makingCharges = item.making_charges_per_gram * item.weight_grams * quantity;
+    // Re-apply discount on new MC amount
+    const discount = calculateDiscount(makingCharges, item.discount_type, item.discount_value);
+    const discountedMaking = Math.max(0, makingCharges - discount);
+    const lineTotal = basePrice + discountedMaking;
 
     return {
       ...item,
       quantity,
       base_price: basePrice,
+      making_charges: makingCharges,
+      discount,
+      discounted_making: discountedMaking,
       line_total: lineTotal,
     };
   }, []);

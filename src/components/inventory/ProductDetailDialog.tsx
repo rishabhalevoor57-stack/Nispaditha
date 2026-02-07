@@ -159,7 +159,7 @@ export function ProductDetailDialog({
             {product.pricing_mode === 'weight_based' && (
               <>
                 <DetailItem label="Price Per Gram" value={formatCurrency(product.price_per_gram)} />
-                <DetailItem label="Making Charges" value={formatCurrency(product.making_charges)} />
+                <DetailItem label="MC Per Gram" value={`${formatCurrency(product.making_charges)}/g`} />
               </>
             )}
             <DetailItem label="MRP" value={formatCurrency(product.mrp)} />

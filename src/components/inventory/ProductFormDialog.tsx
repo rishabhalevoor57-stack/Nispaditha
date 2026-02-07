@@ -106,18 +106,20 @@ export function ProductFormDialog({
     setImageFile(null);
   }, [product, open]);
 
-  // Auto-calculate selling price from price per gram and making charges (weight_based only)
+  // Auto-calculate selling price: (weight × pricePerGram) + (weight × mcPerGram)
   const calculatedSellingPrice = useMemo(() => {
     if (formData.pricing_mode === 'flat_price') return formData.selling_price;
     const metalValue = formData.weight_grams * formData.price_per_gram;
-    return metalValue + formData.making_charges;
+    const mcTotal = formData.weight_grams * formData.making_charges;
+    return metalValue + mcTotal;
   }, [formData.weight_grams, formData.price_per_gram, formData.making_charges, formData.pricing_mode, formData.selling_price]);
 
-  // Auto-calculate purchase price from purchase price per gram and purchase making charges (weight_based only)
+  // Auto-calculate purchase price: (weight × purchasePricePerGram) + (weight × purchaseMcPerGram)
   const calculatedPurchasePrice = useMemo(() => {
     if (formData.pricing_mode === 'flat_price') return formData.purchase_price;
     const metalValue = formData.weight_grams * formData.purchase_price_per_gram;
-    return metalValue + formData.purchase_making_charges;
+    const mcTotal = formData.weight_grams * formData.purchase_making_charges;
+    return metalValue + mcTotal;
   }, [formData.weight_grams, formData.purchase_price_per_gram, formData.purchase_making_charges, formData.pricing_mode, formData.purchase_price]);
 
   // Track whether user has manually overridden prices
@@ -449,10 +451,11 @@ export function ProductFormDialog({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="making_charges">Making Charges (₹) *</Label>
+                      <Label htmlFor="making_charges">MC Per Gram (₹/g) *</Label>
                       <Input
                         id="making_charges"
                         type="number"
+                        step="0.01"
                         value={formData.making_charges}
                         onChange={(e) => updateField('making_charges', parseFloat(e.target.value) || 0)}
                         required
@@ -470,7 +473,7 @@ export function ProductFormDialog({
                         }}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Auto: ({formData.weight_grams}g × ₹{formData.price_per_gram}) + ₹{formData.making_charges} MC = ₹{calculatedSellingPrice.toLocaleString('en-IN')}
+                        Auto: ({formData.weight_grams}g × ₹{formData.price_per_gram}) + ({formData.weight_grams}g × ₹{formData.making_charges} MC/g) = ₹{calculatedSellingPrice.toLocaleString('en-IN')}
                         {sellingPriceManual && (
                           <button type="button" className="ml-2 text-primary underline" onClick={() => { setSellingPriceManual(false); updateField('selling_price', calculatedSellingPrice); }}>
                             Reset to auto
@@ -495,10 +498,11 @@ export function ProductFormDialog({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="purchase_making_charges">Purchase Making Charges (₹)</Label>
+                      <Label htmlFor="purchase_making_charges">Purchase MC Per Gram (₹/g)</Label>
                       <Input
                         id="purchase_making_charges"
                         type="number"
+                        step="0.01"
                         value={formData.purchase_making_charges}
                         onChange={(e) => updateField('purchase_making_charges', parseFloat(e.target.value) || 0)}
                       />
@@ -515,7 +519,7 @@ export function ProductFormDialog({
                         }}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Auto: ({formData.weight_grams}g × ₹{formData.purchase_price_per_gram}) + ₹{formData.purchase_making_charges} MC = ₹{calculatedPurchasePrice.toLocaleString('en-IN')}
+                        Auto: ({formData.weight_grams}g × ₹{formData.purchase_price_per_gram}) + ({formData.weight_grams}g × ₹{formData.purchase_making_charges} MC/g) = ₹{calculatedPurchasePrice.toLocaleString('en-IN')}
                         {purchasePriceManual && (
                           <button type="button" className="ml-2 text-primary underline" onClick={() => { setPurchasePriceManual(false); updateField('purchase_price', calculatedPurchasePrice); }}>
                             Reset to auto

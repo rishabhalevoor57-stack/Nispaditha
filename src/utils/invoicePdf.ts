@@ -161,7 +161,6 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
 
   const tableRows = data.items.map((item, index) => {
     const isFlat = item.pricing_mode === 'flat_price';
-    const mcPerGram = item.weight_grams > 0 ? item.making_charges / item.weight_grams : 0;
     const baseRow = {
       sr: (index + 1).toString(),
       description: item.product_name,
@@ -177,7 +176,7 @@ export function generateInvoicePdf(data: InvoicePdfData, showMakingCharges = fal
       return {
         ...baseRow,
         mc: isFlat ? '-' : formatCurrency(item.making_charges),
-        mcpg: isFlat ? '-' : formatCurrency(mcPerGram),
+        mcpg: isFlat ? '-' : formatCurrency(item.making_charges_per_gram),
         discount: item.discount > 0 ? formatCurrency(item.discount) : '-',
       };
     }

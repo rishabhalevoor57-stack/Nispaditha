@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useActivityLogger } from '@/hooks/useActivityLog';
 
 export interface Vendor {
   id: string;
@@ -58,6 +59,7 @@ export function useVendors() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+  const { logActivity } = useActivityLogger();
 
   useEffect(() => {
     fetchVendors();
@@ -92,14 +94,15 @@ export function useVendors() {
 
   const createVendor = async (formData: VendorFormData) => {
     try {
-      const { error } = await supabase.from('suppliers').insert([{
+      const { data, error } = await supabase.from('suppliers').insert([{
         vendor_code: formData.vendor_code || null,
         name: formData.name,
         phone: formData.phone || null,
         address: formData.address || null,
         notes: formData.notes || null,
-      }]);
+      }]).select().single();
       if (error) throw error;
+      logActivity({ module: 'vendor', action: 'create', recordId: data?.id, recordLabel: formData.name, newValue: { vendor_code: formData.vendor_code, name: formData.name } });
       toast({ title: 'Vendor added successfully' });
       fetchVendors();
       return true;
@@ -112,6 +115,7 @@ export function useVendors() {
 
   const updateVendor = async (id: string, formData: VendorFormData) => {
     try {
+      const oldVendor = vendors.find(v => v.id === id);
       const { error } = await supabase
         .from('suppliers')
         .update({
@@ -123,6 +127,7 @@ export function useVendors() {
         })
         .eq('id', id);
       if (error) throw error;
+      logActivity({ module: 'vendor', action: 'update', recordId: id, recordLabel: formData.name, oldValue: oldVendor ? { name: oldVendor.name, vendor_code: oldVendor.vendor_code } : null, newValue: { name: formData.name, vendor_code: formData.vendor_code } });
       toast({ title: 'Vendor updated successfully' });
       fetchVendors();
       return true;
@@ -150,8 +155,10 @@ export function useVendors() {
         return false;
       }
 
+      const oldVendor = vendors.find(v => v.id === id);
       const { error } = await supabase.from('suppliers').delete().eq('id', id);
       if (error) throw error;
+      logActivity({ module: 'vendor', action: 'delete', recordId: id, recordLabel: oldVendor?.name || id, oldValue: oldVendor ? { name: oldVendor.name, vendor_code: oldVendor.vendor_code } : null });
       toast({ title: 'Vendor deleted' });
       fetchVendors();
       return true;
@@ -201,6 +208,8 @@ export function useVendors() {
           .eq('id', vendorId);
       }
 
+      const payVendor = vendors.find((v) => v.id === vendorId);
+      logActivity({ module: 'payment', action: 'create', recordId: vendorId, recordLabel: `Payment to ${payVendor?.name || 'vendor'}`, newValue: { amount: formData.amount, payment_mode: formData.payment_mode } });
       toast({ title: 'Payment recorded successfully' });
       fetchVendors();
       return true;
