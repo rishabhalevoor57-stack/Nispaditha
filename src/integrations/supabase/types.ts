@@ -682,6 +682,143 @@ export type Database = {
         }
         Relationships: []
       }
+      return_exchange_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          direction: string
+          discount: number
+          gst_amount: number
+          gst_percentage: number
+          id: string
+          line_total: number
+          making_charges: number
+          product_id: string | null
+          product_name: string
+          quantity: number
+          rate_per_gram: number
+          return_exchange_id: string
+          sku: string | null
+          total: number
+          weight_grams: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          direction: string
+          discount?: number
+          gst_amount?: number
+          gst_percentage?: number
+          id?: string
+          line_total?: number
+          making_charges?: number
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          rate_per_gram?: number
+          return_exchange_id: string
+          sku?: string | null
+          total?: number
+          weight_grams?: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          direction?: string
+          discount?: number
+          gst_amount?: number
+          gst_percentage?: number
+          id?: string
+          line_total?: number
+          making_charges?: number
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          rate_per_gram?: number
+          return_exchange_id?: string
+          sku?: string | null
+          total?: number
+          weight_grams?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_exchange_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_exchange_items_return_exchange_id_fkey"
+            columns: ["return_exchange_id"]
+            isOneToOne: false
+            referencedRelation: "return_exchanges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      return_exchanges: {
+        Row: {
+          additional_charge: number
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          original_invoice_id: string
+          original_invoice_number: string
+          payment_mode: string | null
+          reason: string | null
+          reference_number: string
+          refund_amount: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          additional_charge?: number
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          original_invoice_id: string
+          original_invoice_number: string
+          payment_mode?: string | null
+          reason?: string | null
+          reference_number: string
+          refund_amount?: number
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          additional_charge?: number
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          original_invoice_id?: string
+          original_invoice_number?: string
+          payment_mode?: string | null
+          reason?: string | null
+          reference_number?: string
+          refund_amount?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_exchanges_original_invoice_id_fkey"
+            columns: ["original_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_history: {
         Row: {
           created_at: string
@@ -870,6 +1007,10 @@ export type Database = {
     Functions: {
       generate_invoice_number: { Args: never; Returns: string }
       generate_order_reference: { Args: never; Returns: string }
+      generate_return_exchange_reference: {
+        Args: { p_type: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
