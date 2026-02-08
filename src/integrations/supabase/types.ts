@@ -365,6 +365,7 @@ export type Database = {
           payment_status: string
           sent_at: string | null
           status: string
+          store_id: string | null
           subtotal: number
           updated_at: string
         }
@@ -384,6 +385,7 @@ export type Database = {
           payment_status?: string
           sent_at?: string | null
           status?: string
+          store_id?: string | null
           subtotal?: number
           updated_at?: string
         }
@@ -403,6 +405,7 @@ export type Database = {
           payment_status?: string
           sent_at?: string | null
           status?: string
+          store_id?: string | null
           subtotal?: number
           updated_at?: string
         }
@@ -412,6 +415,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -519,6 +529,48 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      product_store_quantities: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_store_quantities_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_store_quantities_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -772,6 +824,7 @@ export type Database = {
           reason: string | null
           reference_number: string
           refund_amount: number
+          store_id: string | null
           type: string
           updated_at: string
         }
@@ -789,6 +842,7 @@ export type Database = {
           reason?: string | null
           reference_number: string
           refund_amount?: number
+          store_id?: string | null
           type: string
           updated_at?: string
         }
@@ -806,6 +860,7 @@ export type Database = {
           reason?: string | null
           reference_number?: string
           refund_amount?: number
+          store_id?: string | null
           type?: string
           updated_at?: string
         }
@@ -815,6 +870,13 @@ export type Database = {
             columns: ["original_invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_exchanges_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -859,6 +921,103 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stock_transfers: {
+        Row: {
+          created_at: string
+          from_store_id: string
+          id: string
+          product_id: string
+          quantity: number
+          reason: string | null
+          to_store_id: string
+          transferred_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          from_store_id: string
+          id?: string
+          product_id: string
+          quantity: number
+          reason?: string | null
+          to_store_id: string
+          transferred_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          from_store_id?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          reason?: string | null
+          to_store_id?: string
+          transferred_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_transfers_from_store_id_fkey"
+            columns: ["from_store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfers_to_store_id_fkey"
+            columns: ["to_store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          gst_number: string | null
+          id: string
+          invoice_prefix: string
+          is_active: boolean
+          is_default: boolean
+          phone: string | null
+          store_name: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          gst_number?: string | null
+          id?: string
+          invoice_prefix?: string
+          is_active?: boolean
+          is_default?: boolean
+          phone?: string | null
+          store_name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          gst_number?: string | null
+          id?: string
+          invoice_prefix?: string
+          is_active?: boolean
+          is_default?: boolean
+          phone?: string | null
+          store_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       suppliers: {
         Row: {
@@ -1011,6 +1170,10 @@ export type Database = {
         Args: { p_type: string }
         Returns: string
       }
+      generate_store_invoice_number: {
+        Args: { p_store_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1019,6 +1182,16 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      transfer_stock: {
+        Args: {
+          p_from_store_id: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+          p_to_store_id: string
+        }
+        Returns: string
+      }
       upsert_client_on_invoice: {
         Args: { p_amount: number; p_name: string; p_phone: string }
         Returns: string
