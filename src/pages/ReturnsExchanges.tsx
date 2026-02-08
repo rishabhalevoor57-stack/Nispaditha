@@ -5,7 +5,17 @@ import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, ArrowLeftRight } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Plus, Search, Eye, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useReturnsExchanges } from '@/hooks/useReturnsExchanges';
 import { ReturnExchangeDialog } from '@/components/returns/ReturnExchangeDialog';
@@ -25,10 +35,12 @@ export default function ReturnsExchanges() {
     setSearchTerm,
     counts,
     refresh,
+    deleteRecord,
   } = useReturnsExchanges();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [viewRecordId, setViewRecordId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ReturnExchange | null>(null);
 
   const filterButtons: { key: 'all' | 'return' | 'exchange'; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -82,17 +94,31 @@ export default function ReturnsExchanges() {
       key: 'actions',
       header: 'Actions',
       cell: (item: ReturnExchange) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            setViewRecordId(item.id);
-          }}
-          title="View Details"
-        >
-          <Eye className="w-4 h-4" />
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewRecordId(item.id);
+            }}
+            title="View Details"
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteTarget(item);
+            }}
+            title="Delete"
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -154,6 +180,32 @@ export default function ReturnsExchanges() {
         open={!!viewRecordId}
         onOpenChange={(open) => !open && setViewRecordId(null)}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteTarget?.reference_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this {deleteTarget?.type === 'return' ? 'return' : 'exchange'} record
+              and reverse all stock adjustments. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) {
+                  deleteRecord(deleteTarget);
+                  setDeleteTarget(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
