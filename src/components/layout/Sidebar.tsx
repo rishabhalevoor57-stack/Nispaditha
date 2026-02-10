@@ -15,7 +15,8 @@ import {
   ClipboardList,
   Truck,
   History,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Hammer
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ const navItems = [
   { icon: FileText, label: 'Invoices', path: '/invoices' },
   { icon: ArrowLeftRight, label: 'Returns', path: '/returns' },
   { icon: ClipboardList, label: 'Order Notes', path: '/order-notes' },
+  { icon: Hammer, label: 'Custom Orders', path: '/custom-orders' },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Truck, label: 'Vendors', path: '/vendors' },
   { icon: Wallet, label: 'Expenses', path: '/expenses' },
