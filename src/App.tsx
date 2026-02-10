@@ -12,6 +12,7 @@ import Inventory from "./pages/Inventory";
 import Invoices from "./pages/Invoices";
 import OrderNotes from "./pages/OrderNotes";
 import ReturnsExchanges from "./pages/ReturnsExchanges";
+import CustomOrders from "./pages/CustomOrders";
 import Clients from "./pages/Clients";
 import Vendors from "./pages/Vendors";
 import Expenses from "./pages/Expenses";
@@ -81,6 +82,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <OrderNotes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/custom-orders"
+        element={
+          <ProtectedRoute>
+            <CustomOrders />
           </ProtectedRoute>
         }
       />

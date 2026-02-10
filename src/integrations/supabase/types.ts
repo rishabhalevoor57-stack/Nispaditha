@@ -231,6 +231,136 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_order_items: {
+        Row: {
+          base_price: number
+          created_at: string
+          custom_order_id: string
+          customization_notes: string | null
+          discount_on_mc: number | null
+          expected_weight: number | null
+          flat_price: number | null
+          id: string
+          item_description: string
+          item_total: number
+          mc_amount: number
+          mc_per_gram: number | null
+          pricing_mode: string
+          quantity: number
+          rate_per_gram: number | null
+          reference_image_url: string | null
+        }
+        Insert: {
+          base_price?: number
+          created_at?: string
+          custom_order_id: string
+          customization_notes?: string | null
+          discount_on_mc?: number | null
+          expected_weight?: number | null
+          flat_price?: number | null
+          id?: string
+          item_description: string
+          item_total?: number
+          mc_amount?: number
+          mc_per_gram?: number | null
+          pricing_mode?: string
+          quantity?: number
+          rate_per_gram?: number | null
+          reference_image_url?: string | null
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          custom_order_id?: string
+          customization_notes?: string | null
+          discount_on_mc?: number | null
+          expected_weight?: number | null
+          flat_price?: number | null
+          id?: string
+          item_description?: string
+          item_total?: number
+          mc_amount?: number
+          mc_per_gram?: number | null
+          pricing_mode?: string
+          quantity?: number
+          rate_per_gram?: number | null
+          reference_image_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_order_items_custom_order_id_fkey"
+            columns: ["custom_order_id"]
+            isOneToOne: false
+            referencedRelation: "custom_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_orders: {
+        Row: {
+          additional_charge: number
+          additional_charge_label: string | null
+          client_name: string
+          converted_to_invoice_id: string | null
+          created_at: string
+          created_by: string | null
+          design_charges: number
+          expected_delivery_date: string | null
+          id: string
+          notes: string | null
+          order_date: string
+          phone_number: string | null
+          reference_number: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          additional_charge?: number
+          additional_charge_label?: string | null
+          client_name: string
+          converted_to_invoice_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          design_charges?: number
+          expected_delivery_date?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          phone_number?: string | null
+          reference_number: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          additional_charge?: number
+          additional_charge_label?: string | null
+          client_name?: string
+          converted_to_invoice_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          design_charges?: number
+          expected_delivery_date?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          phone_number?: string | null
+          reference_number?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_orders_converted_to_invoice_id_fkey"
+            columns: ["converted_to_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -1164,6 +1294,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_custom_order_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_order_reference: { Args: never; Returns: string }
       generate_return_exchange_reference: {
