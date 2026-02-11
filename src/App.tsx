@@ -17,6 +17,7 @@ import Clients from "./pages/Clients";
 import Vendors from "./pages/Vendors";
 import Expenses from "./pages/Expenses";
 import ActivityLog from "./pages/ActivityLog";
+import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -114,6 +115,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Expenses />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <Reports />
           </ProtectedRoute>
         }
       />
