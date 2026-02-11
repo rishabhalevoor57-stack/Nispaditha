@@ -16,7 +16,8 @@ import {
   Truck,
   History,
   ArrowLeftRight,
-  Hammer
+  Hammer,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,7 @@ const navItems = [
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Truck, label: 'Vendors', path: '/vendors' },
   { icon: Wallet, label: 'Expenses', path: '/expenses' },
+  { icon: BarChart3, label: 'Reports', path: '/reports' },
   { icon: History, label: 'Activity Log', path: '/activity-log' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
