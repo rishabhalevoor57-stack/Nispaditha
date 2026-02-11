@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { LiveMetalRatesCard } from '@/components/dashboard/LiveMetalRatesCard';
 import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
 import { CategoryStockValuation } from '@/components/dashboard/CategoryStockValuation';
+import { CustomOrdersSummary } from '@/components/dashboard/CustomOrdersSummary';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   IndianRupee, 
@@ -248,9 +249,12 @@ export default function Dashboard() {
         <CalendarWidget />
       </div>
 
-      {/* Category Stock Valuation */}
-      <div className="mb-8">
-        <CategoryStockValuation />
+      {/* Custom Orders & Category Stock Valuation */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <CustomOrdersSummary />
+        <div className="lg:col-span-2">
+          <CategoryStockValuation />
+        </div>
       </div>
 
       {/* Tables */}
