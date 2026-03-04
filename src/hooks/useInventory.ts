@@ -236,9 +236,8 @@ export function useInventory() {
     }
   };
 
-  const bulkImport = async (productsToImport: Partial<ProductFormData>[]) => {
+  const bulkImport = async (productsToImport: Partial<ProductFormData>[], onProgress?: (current: number, total: number) => void) => {
     try {
-      // Filter out products without required fields and cast properly
       const validProducts = productsToImport
         .filter(p => p.sku && p.name)
         .map(p => ({
@@ -259,11 +258,33 @@ export function useInventory() {
           bangle_size: p.bangle_size || null,
           low_stock_alert: p.low_stock_alert || 5,
           gst_percentage: p.gst_percentage || 3,
+          pricing_mode: p.pricing_mode || 'weight_based',
+          purchase_price_per_gram: p.purchase_price_per_gram || 0,
+          purchase_making_charges: p.purchase_making_charges || 0,
         }));
 
-      const { error } = await supabase.from('products').insert(validProducts);
-      if (error) throw error;
-      toast({ title: `${validProducts.length} products imported successfully` });
+      if (validProducts.length === 0) {
+        toast({ variant: 'destructive', title: 'No valid products', description: 'Each row must have at least SKU and Name.' });
+        return false;
+      }
+
+      // Process in batches of 50
+      const BATCH_SIZE = 50;
+      let imported = 0;
+
+      for (let i = 0; i < validProducts.length; i += BATCH_SIZE) {
+        const batch = validProducts.slice(i, i + BATCH_SIZE);
+        const { error } = await supabase.from('products').insert(batch);
+        if (error) throw error;
+
+        imported += batch.length;
+        onProgress?.(imported, validProducts.length);
+
+        // Yield to UI thread
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      toast({ title: `${imported} products imported successfully` });
       fetchProducts();
       return true;
     } catch (error: unknown) {

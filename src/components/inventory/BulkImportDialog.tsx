@@ -7,14 +7,15 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Upload, Download, FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import type { ProductFormData } from '@/types/inventory';
 
 interface BulkImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (products: Partial<ProductFormData>[]) => Promise<boolean>;
+  onImport: (products: Partial<ProductFormData>[], onProgress?: (current: number, total: number) => void) => Promise<boolean>;
 }
 
 export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDialogProps) {
@@ -22,6 +23,8 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
   const [preview, setPreview] = useState<Partial<ProductFormData>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [importComplete, setImportComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const downloadTemplate = () => {
@@ -43,26 +46,28 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
       'bangle_size',
       'low_stock_alert',
       'gst_percentage',
+      'pricing_mode',
     ];
     
     const sampleRow = [
       'SKU001',
-      'Gold Ring 22K',
-      'Beautiful handmade gold ring',
-      'Gold',
-      '22K',
+      'Silver Ring 925',
+      'Beautiful handmade silver ring',
+      'Silver',
+      '925',
       '5.5',
       '10',
-      '6500',
-      '1500',
-      '45000',
-      '42000',
-      '35000',
+      '285',
+      '150',
+      '5000',
+      '4500',
+      '3500',
       'Handmade',
       'in_stock',
       '',
       '5',
       '3',
+      'weight_based',
     ];
     
     const csv = [headers.join(','), sampleRow.join(',')].join('\n');
@@ -80,18 +85,28 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
     if (lines.length < 2) throw new Error('File must have at least a header and one data row');
     
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    
+    // Validate required columns
+    if (!headers.includes('sku') || !headers.includes('name')) {
+      throw new Error('CSV must have "sku" and "name" columns');
+    }
+    
     const products: Partial<ProductFormData>[] = [];
+    const numericFields = [
+      'weight_grams', 'quantity', 'price_per_gram', 'making_charges', 'mrp',
+      'selling_price', 'purchase_price', 'low_stock_alert', 'gst_percentage',
+      'purchase_price_per_gram', 'purchase_making_charges'
+    ];
     
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
+      // Handle CSV values that might contain commas in quotes
+      const values = parseCSVLine(lines[i]);
       const product: Record<string, unknown> = {};
       
       headers.forEach((header, index) => {
-        const value = values[index] || '';
+        const value = (values[index] || '').trim();
         
-        // Parse numeric fields
-        if (['weight_grams', 'quantity', 'price_per_gram', 'making_charges', 'mrp', 
-             'selling_price', 'purchase_price', 'low_stock_alert', 'gst_percentage'].includes(header)) {
+        if (numericFields.includes(header)) {
           product[header] = parseFloat(value) || 0;
         } else {
           product[header] = value;
@@ -103,13 +118,39 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
       }
     }
     
+    if (products.length === 0) {
+      throw new Error('No valid products found. Each row must have at least "sku" and "name".');
+    }
+    
     return products;
+  };
+
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current);
+    return result;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     setError(null);
     setPreview([]);
+    setImportComplete(false);
+    setProgress({ current: 0, total: 0 });
     
     if (!selectedFile) return;
     
@@ -137,18 +178,44 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
     if (preview.length === 0) return;
     
     setIsImporting(true);
-    const success = await onImport(preview);
+    setImportComplete(false);
+    setProgress({ current: 0, total: preview.length });
+    
+    const success = await onImport(preview, (current, total) => {
+      setProgress({ current, total });
+    });
+    
     setIsImporting(false);
     
     if (success) {
-      onOpenChange(false);
-      setFile(null);
-      setPreview([]);
+      setImportComplete(true);
+      setTimeout(() => {
+        onOpenChange(false);
+        setFile(null);
+        setPreview([]);
+        setImportComplete(false);
+        setProgress({ current: 0, total: 0 });
+      }, 1500);
     }
   };
 
+  const handleClose = (open: boolean) => {
+    if (!isImporting) {
+      onOpenChange(open);
+      if (!open) {
+        setFile(null);
+        setPreview([]);
+        setError(null);
+        setImportComplete(false);
+        setProgress({ current: 0, total: 0 });
+      }
+    }
+  };
+
+  const progressPercent = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -156,19 +223,21 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
             Bulk Import Products
           </DialogTitle>
           <DialogDescription>
-            Upload a CSV file to import multiple products at once.
+            Upload a CSV file to import multiple products at once. Download the template first to see the required format.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 mt-4">
-          <Button variant="outline" onClick={downloadTemplate} className="w-full">
+          <Button variant="outline" onClick={downloadTemplate} className="w-full" disabled={isImporting}>
             <Download className="w-4 h-4 mr-2" />
             Download CSV Template
           </Button>
           
           <div 
-            onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+            onClick={() => !isImporting && fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              isImporting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-primary'
+            }`}
           >
             <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground">
@@ -181,6 +250,7 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
               accept=".csv"
               onChange={handleFileChange}
               className="hidden"
+              disabled={isImporting}
             />
           </div>
           
@@ -190,8 +260,27 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
+          {importComplete && (
+            <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              <AlertDescription className="text-green-700 dark:text-green-300">
+                Successfully imported {progress.current} products!
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {isImporting && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Importing products...</span>
+                <span>{progress.current} / {progress.total} ({progressPercent}%)</span>
+              </div>
+              <Progress value={progressPercent} className="h-2" />
+            </div>
+          )}
           
-          {preview.length > 0 && (
+          {preview.length > 0 && !isImporting && !importComplete && (
             <div className="border rounded-lg p-4">
               <p className="text-sm font-medium mb-2">
                 Preview: {preview.length} products to import
@@ -212,15 +301,15 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
           )}
           
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => handleClose(false)} disabled={isImporting}>
               Cancel
             </Button>
             <Button 
               onClick={handleImport} 
-              disabled={preview.length === 0 || isImporting}
+              disabled={preview.length === 0 || isImporting || importComplete}
               className="btn-gold"
             >
-              {isImporting ? 'Importing...' : `Import ${preview.length} Products`}
+              {isImporting ? `Importing... ${progressPercent}%` : `Import ${preview.length} Products`}
             </Button>
           </div>
         </div>
