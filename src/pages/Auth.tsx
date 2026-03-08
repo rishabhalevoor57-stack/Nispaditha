@@ -78,7 +78,7 @@ export default function Auth() {
             <Gem className="w-10 h-10 text-sidebar-primary-foreground" />
           </div>
           <h1 className="text-4xl font-bold text-sidebar-foreground mb-4">
-            SmartBiz Manager
+            Nispaditha Jewellery
           </h1>
           <p className="text-sidebar-foreground/70 text-lg leading-relaxed">
             Complete business management solution for jewellery and retail stores. 
@@ -95,7 +95,7 @@ export default function Auth() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
               <Gem className="w-8 h-8 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold">SmartBiz Manager</h1>
+            <h1 className="text-2xl font-bold">Nispaditha Jewellery</h1>
           </div>
 
           <div className="text-center">
@@ -105,7 +105,7 @@ export default function Auth() {
             <p className="text-muted-foreground mt-2">
               {isLogin 
                 ? 'Sign in to your account to continue' 
-                : 'Get started with SmartBiz Manager'}
+                : 'Get started with Nispaditha Jewellery'}
             </p>
           </div>
 

@@ -57,8 +57,8 @@ const SidebarContent = ({ collapsed, onCollapse }: SidebarContentProps) => {
         </div>
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <h1 className="font-bold text-lg tracking-tight truncate">SmartBiz</h1>
-            <p className="text-xs text-sidebar-foreground/60 truncate">Manager</p>
+            <h1 className="font-bold text-lg tracking-tight truncate">Nispaditha</h1>
+            <p className="text-xs text-sidebar-foreground/60 truncate">Jewellery</p>
           </div>
         )}
       </div>
@@ -136,7 +136,7 @@ export const Sidebar = () => {
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-sidebar-primary">
             <Gem className="w-4 h-4 text-sidebar-primary-foreground" />
           </div>
-          <span className="font-bold">SmartBiz</span>
+          <span className="font-bold">Nispaditha</span>
         </div>
         
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
