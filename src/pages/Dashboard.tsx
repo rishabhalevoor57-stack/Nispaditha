@@ -8,6 +8,7 @@ import { LiveMetalRatesCard } from '@/components/dashboard/LiveMetalRatesCard';
 import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
 import { CategoryStockValuation } from '@/components/dashboard/CategoryStockValuation';
 import { CustomOrdersSummary } from '@/components/dashboard/CustomOrdersSummary';
+import { GSTSalesSummary } from '@/components/dashboard/GSTSalesSummary';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   IndianRupee, 
@@ -242,6 +243,11 @@ export default function Dashboard() {
           icon={Package}
           variant="default"
         />
+      </div>
+
+      {/* GST & Sales Summary */}
+      <div className="mb-8">
+        <GSTSalesSummary />
       </div>
 
       {/* Calendar Widget */}
