@@ -10,6 +10,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Phone, MapPin, Edit, Trash2, CreditCard, Hash } from 'lucide-react';
 import type { Vendor, VendorPayment } from '@/hooks/useVendors';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 interface VendorProduct {
   id: string;
