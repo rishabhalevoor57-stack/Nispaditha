@@ -11,6 +11,7 @@ import { VendorFormDialog } from '@/components/vendors/VendorFormDialog';
 import { VendorProfileDialog } from '@/components/vendors/VendorProfileDialog';
 import { VendorPaymentDialog } from '@/components/vendors/VendorPaymentDialog';
 import { useToast } from '@/hooks/use-toast';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 export default function Vendors() {
   const {
