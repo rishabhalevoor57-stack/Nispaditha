@@ -4,10 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Gem, Mail, Lock, User, Loader2, KeyRound } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Gem, Mail, Lock, User, Loader2, KeyRound, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const VALID_SIGNUP_CODE = 'Rishi@123';
+const MAX_ADMINS = 5;
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,6 +18,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [signupCode, setSignupCode] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'staff'>('staff');
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
@@ -49,6 +53,24 @@ export default function Auth() {
           return;
         }
 
+        // Check admin limit if admin role selected
+        if (selectedRole === 'admin') {
+          const { count } = await supabase
+            .from('user_roles')
+            .select('*', { count: 'exact', head: true })
+            .eq('role', 'admin');
+          
+          if ((count || 0) >= MAX_ADMINS) {
+            toast({
+              variant: 'destructive',
+              title: 'Admin limit reached',
+              description: `Maximum ${MAX_ADMINS} admin accounts are allowed. Please select Staff role.`,
+            });
+            setIsLoading(false);
+            return;
+          }
+        }
+
         const { error } = await signUp(email, password, fullName);
         if (error) {
           toast({
@@ -57,9 +79,22 @@ export default function Auth() {
             description: error.message,
           });
         } else {
+          // Update the role if admin was selected (default trigger creates as staff for non-first users)
+          if (selectedRole === 'admin') {
+            // We need to wait briefly for the trigger to create the user_roles entry
+            setTimeout(async () => {
+              const { data: { user: newUser } } = await supabase.auth.getUser();
+              if (newUser) {
+                await supabase
+                  .from('user_roles')
+                  .update({ role: 'admin' })
+                  .eq('user_id', newUser.id);
+              }
+            }, 1000);
+          }
           toast({
             title: 'Account created!',
-            description: 'You can now sign in with your credentials.',
+            description: `You can now sign in as ${selectedRole}.`,
           });
           setIsLogin(true);
         }
@@ -125,6 +160,21 @@ export default function Auth() {
                       className="pl-10 h-12 input-elegant"
                       required={!isLogin}
                     />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role *</Label>
+                  <div className="relative">
+                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
+                    <Select value={selectedRole} onValueChange={(val) => setSelectedRole(val as 'admin' | 'staff')}>
+                      <SelectTrigger className="pl-10 h-12 input-elegant">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin — Full access</SelectItem>
+                        <SelectItem value="staff">Staff — Can add & edit, no delete</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
