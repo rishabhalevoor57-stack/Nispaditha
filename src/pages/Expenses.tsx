@@ -70,6 +70,7 @@ export default function Expenses() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const { toast } = useToast();
   const { user } = useAuth();
+  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     fetchExpenses();

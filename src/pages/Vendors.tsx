@@ -26,6 +26,7 @@ export default function Vendors() {
     fetchVendorProducts,
   } = useVendors();
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);

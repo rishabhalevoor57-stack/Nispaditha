@@ -48,6 +48,7 @@ export default function Clients() {
   const [formData, setFormData] = useState(initialClient);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     fetchClients();
