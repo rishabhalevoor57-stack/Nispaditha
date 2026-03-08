@@ -18,6 +18,7 @@ import {
 import { Edit, Trash2, Eye, Package, Coins } from 'lucide-react';
 import { Product, STATUS_OPTIONS } from '@/types/inventory';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 interface InventoryTableProps {
   products: Product[];
