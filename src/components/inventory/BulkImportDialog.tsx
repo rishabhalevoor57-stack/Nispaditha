@@ -142,7 +142,7 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
     return result;
   };
 
-  const findColumnIndex = (headers: string[], aliases: string[]): number => {
+  const findColumnIndex = (headers: string[], aliases: readonly string[]): number => {
     const normalizedHeaders = headers.map(normalizeHeader);
     const normalizedAliases = aliases.map(normalizeHeader);
 
