@@ -80,69 +80,195 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
     URL.revokeObjectURL(url);
   };
 
-  const parseCSV = (text: string): Partial<ProductFormData>[] => {
-    const lines = text.split('\n').filter(line => line.trim());
-    if (lines.length < 2) throw new Error('File must have at least a header and one data row');
-    
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    
-    // Validate required columns
-    if (!headers.includes('sku') || !headers.includes('name')) {
-      throw new Error('CSV must have "sku" and "name" columns');
-    }
-    
-    const products: Partial<ProductFormData>[] = [];
-    const numericFields = [
-      'weight_grams', 'quantity', 'price_per_gram', 'making_charges', 'mrp',
-      'selling_price', 'purchase_price', 'low_stock_alert', 'gst_percentage',
-      'purchase_price_per_gram', 'purchase_making_charges'
-    ];
-    
-    for (let i = 1; i < lines.length; i++) {
-      // Handle CSV values that might contain commas in quotes
-      const values = parseCSVLine(lines[i]);
-      const product: Record<string, unknown> = {};
-      
-      headers.forEach((header, index) => {
-        const value = (values[index] || '').trim();
-        
-        if (numericFields.includes(header)) {
-          product[header] = parseFloat(value) || 0;
-        } else {
-          product[header] = value;
-        }
-      });
-      
-      if (product.sku && product.name) {
-        products.push(product as Partial<ProductFormData>);
-      }
-    }
-    
-    if (products.length === 0) {
-      throw new Error('No valid products found. Each row must have at least "sku" and "name".');
-    }
-    
-    return products;
+  const normalizeHeader = (header: string): string => {
+    return header
+      .trim()
+      .replace(/^\uFEFF/, '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[_\s-]+/g, ' ');
   };
 
-  const parseCSVLine = (line: string): string[] => {
+  const detectDelimiter = (text: string): string => {
+    const sample = text
+      .split('\n')
+      .slice(0, 5)
+      .join('\n');
+
+    const delimiters = [',', ';', '\t', '|'];
+    let best = ',';
+    let max = -1;
+
+    delimiters.forEach((delimiter) => {
+      const count = sample.split(delimiter).length - 1;
+      if (count > max) {
+        max = count;
+        best = delimiter;
+      }
+    });
+
+    return best;
+  };
+
+  const parseCSVLine = (line: string, delimiter: string): string[] => {
     const result: string[] = [];
     let current = '';
     let inQuotes = false;
-    
+
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
+
       if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+        continue;
+      }
+
+      if (char === delimiter && !inQuotes) {
         result.push(current);
         current = '';
-      } else {
-        current += char;
+        continue;
       }
+
+      current += char;
     }
+
     result.push(current);
     return result;
+  };
+
+  const findColumnIndex = (headers: string[], aliases: string[]): number => {
+    const normalizedHeaders = headers.map(normalizeHeader);
+    const normalizedAliases = aliases.map(normalizeHeader);
+
+    for (const alias of normalizedAliases) {
+      const exact = normalizedHeaders.indexOf(alias);
+      if (exact !== -1) return exact;
+    }
+
+    for (const alias of normalizedAliases) {
+      const startsWith = normalizedHeaders.findIndex((h) => h.startsWith(alias));
+      if (startsWith !== -1) return startsWith;
+    }
+
+    for (const alias of normalizedAliases) {
+      const contains = normalizedHeaders.findIndex((h) => h.includes(alias));
+      if (contains !== -1) return contains;
+    }
+
+    return -1;
+  };
+
+  const parseLocalizedNumber = (value: string): number => {
+    const trimmed = value.trim();
+    if (!trimmed) return 0;
+
+    let normalized = trimmed.replace(/[₹$€£¥\s]/g, '');
+    const lastComma = normalized.lastIndexOf(',');
+    const lastDot = normalized.lastIndexOf('.');
+
+    if (lastComma > lastDot) {
+      normalized = normalized.replace(/\./g, '');
+      normalized = normalized.replace(',', '.');
+    } else {
+      normalized = normalized.replace(/,/g, '');
+    }
+
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const parseCSV = (text: string): Partial<ProductFormData>[] => {
+    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    if (lines.length < 2) throw new Error('File must have at least a header and one data row');
+
+    const delimiter = detectDelimiter(lines.slice(0, 5).join('\n'));
+    const headers = parseCSVLine(lines[0], delimiter).map((h) => h.trim());
+
+    const columnMap = {
+      sku: ['sku', 'product sku', 'item code', 'code'],
+      name: ['name', 'product name', 'item name'],
+      description: ['description', 'details'],
+      metal_type: ['metal_type', 'metal type', 'metal'],
+      purity: ['purity', 'karat'],
+      weight_grams: ['weight_grams', 'weight grams', 'weight', 'gross weight'],
+      quantity: ['quantity', 'qty', 'stock'],
+      price_per_gram: ['price_per_gram', 'price per gram', 'rate per gram'],
+      making_charges: ['making_charges', 'making charges', 'making charge', 'mc'],
+      mrp: ['mrp', 'max retail price'],
+      selling_price: ['selling_price', 'selling price', 'sale price'],
+      purchase_price: ['purchase_price', 'purchase price', 'cost price'],
+      type_of_work: ['type_of_work', 'type of work', 'work type'],
+      status: ['status', 'stock status'],
+      bangle_size: ['bangle_size', 'bangle size', 'size'],
+      low_stock_alert: ['low_stock_alert', 'low stock alert', 'reorder level'],
+      gst_percentage: ['gst_percentage', 'gst percentage', 'gst'],
+      pricing_mode: ['pricing_mode', 'pricing mode', 'price mode'],
+      purchase_price_per_gram: ['purchase_price_per_gram', 'purchase price per gram'],
+      purchase_making_charges: ['purchase_making_charges', 'purchase making charges'],
+    } as const;
+
+    const indexes = Object.fromEntries(
+      Object.entries(columnMap).map(([key, aliases]) => [key, findColumnIndex(headers, aliases)])
+    ) as Record<keyof typeof columnMap, number>;
+
+    if (indexes.sku === -1 || indexes.name === -1) {
+      throw new Error('CSV must include SKU and Name columns (any common naming variation is supported).');
+    }
+
+    const getValue = (values: string[], index: number): string => {
+      if (index < 0) return '';
+      return (values[index] || '').trim();
+    };
+
+    const products: Partial<ProductFormData>[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i], delimiter);
+      const sku = getValue(values, indexes.sku);
+      const name = getValue(values, indexes.name);
+
+      if (!sku || !name) continue;
+
+      const rawStatus = getValue(values, indexes.status).toLowerCase().replace(/\s+/g, '_');
+      const rawPricingMode = getValue(values, indexes.pricing_mode).toLowerCase().replace(/\s+/g, '_');
+
+      const product: Partial<ProductFormData> = {
+        sku,
+        name,
+        description: getValue(values, indexes.description),
+        metal_type: getValue(values, indexes.metal_type),
+        purity: getValue(values, indexes.purity),
+        weight_grams: parseLocalizedNumber(getValue(values, indexes.weight_grams)),
+        quantity: Math.round(parseLocalizedNumber(getValue(values, indexes.quantity))),
+        price_per_gram: parseLocalizedNumber(getValue(values, indexes.price_per_gram)),
+        making_charges: parseLocalizedNumber(getValue(values, indexes.making_charges)),
+        mrp: parseLocalizedNumber(getValue(values, indexes.mrp)),
+        selling_price: parseLocalizedNumber(getValue(values, indexes.selling_price)),
+        purchase_price: parseLocalizedNumber(getValue(values, indexes.purchase_price)),
+        type_of_work: getValue(values, indexes.type_of_work),
+        status: rawStatus === 'sold' || rawStatus === 'for_repair' ? rawStatus : 'in_stock',
+        bangle_size: getValue(values, indexes.bangle_size),
+        low_stock_alert: Math.round(parseLocalizedNumber(getValue(values, indexes.low_stock_alert))),
+        gst_percentage: parseLocalizedNumber(getValue(values, indexes.gst_percentage)),
+        pricing_mode: rawPricingMode === 'flat_price' || rawPricingMode === 'flat' ? 'flat_price' : 'weight_based',
+        purchase_price_per_gram: parseLocalizedNumber(getValue(values, indexes.purchase_price_per_gram)),
+        purchase_making_charges: parseLocalizedNumber(getValue(values, indexes.purchase_making_charges)),
+      };
+
+      products.push(product);
+    }
+
+    if (products.length === 0) {
+      throw new Error('No valid products found. Each row must include SKU and Name.');
+    }
+
+    return products;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
