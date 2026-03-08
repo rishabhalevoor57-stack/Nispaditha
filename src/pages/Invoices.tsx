@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Eye, Trash2, Download, Printer, ArrowLeftRight } from 'lucide-react';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { format } from 'date-fns';
 import { CreateInvoiceDialog } from '@/components/invoice/CreateInvoiceDialog';
 import { ViewInvoiceDialog } from '@/components/invoice/ViewInvoiceDialog';
@@ -258,15 +259,17 @@ export default function Invoices() {
           >
             <Download className="w-4 h-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-            className="text-destructive hover:text-destructive"
-            title="Delete Invoice"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          {isAdmin && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+              className="text-destructive hover:text-destructive"
+              title="Delete Invoice"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       )
     },

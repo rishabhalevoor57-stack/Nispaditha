@@ -10,7 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTypesOfWork } from '@/hooks/useTypesOfWork';
-import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle, Pencil, Check, X, Hammer } from 'lucide-react';
+import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle, Pencil, Check, X, Hammer, Shield } from 'lucide-react';
+import { UserManagement } from '@/components/settings/UserManagement';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +61,7 @@ export default function Settings() {
   const [editCategoryName, setEditCategoryName] = useState('');
   const [categoryProductCounts, setCategoryProductCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
 
   // Type of Work state
   const {
@@ -260,10 +263,18 @@ export default function Settings() {
             <Hammer className="w-4 h-4" />
             Type of Work
           </TabsTrigger>
-          <TabsTrigger value="data" className="flex items-center gap-2">
-            <Trash2 className="w-4 h-4" />
-            Data Management
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              User Management
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="data" className="flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />
+              Data Management
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Business Profile Tab */}
@@ -549,8 +560,15 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
+        {/* User Management Tab */}
+        {isAdmin && (
+          <TabsContent value="users">
+            <UserManagement />
+          </TabsContent>
+        )}
+
         {/* Data Management Tab */}
-        <TabsContent value="data">
+        {isAdmin && <TabsContent value="data">
           <Card className="shadow-card border-destructive/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
@@ -592,7 +610,7 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent>}
       </Tabs>
     </AppLayout>
   );

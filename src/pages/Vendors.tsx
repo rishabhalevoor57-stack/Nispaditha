@@ -135,14 +135,16 @@ export default function Vendors() {
           <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEdit(v); }}>
             <Edit className="w-4 h-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={(e) => { e.stopPropagation(); handleDelete(v); }}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={(e) => { e.stopPropagation(); handleDelete(v); }}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       ),
     },
