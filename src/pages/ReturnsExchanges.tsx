@@ -21,6 +21,7 @@ import { useReturnsExchanges } from '@/hooks/useReturnsExchanges';
 import { ReturnExchangeDialog } from '@/components/returns/ReturnExchangeDialog';
 import { ViewReturnExchangeDialog } from '@/components/returns/ViewReturnExchangeDialog';
 import type { ReturnExchange } from '@/types/returnExchange';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount);
@@ -38,6 +39,7 @@ export default function ReturnsExchanges() {
     deleteRecord,
   } = useReturnsExchanges();
 
+  const isAdmin = useIsAdmin();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [viewRecordId, setViewRecordId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ReturnExchange | null>(null);
@@ -106,18 +108,20 @@ export default function ReturnsExchanges() {
           >
             <Eye className="w-4 h-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteTarget(item);
-            }}
-            title="Delete"
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteTarget(item);
+              }}
+              title="Delete"
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       ),
     },

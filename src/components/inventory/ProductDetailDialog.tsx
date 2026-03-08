@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Edit, Trash2, Package, Coins } from 'lucide-react';
 import { Product, STATUS_OPTIONS } from '@/types/inventory';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { format } from 'date-fns';
 
 interface ProductDetailDialogProps {
@@ -29,6 +30,7 @@ export function ProductDetailDialog({
   onEdit,
   onDelete,
 }: ProductDetailDialogProps) {
+  const isAdmin = useIsAdmin();
   const [silverRate, setSilverRate] = useState<number>(0);
 
   useEffect(() => {
@@ -175,10 +177,12 @@ export function ProductDetailDialog({
 
           {/* Actions */}
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={onDelete} className="text-destructive">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={onDelete} className="text-destructive">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            )}
             <Button onClick={onEdit}>
               <Edit className="w-4 h-4 mr-2" />
               Edit Product

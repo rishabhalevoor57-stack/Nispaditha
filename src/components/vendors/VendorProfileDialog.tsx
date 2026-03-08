@@ -10,6 +10,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Phone, MapPin, Edit, Trash2, CreditCard, Hash } from 'lucide-react';
 import type { Vendor, VendorPayment } from '@/hooks/useVendors';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 interface VendorProduct {
   id: string;
@@ -42,6 +43,7 @@ export function VendorProfileDialog({
   fetchProducts,
   fetchPayments,
 }: VendorProfileDialogProps) {
+  const isAdmin = useIsAdmin();
   const [products, setProducts] = useState<VendorProduct[]>([]);
   const [payments, setPayments] = useState<VendorPayment[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -129,9 +131,11 @@ export function VendorProfileDialog({
           <Button variant="outline" size="sm" onClick={onAddPayment}>
             <CreditCard className="w-4 h-4 mr-1" /> Record Payment
           </Button>
-          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive ml-auto" onClick={onDelete}>
-            <Trash2 className="w-4 h-4 mr-1" /> Delete
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive ml-auto" onClick={onDelete}>
+              <Trash2 className="w-4 h-4 mr-1" /> Delete
+            </Button>
+          )}
         </div>
 
         {/* Tabs: Products & Payments */}

@@ -11,6 +11,7 @@ import { VendorFormDialog } from '@/components/vendors/VendorFormDialog';
 import { VendorProfileDialog } from '@/components/vendors/VendorProfileDialog';
 import { VendorPaymentDialog } from '@/components/vendors/VendorPaymentDialog';
 import { useToast } from '@/hooks/use-toast';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 export default function Vendors() {
   const {
@@ -26,6 +27,7 @@ export default function Vendors() {
     fetchVendorProducts,
   } = useVendors();
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -135,14 +137,16 @@ export default function Vendors() {
           <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEdit(v); }}>
             <Edit className="w-4 h-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={(e) => { e.stopPropagation(); handleDelete(v); }}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={(e) => { e.stopPropagation(); handleDelete(v); }}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       ),
     },

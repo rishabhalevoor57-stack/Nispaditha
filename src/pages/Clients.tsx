@@ -16,6 +16,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Edit, Trash2, Phone, Mail, Download } from 'lucide-react';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 interface Client {
   id: string;
@@ -47,6 +48,7 @@ export default function Clients() {
   const [formData, setFormData] = useState(initialClient);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     fetchClients();
@@ -246,14 +248,16 @@ export default function Clients() {
           >
             <Edit className="w-4 h-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          {isAdmin && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       )
     },
