@@ -35,6 +35,7 @@ export function InventoryTable({
   onEdit,
   onDelete,
 }: InventoryTableProps) {
+  const isAdmin = useIsAdmin();
   const [silverRate, setSilverRate] = useState<number>(0);
 
   useEffect(() => {
@@ -206,14 +207,16 @@ export function InventoryTable({
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={(e) => { e.stopPropagation(); onDelete(product); }}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {isAdmin && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); onDelete(product); }}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
