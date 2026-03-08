@@ -245,6 +245,11 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* GST & Sales Summary */}
+      <div className="mb-8">
+        <GSTSalesSummary />
+      </div>
+
       {/* Calendar Widget */}
       <div className="mb-8">
         <CalendarWidget />
