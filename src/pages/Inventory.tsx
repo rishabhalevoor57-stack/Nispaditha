@@ -81,6 +81,57 @@ export default function Inventory() {
         description="Manage your products and stock levels"
         actions={
           <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => {
+                  const data = allProducts.map((p: any) => ({
+                    SKU: p.sku,
+                    Name: p.name,
+                    Category: p.categories?.name || '',
+                    'Type of Work': p.type_of_work || '',
+                    'Weight (g)': p.weight_grams,
+                    Quantity: p.quantity,
+                    'Purchase Price': p.purchase_price,
+                    'Selling Price': p.selling_price,
+                    'Making Charges': p.making_charges,
+                    Status: p.status,
+                    Vendor: p.suppliers?.name || '',
+                  }));
+                  exportToExcel(data, 'Inventory_Export');
+                }}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Export to Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  exportToPDF('Inventory Report', [
+                    { header: 'SKU', key: 'SKU' },
+                    { header: 'Name', key: 'Name' },
+                    { header: 'Category', key: 'Category' },
+                    { header: 'Weight (g)', key: 'Weight' },
+                    { header: 'Qty', key: 'Qty' },
+                    { header: 'Selling Price', key: 'Price' },
+                    { header: 'Status', key: 'Status' },
+                  ], allProducts.map((p: any) => ({
+                    SKU: p.sku,
+                    Name: p.name,
+                    Category: p.categories?.name || '',
+                    Weight: `${p.weight_grams}g`,
+                    Qty: p.quantity,
+                    Price: `₹${p.selling_price}`,
+                    Status: p.status,
+                  })), 'Inventory_Report');
+                }}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export to PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" onClick={() => setIsBulkImportOpen(true)}>
               <FileSpreadsheet className="w-4 h-4 mr-2" />
               Bulk Import
