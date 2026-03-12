@@ -90,42 +90,59 @@ export default function Inventory() {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => {
-                  const data = allProducts.map((p: any) => ({
-                    SKU: p.sku,
-                    Name: p.name,
-                    Category: p.categories?.name || '',
+                  const data = allProducts.map((p: any, i: number) => ({
+                    'SL No.': i + 1,
+                    'SKU': p.sku,
+                    'Product Name': p.name,
+                    'Description': p.description || '',
+                    'Category': p.categories?.name || '',
                     'Type of Work': p.type_of_work || '',
-                    'Weight (g)': p.weight_grams,
-                    Quantity: p.quantity,
-                    'Purchase Price': p.purchase_price,
-                    'Selling Price': p.selling_price,
-                    'Making Charges': p.making_charges,
-                    Status: p.status,
-                    Vendor: p.suppliers?.name || '',
+                    'Metal Type': p.metal_type || '',
+                    'Purity': p.purity || '',
+                    'Weight (g)': Number(p.weight_grams).toFixed(2),
+                    'Bangle Size': p.bangle_size || '',
+                    'Quantity': p.quantity,
+                    'Pricing Mode': p.pricing_mode === 'flat_price' ? 'Flat Price' : 'Weight Based',
+                    'Purchase Price (₹)': Number(p.purchase_price).toFixed(2),
+                    'Purchase MC (₹)': Number(p.purchase_making_charges || 0).toFixed(2),
+                    'Selling Price (₹)': Number(p.selling_price).toFixed(2),
+                    'Making Charges (₹)': Number(p.making_charges).toFixed(2),
+                    'MRP (₹)': Number(p.mrp || 0).toFixed(2),
+                    'GST %': p.gst_percentage,
+                    'Low Stock Alert': p.low_stock_alert,
+                    'Status': p.status === 'in_stock' ? 'In Stock' : p.status === 'sold' ? 'Sold' : 'For Repair',
+                    'Vendor': p.suppliers?.name || '',
+                    'Date Ordered': p.date_ordered || '',
                   }));
-                  exportToExcel(data, 'Inventory_Export');
+                  exportToExcel(data, `Inventory_Export_${new Date().toISOString().split('T')[0]}`);
                 }}>
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
                   Export to Excel
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   exportToPDF('Inventory Report', [
+                    { header: 'SL', key: 'SL' },
                     { header: 'SKU', key: 'SKU' },
-                    { header: 'Name', key: 'Name' },
+                    { header: 'Product', key: 'Name' },
                     { header: 'Category', key: 'Category' },
-                    { header: 'Weight (g)', key: 'Weight' },
+                    { header: 'Wt (g)', key: 'Weight' },
                     { header: 'Qty', key: 'Qty' },
-                    { header: 'Selling Price', key: 'Price' },
+                    { header: 'Selling ₹', key: 'Price' },
+                    { header: 'MC ₹', key: 'MC' },
                     { header: 'Status', key: 'Status' },
-                  ], allProducts.map((p: any) => ({
+                    { header: 'Vendor', key: 'Vendor' },
+                  ], allProducts.map((p: any, i: number) => ({
+                    SL: i + 1,
                     SKU: p.sku,
                     Name: p.name,
-                    Category: p.categories?.name || '',
-                    Weight: `${p.weight_grams}g`,
+                    Category: p.categories?.name || '-',
+                    Weight: `${Number(p.weight_grams).toFixed(1)}`,
                     Qty: p.quantity,
-                    Price: `₹${p.selling_price}`,
-                    Status: p.status,
-                  })), 'Inventory_Report');
+                    Price: Number(p.selling_price).toLocaleString('en-IN'),
+                    MC: Number(p.making_charges).toLocaleString('en-IN'),
+                    Status: p.status === 'in_stock' ? 'In Stock' : p.status === 'sold' ? 'Sold' : 'Repair',
+                    Vendor: p.suppliers?.name || '-',
+                  })), `Inventory_Report_${new Date().toISOString().split('T')[0]}`);
                 }}>
                   <Download className="w-4 h-4 mr-2" />
                   Export to PDF
