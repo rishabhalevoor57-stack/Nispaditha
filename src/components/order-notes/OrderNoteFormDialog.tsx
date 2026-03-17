@@ -34,6 +34,7 @@ import {
   ORDER_NOTE_STATUS_LABELS,
   PAYMENT_MODES,
   TIME_SLOTS,
+  SERVICE_TYPES,
 } from '@/types/orderNote';
 import { useOrderNotes } from '@/hooks/useOrderNotes';
 import { useAuth } from '@/contexts/AuthContext';
