@@ -82,7 +82,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
                   </TableRow>
                 ))}
                 <TableRow className="font-bold bg-muted/50">
-                  <TableCell colSpan={4} className="text-right">Total Expected:</TableCell>
+                  <TableCell colSpan={5} className="text-right">Total Expected:</TableCell>
                   <TableCell className="text-right">₹{totalExpected.toLocaleString('en-IN')}</TableCell>
                 </TableRow>
               </>
