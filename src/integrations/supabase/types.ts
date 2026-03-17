@@ -565,6 +565,7 @@ export type Database = {
           item_description: string
           order_note_id: string
           quantity: number
+          service_type: string | null
         }
         Insert: {
           created_at?: string
@@ -574,6 +575,7 @@ export type Database = {
           item_description: string
           order_note_id: string
           quantity?: number
+          service_type?: string | null
         }
         Update: {
           created_at?: string
@@ -583,6 +585,7 @@ export type Database = {
           item_description?: string
           order_note_id?: string
           quantity?: number
+          service_type?: string | null
         }
         Relationships: [
           {

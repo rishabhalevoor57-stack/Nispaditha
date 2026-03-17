@@ -5,6 +5,7 @@ export interface OrderNoteItem {
   customization_notes?: string;
   quantity: number;
   expected_price: number;
+  service_type?: string;
   created_at?: string;
 }
 
