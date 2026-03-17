@@ -190,13 +190,14 @@ export const useOrderNotes = () => {
       if (deleteError) throw deleteError;
 
       if (data.items.length > 0) {
-        const itemsWithNoteId = data.items.map(item => ({
-          item_description: item.item_description,
-          customization_notes: item.customization_notes,
-          quantity: item.quantity,
-          expected_price: item.expected_price,
-          order_note_id: data.id,
-        }));
+          const itemsWithNoteId = data.items.map(item => ({
+            item_description: item.item_description,
+            customization_notes: item.customization_notes,
+            quantity: item.quantity,
+            expected_price: item.expected_price,
+            service_type: item.service_type || 'new_order',
+            order_note_id: data.id,
+          }));
 
         const { error: itemsError } = await supabase
           .from('order_note_items')

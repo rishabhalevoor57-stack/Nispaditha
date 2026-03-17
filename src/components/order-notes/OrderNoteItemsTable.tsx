@@ -3,6 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -10,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { OrderNoteItem } from '@/types/orderNote';
+import { OrderNoteItem, SERVICE_TYPES, SERVICE_TYPE_LABELS } from '@/types/orderNote';
 
 interface OrderNoteItemsTableProps {
   items: OrderNoteItem[];
@@ -22,7 +29,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
   const addItem = () => {
     onChange([
       ...items,
-      { item_description: '', customization_notes: '', quantity: 1, expected_price: 0 },
+      { item_description: '', customization_notes: '', quantity: 1, expected_price: 0, service_type: 'new_order' },
     ]);
   };
 
@@ -46,6 +53,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
           <TableHeader>
             <TableRow>
               <TableHead>Item / Description</TableHead>
+              <TableHead>Service</TableHead>
               <TableHead>Customization Notes</TableHead>
               <TableHead className="text-center">Qty</TableHead>
               <TableHead className="text-right">Expected Price</TableHead>
@@ -55,7 +63,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No items
                 </TableCell>
               </TableRow>
@@ -64,6 +72,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
                 {items.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>{item.item_description}</TableCell>
+                    <TableCell>{SERVICE_TYPE_LABELS[item.service_type || 'new_order'] || 'New Order'}</TableCell>
                     <TableCell>{item.customization_notes || '-'}</TableCell>
                     <TableCell className="text-center">{item.quantity}</TableCell>
                     <TableCell className="text-right">₹{item.expected_price.toLocaleString('en-IN')}</TableCell>
@@ -73,7 +82,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
                   </TableRow>
                 ))}
                 <TableRow className="font-bold bg-muted/50">
-                  <TableCell colSpan={4} className="text-right">Total Expected:</TableCell>
+                  <TableCell colSpan={5} className="text-right">Total Expected:</TableCell>
                   <TableCell className="text-right">₹{totalExpected.toLocaleString('en-IN')}</TableCell>
                 </TableRow>
               </>
@@ -91,6 +100,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[200px]">Item / Description</TableHead>
+              <TableHead className="min-w-[130px]">Service</TableHead>
               <TableHead className="min-w-[150px]">Customization Notes</TableHead>
               <TableHead className="w-[80px]">Qty</TableHead>
               <TableHead className="w-[120px]">Expected Price</TableHead>
@@ -100,7 +110,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No items added. Click "Add Item" to start.
                 </TableCell>
               </TableRow>
@@ -113,6 +123,21 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
                       value={item.item_description}
                       onChange={(e) => updateItem(index, 'item_description', e.target.value)}
                     />
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={item.service_type || 'new_order'}
+                      onValueChange={(v) => updateItem(index, 'service_type', v)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SERVICE_TYPES.map((st) => (
+                          <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     <Textarea
