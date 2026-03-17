@@ -72,6 +72,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
                 {items.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>{item.item_description}</TableCell>
+                    <TableCell>{SERVICE_TYPE_LABELS[item.service_type || 'new_order'] || 'New Order'}</TableCell>
                     <TableCell>{item.customization_notes || '-'}</TableCell>
                     <TableCell className="text-center">{item.quantity}</TableCell>
                     <TableCell className="text-right">₹{item.expected_price.toLocaleString('en-IN')}</TableCell>
