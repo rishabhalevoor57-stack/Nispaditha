@@ -236,6 +236,19 @@ export const OrderNoteFormDialog = ({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Service Type</Label>
+                <Select value={serviceType} onValueChange={setServiceType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SERVICE_TYPES.map((st) => (
+                      <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
 
