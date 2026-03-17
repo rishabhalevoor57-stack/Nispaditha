@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OrderNote, OrderNoteItem, OrderNoteStatus } from '@/types/orderNote';
 import { toast } from '@/hooks/use-toast';
-import { v4 as uuidv4 } from 'crypto';
+
 
 const uploadItemImage = async (file: File, orderNoteId: string): Promise<string> => {
   const ext = file.name.split('.').pop() || 'jpg';
