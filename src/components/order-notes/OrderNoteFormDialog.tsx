@@ -156,6 +156,7 @@ export const OrderNoteFormDialog = ({
         expected_delivery_date: expectedDeliveryDate ? format(expectedDeliveryDate, 'yyyy-MM-dd') : null,
         time_slot: timeSlot || null,
         special_instructions: specialInstructions || null,
+        service_type: serviceType,
         status,
         created_by: user?.id || null,
       };
