@@ -22,6 +22,7 @@ import {
   OrderNoteStatus,
   ORDER_NOTE_STATUS_LABELS,
   ORDER_NOTE_STATUS_COLORS,
+  SERVICE_TYPE_LABELS,
 } from '@/types/orderNote';
 import { useAuth } from '@/contexts/AuthContext';
 
