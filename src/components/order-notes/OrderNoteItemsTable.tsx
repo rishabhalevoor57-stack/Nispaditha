@@ -100,6 +100,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[200px]">Item / Description</TableHead>
+              <TableHead className="min-w-[130px]">Service</TableHead>
               <TableHead className="min-w-[150px]">Customization Notes</TableHead>
               <TableHead className="w-[80px]">Qty</TableHead>
               <TableHead className="w-[120px]">Expected Price</TableHead>
