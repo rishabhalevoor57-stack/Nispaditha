@@ -229,12 +229,15 @@ export const useOrderNotes = () => {
       if (deleteError) throw deleteError;
 
       if (data.items.length > 0) {
-          const itemsWithNoteId = data.items.map(item => ({
+        const itemsWithImages = await uploadItemImages(data.items as OrderNoteItem[], data.id);
+        
+        const itemsWithNoteId = itemsWithImages.map(item => ({
             item_description: item.item_description,
             customization_notes: item.customization_notes,
             quantity: item.quantity,
             expected_price: item.expected_price,
             service_type: item.service_type || 'new_order',
+            image_url: item.image_url || null,
             order_note_id: data.id,
           }));
 
