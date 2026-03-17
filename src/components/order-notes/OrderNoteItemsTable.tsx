@@ -29,7 +29,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
   const addItem = () => {
     onChange([
       ...items,
-      { item_description: '', customization_notes: '', quantity: 1, expected_price: 0 },
+      { item_description: '', customization_notes: '', quantity: 1, expected_price: 0, service_type: 'new_order' },
     ]);
   };
 
