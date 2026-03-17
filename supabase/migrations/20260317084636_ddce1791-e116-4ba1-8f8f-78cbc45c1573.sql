@@ -1,0 +1,1 @@
+ALTER TABLE public.order_notes ADD COLUMN service_type text DEFAULT 'new_order';

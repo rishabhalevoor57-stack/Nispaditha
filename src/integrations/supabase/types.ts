@@ -611,6 +611,7 @@ export type Database = {
           payment_mode: string | null
           phone_number: string | null
           quoted_estimate: number | null
+          service_type: string | null
           special_instructions: string | null
           status: Database["public"]["Enums"]["order_note_status"] | null
           time_slot: string | null
@@ -632,6 +633,7 @@ export type Database = {
           payment_mode?: string | null
           phone_number?: string | null
           quoted_estimate?: number | null
+          service_type?: string | null
           special_instructions?: string | null
           status?: Database["public"]["Enums"]["order_note_status"] | null
           time_slot?: string | null
@@ -653,6 +655,7 @@ export type Database = {
           payment_mode?: string | null
           phone_number?: string | null
           quoted_estimate?: number | null
+          service_type?: string | null
           special_instructions?: string | null
           status?: Database["public"]["Enums"]["order_note_status"] | null
           time_slot?: string | null

@@ -34,6 +34,7 @@ import {
   ORDER_NOTE_STATUS_LABELS,
   PAYMENT_MODES,
   TIME_SLOTS,
+  SERVICE_TYPES,
 } from '@/types/orderNote';
 import { useOrderNotes } from '@/hooks/useOrderNotes';
 import { useAuth } from '@/contexts/AuthContext';
@@ -78,6 +79,9 @@ export const OrderNoteFormDialog = ({
   // Special Instructions
   const [specialInstructions, setSpecialInstructions] = useState('');
 
+  // Service Type
+  const [serviceType, setServiceType] = useState('new_order');
+
   // Status
   const [status, setStatus] = useState<OrderNoteStatus>('order_noted');
 
@@ -104,6 +108,7 @@ export const OrderNoteFormDialog = ({
           setExpectedDeliveryDate(fullNote.expected_delivery_date ? new Date(fullNote.expected_delivery_date) : undefined);
           setTimeSlot(fullNote.time_slot || '');
           setSpecialInstructions(fullNote.special_instructions || '');
+          setServiceType(fullNote.service_type || 'new_order');
           setStatus(fullNote.status);
         } else {
           // New order note
@@ -122,6 +127,7 @@ export const OrderNoteFormDialog = ({
           setExpectedDeliveryDate(undefined);
           setTimeSlot('');
           setSpecialInstructions('');
+          setServiceType('new_order');
           setStatus('order_noted');
         }
       }
@@ -150,6 +156,7 @@ export const OrderNoteFormDialog = ({
         expected_delivery_date: expectedDeliveryDate ? format(expectedDeliveryDate, 'yyyy-MM-dd') : null,
         time_slot: timeSlot || null,
         special_instructions: specialInstructions || null,
+        service_type: serviceType,
         status,
         created_by: user?.id || null,
       };
@@ -195,7 +202,7 @@ export const OrderNoteFormDialog = ({
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Order Information</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label>Order Reference</Label>
                 <Input value={orderReference} readOnly className="bg-muted" />
@@ -225,6 +232,19 @@ export const OrderNoteFormDialog = ({
                       <SelectItem key={profile.user_id} value={profile.user_id}>
                         {profile.full_name || profile.email}
                       </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Service Type</Label>
+                <Select value={serviceType} onValueChange={setServiceType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SERVICE_TYPES.map((st) => (
+                      <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

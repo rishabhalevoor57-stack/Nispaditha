@@ -24,6 +24,7 @@ export interface OrderNote {
   expected_delivery_date: string | null;
   time_slot: string | null;
   special_instructions: string | null;
+  service_type: string | null;
   status: OrderNoteStatus;
   created_by: string | null;
   created_at: string;
@@ -52,3 +53,17 @@ export const ORDER_NOTE_STATUS_COLORS: Record<OrderNoteStatus, string> = {
 
 export const PAYMENT_MODES = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Other'];
 export const TIME_SLOTS = ['Morning (9AM-12PM)', 'Afternoon (12PM-4PM)', 'Evening (4PM-8PM)'];
+
+export const SERVICE_TYPES = [
+  { value: 'new_order', label: 'New Order' },
+  { value: 'polishing', label: 'Polishing' },
+  { value: 'repair', label: 'Repair' },
+  { value: 'resizing', label: 'Resizing' },
+  { value: 'rhodium_plating', label: 'Rhodium Plating' },
+  { value: 'engraving', label: 'Engraving' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+export const SERVICE_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  SERVICE_TYPES.map(s => [s.value, s.label])
+);

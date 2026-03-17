@@ -17,6 +17,7 @@ import {
   OrderNoteItem,
   ORDER_NOTE_STATUS_LABELS,
   ORDER_NOTE_STATUS_COLORS,
+  SERVICE_TYPE_LABELS,
 } from '@/types/orderNote';
 import { useOrderNotes } from '@/hooks/useOrderNotes';
 
@@ -87,6 +88,10 @@ export const ViewOrderNoteDialog = ({
             <div>
               <p className="text-sm text-muted-foreground">Handled By</p>
               <p className="font-medium">{handlerName}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Service Type</p>
+              <p className="font-medium">{SERVICE_TYPE_LABELS[orderNote.service_type || 'new_order'] || 'New Order'}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Delivery Type</p>

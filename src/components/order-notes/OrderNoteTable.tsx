@@ -22,6 +22,7 @@ import {
   OrderNoteStatus,
   ORDER_NOTE_STATUS_LABELS,
   ORDER_NOTE_STATUS_COLORS,
+  SERVICE_TYPE_LABELS,
 } from '@/types/orderNote';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -61,6 +62,7 @@ export const OrderNoteTable = ({
             <TableHead>Reference</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Customer</TableHead>
+            <TableHead>Service</TableHead>
             <TableHead>Phone</TableHead>
             <TableHead>Estimate</TableHead>
             <TableHead>Balance</TableHead>
@@ -75,6 +77,9 @@ export const OrderNoteTable = ({
               <TableCell className="font-medium">{note.order_reference}</TableCell>
               <TableCell>{format(new Date(note.order_date), 'dd/MM/yyyy')}</TableCell>
               <TableCell>{note.customer_name}</TableCell>
+              <TableCell>
+                <Badge variant="outline">{SERVICE_TYPE_LABELS[note.service_type || 'new_order'] || 'New Order'}</Badge>
+              </TableCell>
               <TableCell>{note.phone_number || '-'}</TableCell>
               <TableCell>₹{note.quoted_estimate?.toLocaleString('en-IN') || '0'}</TableCell>
               <TableCell className={note.balance > 0 ? 'text-amber-600 font-medium' : ''}>
