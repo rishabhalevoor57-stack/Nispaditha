@@ -2,6 +2,37 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OrderNote, OrderNoteItem, OrderNoteStatus } from '@/types/orderNote';
 import { toast } from '@/hooks/use-toast';
+import { v4 as uuidv4 } from 'crypto';
+
+const uploadItemImage = async (file: File, orderNoteId: string): Promise<string> => {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const filePath = `${orderNoteId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  
+  const { error } = await supabase.storage
+    .from('order-note-images')
+    .upload(filePath, file);
+  
+  if (error) throw error;
+  
+  const { data } = supabase.storage
+    .from('order-note-images')
+    .getPublicUrl(filePath);
+  
+  return data.publicUrl;
+};
+
+const uploadItemImages = async (items: OrderNoteItem[], orderNoteId: string): Promise<OrderNoteItem[]> => {
+  const results = await Promise.all(
+    items.map(async (item) => {
+      if (item._imageFile) {
+        const imageUrl = await uploadItemImage(item._imageFile, orderNoteId);
+        return { ...item, image_url: imageUrl, _imageFile: undefined };
+      }
+      return { ...item, _imageFile: undefined };
+    })
+  );
+  return results;
+};
 
 export const useOrderNotes = () => {
   const queryClient = useQueryClient();
