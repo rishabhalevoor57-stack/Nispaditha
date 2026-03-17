@@ -108,6 +108,7 @@ export const OrderNoteFormDialog = ({
           setExpectedDeliveryDate(fullNote.expected_delivery_date ? new Date(fullNote.expected_delivery_date) : undefined);
           setTimeSlot(fullNote.time_slot || '');
           setSpecialInstructions(fullNote.special_instructions || '');
+          setServiceType(fullNote.service_type || 'new_order');
           setStatus(fullNote.status);
         } else {
           // New order note
