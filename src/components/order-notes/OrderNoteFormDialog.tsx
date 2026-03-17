@@ -127,6 +127,7 @@ export const OrderNoteFormDialog = ({
           setExpectedDeliveryDate(undefined);
           setTimeSlot('');
           setSpecialInstructions('');
+          setServiceType('new_order');
           setStatus('order_noted');
         }
       }
