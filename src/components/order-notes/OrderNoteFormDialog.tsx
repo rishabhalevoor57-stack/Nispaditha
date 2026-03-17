@@ -166,6 +166,9 @@ export const OrderNoteFormDialog = ({
         customization_notes: item.customization_notes || null,
         quantity: item.quantity,
         expected_price: item.expected_price,
+        service_type: item.service_type || 'new_order',
+        image_url: item.image_url || null,
+        _imageFile: item._imageFile || null,
       }));
 
       if (isEditing) {

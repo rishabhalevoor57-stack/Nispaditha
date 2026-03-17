@@ -3,6 +3,37 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrderNote, OrderNoteItem, OrderNoteStatus } from '@/types/orderNote';
 import { toast } from '@/hooks/use-toast';
 
+
+const uploadItemImage = async (file: File, orderNoteId: string): Promise<string> => {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const filePath = `${orderNoteId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  
+  const { error } = await supabase.storage
+    .from('order-note-images')
+    .upload(filePath, file);
+  
+  if (error) throw error;
+  
+  const { data } = supabase.storage
+    .from('order-note-images')
+    .getPublicUrl(filePath);
+  
+  return data.publicUrl;
+};
+
+const uploadItemImages = async (items: OrderNoteItem[], orderNoteId: string): Promise<OrderNoteItem[]> => {
+  const results = await Promise.all(
+    items.map(async (item) => {
+      if (item._imageFile) {
+        const imageUrl = await uploadItemImage(item._imageFile, orderNoteId);
+        return { ...item, image_url: imageUrl, _imageFile: undefined };
+      }
+      return { ...item, _imageFile: undefined };
+    })
+  );
+  return results;
+};
+
 export const useOrderNotes = () => {
   const queryClient = useQueryClient();
 
@@ -135,8 +166,16 @@ export const useOrderNotes = () => {
       if (noteError) throw noteError;
 
       if (data.items.length > 0) {
-        const itemsWithNoteId = data.items.map(item => ({
-          ...item,
+        // Upload images first
+        const itemsWithImages = await uploadItemImages(data.items as OrderNoteItem[], noteData.id);
+        
+        const itemsWithNoteId = itemsWithImages.map(item => ({
+          item_description: item.item_description,
+          customization_notes: item.customization_notes || null,
+          quantity: item.quantity,
+          expected_price: item.expected_price,
+          service_type: item.service_type || 'new_order',
+          image_url: item.image_url || null,
           order_note_id: noteData.id,
         }));
 
@@ -190,12 +229,15 @@ export const useOrderNotes = () => {
       if (deleteError) throw deleteError;
 
       if (data.items.length > 0) {
-          const itemsWithNoteId = data.items.map(item => ({
+        const itemsWithImages = await uploadItemImages(data.items as OrderNoteItem[], data.id);
+        
+        const itemsWithNoteId = itemsWithImages.map(item => ({
             item_description: item.item_description,
             customization_notes: item.customization_notes,
             quantity: item.quantity,
             expected_price: item.expected_price,
             service_type: item.service_type || 'new_order',
+            image_url: item.image_url || null,
             order_note_id: data.id,
           }));
 

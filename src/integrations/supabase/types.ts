@@ -562,6 +562,7 @@ export type Database = {
           customization_notes: string | null
           expected_price: number | null
           id: string
+          image_url: string | null
           item_description: string
           order_note_id: string
           quantity: number
@@ -572,6 +573,7 @@ export type Database = {
           customization_notes?: string | null
           expected_price?: number | null
           id?: string
+          image_url?: string | null
           item_description: string
           order_note_id: string
           quantity?: number
@@ -582,6 +584,7 @@ export type Database = {
           customization_notes?: string | null
           expected_price?: number | null
           id?: string
+          image_url?: string | null
           item_description?: string
           order_note_id?: string
           quantity?: number
