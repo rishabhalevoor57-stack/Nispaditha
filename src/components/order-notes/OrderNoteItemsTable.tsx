@@ -125,6 +125,21 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
                     />
                   </TableCell>
                   <TableCell>
+                    <Select
+                      value={item.service_type || 'new_order'}
+                      onValueChange={(v) => updateItem(index, 'service_type', v)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SERVICE_TYPES.map((st) => (
+                          <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
                     <Textarea
                       placeholder="Notes..."
                       value={item.customization_notes || ''}
