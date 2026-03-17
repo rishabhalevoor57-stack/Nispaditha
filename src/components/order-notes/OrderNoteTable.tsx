@@ -62,6 +62,7 @@ export const OrderNoteTable = ({
             <TableHead>Reference</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Customer</TableHead>
+            <TableHead>Service</TableHead>
             <TableHead>Phone</TableHead>
             <TableHead>Estimate</TableHead>
             <TableHead>Balance</TableHead>
