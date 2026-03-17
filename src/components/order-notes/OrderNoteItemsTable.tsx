@@ -110,7 +110,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No items added. Click "Add Item" to start.
                 </TableCell>
               </TableRow>
