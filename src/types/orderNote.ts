@@ -6,6 +6,8 @@ export interface OrderNoteItem {
   quantity: number;
   expected_price: number;
   service_type?: string;
+  image_url?: string | null;
+  _imageFile?: File | null; // transient, not stored in DB
   created_at?: string;
 }
 
