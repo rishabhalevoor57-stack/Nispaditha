@@ -79,6 +79,9 @@ export const OrderNoteFormDialog = ({
   // Special Instructions
   const [specialInstructions, setSpecialInstructions] = useState('');
 
+  // Service Type
+  const [serviceType, setServiceType] = useState('new_order');
+
   // Status
   const [status, setStatus] = useState<OrderNoteStatus>('order_noted');
 
