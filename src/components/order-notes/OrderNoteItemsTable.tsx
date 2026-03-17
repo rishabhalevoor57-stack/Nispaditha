@@ -53,6 +53,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
           <TableHeader>
             <TableRow>
               <TableHead>Item / Description</TableHead>
+              <TableHead>Service</TableHead>
               <TableHead>Customization Notes</TableHead>
               <TableHead className="text-center">Qty</TableHead>
               <TableHead className="text-right">Expected Price</TableHead>
