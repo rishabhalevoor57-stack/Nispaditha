@@ -90,6 +90,10 @@ export const ViewOrderNoteDialog = ({
               <p className="font-medium">{handlerName}</p>
             </div>
             <div>
+              <p className="text-sm text-muted-foreground">Service Type</p>
+              <p className="font-medium">{SERVICE_TYPE_LABELS[orderNote.service_type || 'new_order'] || 'New Order'}</p>
+            </div>
+            <div>
               <p className="text-sm text-muted-foreground">Delivery Type</p>
               <p className="font-medium capitalize">{orderNote.delivery_type.replace('_', ' ')}</p>
             </div>

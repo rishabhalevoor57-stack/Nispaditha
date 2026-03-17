@@ -202,7 +202,7 @@ export const OrderNoteFormDialog = ({
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Order Information</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label>Order Reference</Label>
                 <Input value={orderReference} readOnly className="bg-muted" />

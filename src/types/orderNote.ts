@@ -24,6 +24,7 @@ export interface OrderNote {
   expected_delivery_date: string | null;
   time_slot: string | null;
   special_instructions: string | null;
+  service_type: string | null;
   status: OrderNoteStatus;
   created_by: string | null;
   created_at: string;
