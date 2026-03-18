@@ -244,7 +244,7 @@ export const useOrderNotes = () => {
     }) => {
       const { error: noteError } = await supabase
         .from('order_notes')
-        .update(data.note)
+        .update(data.note as any)
         .eq('id', data.id);
 
       if (noteError) throw noteError;
