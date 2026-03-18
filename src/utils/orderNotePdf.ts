@@ -1,7 +1,12 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
-import { OrderNote, OrderNoteItem, ORDER_NOTE_STATUS_LABELS } from '@/types/orderNote';
+import { OrderNote, OrderNoteItem, ORDER_NOTE_STATUS_LABELS, SERVICE_TYPE_LABELS } from '@/types/orderNote';
+
+const getServiceLabels = (serviceType?: string): string => {
+  if (!serviceType) return 'New Order';
+  return serviceType.split(',').map(s => SERVICE_TYPE_LABELS[s.trim()] || s.trim()).join(', ');
+};
 
 export const generateOrderNotePdf = async (
   orderNote: OrderNote,
@@ -41,24 +46,26 @@ export const generateOrderNotePdf = async (
 
   autoTable(doc, {
     startY: yPos + 5,
-    head: [['#', 'Item / Description', 'Customization Notes', 'Qty', 'Expected Price', 'Total']],
+    head: [['#', 'Item / Description', 'Services', 'Notes', 'Qty', 'Price', 'Total']],
     body: items.map((item, index) => [
       (index + 1).toString(),
       item.item_description,
+      getServiceLabels(item.service_type),
       item.customization_notes || '-',
       item.quantity.toString(),
       `₹${item.expected_price.toLocaleString('en-IN')}`,
       `₹${(item.expected_price * item.quantity).toLocaleString('en-IN')}`,
     ]),
-    styles: { fontSize: 9, cellPadding: 3 },
+    styles: { fontSize: 8, cellPadding: 3 },
     headStyles: { fillColor: [50, 50, 50], textColor: 255, fontStyle: 'bold' },
     columnStyles: {
-      0: { cellWidth: 10 },
-      1: { cellWidth: 45 },
-      2: { cellWidth: 45 },
-      3: { cellWidth: 15, halign: 'center' },
-      4: { cellWidth: 30, halign: 'right' },
-      5: { cellWidth: 30, halign: 'right' },
+      0: { cellWidth: 8 },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 35 },
+      4: { cellWidth: 12, halign: 'center' },
+      5: { cellWidth: 25, halign: 'right' },
+      6: { cellWidth: 25, halign: 'right' },
     },
   });
 
@@ -71,6 +78,12 @@ export const generateOrderNotePdf = async (
   doc.text(`Total Expected: ₹${totalExpected.toLocaleString('en-IN')}`, 180, yPos, { align: 'right' });
 
   yPos += 15;
+
+  // Check if we need a new page
+  if (yPos > 250) {
+    doc.addPage();
+    yPos = 20;
+  }
 
   // Payment Details
   doc.setFontSize(11);
@@ -146,7 +159,6 @@ export const printOrderNote = async (orderNote: OrderNote, items: OrderNoteItem[
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();
     } catch (error) {
-      // Fallback: open in new tab
       window.open(pdfUrl, '_blank');
     }
 

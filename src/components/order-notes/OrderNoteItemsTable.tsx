@@ -3,13 +3,8 @@ import { Plus, Trash2, ImagePlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -30,6 +25,20 @@ interface OrderNoteItemsTableProps {
 const MIN_FILE_SIZE = 100 * 1024; // 0.1 MB
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 
+const parseServices = (serviceType?: string): string[] => {
+  if (!serviceType) return ['new_order'];
+  return serviceType.split(',').filter(Boolean);
+};
+
+const formatServices = (services: string[]): string => {
+  return services.join(',');
+};
+
+const getServiceLabels = (serviceType?: string): string => {
+  const services = parseServices(serviceType);
+  return services.map(s => SERVICE_TYPE_LABELS[s] || s).join(', ');
+};
+
 export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItemsTableProps) => {
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
@@ -45,6 +54,21 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
       i === index ? { ...item, [field]: value } : item
     );
     onChange(updated);
+  };
+
+  const toggleService = (index: number, serviceValue: string) => {
+    const item = items[index];
+    const currentServices = parseServices(item.service_type);
+    let newServices: string[];
+    
+    if (currentServices.includes(serviceValue)) {
+      newServices = currentServices.filter(s => s !== serviceValue);
+      if (newServices.length === 0) newServices = ['new_order']; // must have at least one
+    } else {
+      newServices = [...currentServices, serviceValue];
+    }
+    
+    updateItem(index, 'service_type', formatServices(newServices));
   };
 
   const handleFileSelect = (index: number, file: File | null) => {
@@ -92,7 +116,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
             <TableRow>
               <TableHead>Image</TableHead>
               <TableHead>Item / Description</TableHead>
-              <TableHead>Service</TableHead>
+              <TableHead>Services</TableHead>
               <TableHead>Customization Notes</TableHead>
               <TableHead className="text-center">Qty</TableHead>
               <TableHead className="text-right">Expected Price</TableHead>
@@ -124,7 +148,9 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
                       )}
                     </TableCell>
                     <TableCell>{item.item_description}</TableCell>
-                    <TableCell>{SERVICE_TYPE_LABELS[item.service_type || 'new_order'] || 'New Order'}</TableCell>
+                    <TableCell>
+                      <span className="text-sm">{getServiceLabels(item.service_type)}</span>
+                    </TableCell>
                     <TableCell>{item.customization_notes || '-'}</TableCell>
                     <TableCell className="text-center">{item.quantity}</TableCell>
                     <TableCell className="text-right">₹{item.expected_price.toLocaleString('en-IN')}</TableCell>
@@ -153,7 +179,7 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
             <TableRow>
               <TableHead className="w-[100px]">Image</TableHead>
               <TableHead className="min-w-[200px]">Item / Description</TableHead>
-              <TableHead className="min-w-[130px]">Service</TableHead>
+              <TableHead className="min-w-[160px]">Services</TableHead>
               <TableHead className="min-w-[150px]">Customization Notes</TableHead>
               <TableHead className="w-[80px]">Qty</TableHead>
               <TableHead className="w-[120px]">Expected Price</TableHead>
@@ -168,96 +194,103 @@ export const OrderNoteItemsTable = ({ items, onChange, readOnly }: OrderNoteItem
                 </TableCell>
               </TableRow>
             ) : (
-              items.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      ref={(el) => { fileInputRefs.current[index] = el; }}
-                      onChange={(e) => handleFileSelect(index, e.target.files?.[0] || null)}
-                    />
-                    {item.image_url ? (
-                      <div className="relative group w-14 h-14">
-                        <img
-                          src={item.image_url}
-                          alt="Item"
-                          className="w-14 h-14 object-cover rounded border"
-                        />
-                        <button
+              items.map((item, index) => {
+                const selectedServices = parseServices(item.service_type);
+                return (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        ref={(el) => { fileInputRefs.current[index] = el; }}
+                        onChange={(e) => handleFileSelect(index, e.target.files?.[0] || null)}
+                      />
+                      {item.image_url ? (
+                        <div className="relative group w-14 h-14">
+                          <img
+                            src={item.image_url}
+                            alt="Item"
+                            className="w-14 h-14 object-cover rounded border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <Button
                           type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          variant="outline"
+                          size="sm"
+                          className="h-14 w-14 p-0"
+                          onClick={() => fileInputRefs.current[index]?.click()}
                         >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-14 w-14 p-0"
-                        onClick={() => fileInputRefs.current[index]?.click()}
-                      >
-                        <ImagePlus className="h-5 w-5 text-muted-foreground" />
-                      </Button>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      placeholder="Item description"
-                      value={item.item_description}
-                      onChange={(e) => updateItem(index, 'item_description', e.target.value)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={item.service_type || 'new_order'}
-                      onValueChange={(v) => updateItem(index, 'service_type', v)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
+                          <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                        </Button>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        placeholder="Item description"
+                        value={item.item_description}
+                        onChange={(e) => updateItem(index, 'item_description', e.target.value)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1 max-h-[120px] overflow-y-auto">
                         {SERVICE_TYPES.map((st) => (
-                          <SelectItem key={st.value} value={st.value}>{st.label}</SelectItem>
+                          <div key={st.value} className="flex items-center gap-1.5">
+                            <Checkbox
+                              id={`service-${index}-${st.value}`}
+                              checked={selectedServices.includes(st.value)}
+                              onCheckedChange={() => toggleService(index, st.value)}
+                            />
+                            <Label
+                              htmlFor={`service-${index}-${st.value}`}
+                              className="text-xs font-normal cursor-pointer"
+                            >
+                              {st.label}
+                            </Label>
+                          </div>
                         ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Textarea
-                      placeholder="Notes..."
-                      value={item.customization_notes || ''}
-                      onChange={(e) => updateItem(index, 'customization_notes', e.target.value)}
-                      className="min-h-[60px]"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={item.expected_price}
-                      onChange={(e) => updateItem(index, 'expected_price', parseFloat(e.target.value) || 0)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => removeItem(index)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Textarea
+                        placeholder="Notes..."
+                        value={item.customization_notes || ''}
+                        onChange={(e) => updateItem(index, 'customization_notes', e.target.value)}
+                        className="min-h-[60px]"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.expected_price}
+                        onChange={(e) => updateItem(index, 'expected_price', parseFloat(e.target.value) || 0)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" onClick={() => removeItem(index)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

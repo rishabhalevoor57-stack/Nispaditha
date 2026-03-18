@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Printer } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -26,6 +26,7 @@ interface ViewOrderNoteDialogProps {
   onOpenChange: (open: boolean) => void;
   orderNote: OrderNote | null;
   onPrint: (orderNote: OrderNote) => void;
+  onDownload: (orderNote: OrderNote) => void;
 }
 
 export const ViewOrderNoteDialog = ({
@@ -33,6 +34,7 @@ export const ViewOrderNoteDialog = ({
   onOpenChange,
   orderNote,
   onPrint,
+  onDownload,
 }: ViewOrderNoteDialogProps) => {
   const { getOrderNoteWithItems } = useOrderNotes();
   const [items, setItems] = useState<OrderNoteItem[]>([]);
@@ -74,6 +76,10 @@ export const ViewOrderNoteDialog = ({
             <Button variant="outline" size="sm" onClick={() => onPrint(orderNote)}>
               <Printer className="h-4 w-4 mr-2" />
               Print
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => onDownload(orderNote)}>
+              <Download className="h-4 w-4 mr-2" />
+              PDF
             </Button>
           </div>
         </DialogHeader>

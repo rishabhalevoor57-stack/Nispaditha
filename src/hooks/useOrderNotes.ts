@@ -40,16 +40,35 @@ export const useOrderNotes = () => {
   const { data: orderNotes = [], isLoading } = useQuery({
     queryKey: ['order-notes'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch order notes
+      const { data: notes, error } = await supabase
         .from('order_notes')
-        .select(`
-          *,
-          handler:handled_by(full_name, email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as unknown as OrderNote[];
+
+      // Fetch handler profiles for all notes that have handled_by
+      const handlerIds = [...new Set(notes.filter(n => n.handled_by).map(n => n.handled_by!))];
+      let profilesMap: Record<string, { full_name: string | null; email: string | null }> = {};
+      
+      if (handlerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .in('user_id', handlerIds);
+        
+        if (profiles) {
+          profilesMap = Object.fromEntries(
+            profiles.map(p => [p.user_id, { full_name: p.full_name, email: p.email }])
+          );
+        }
+      }
+
+      return notes.map(note => ({
+        ...note,
+        handler: note.handled_by ? profilesMap[note.handled_by] || null : null,
+      })) as unknown as OrderNote[];
     },
   });
 
@@ -75,7 +94,7 @@ export const useOrderNotes = () => {
     const [noteResult, itemsResult] = await Promise.all([
       supabase
         .from('order_notes')
-        .select('*, handler:handled_by(full_name, email)')
+        .select('*')
         .eq('id', id)
         .single(),
       supabase
@@ -88,8 +107,20 @@ export const useOrderNotes = () => {
     if (noteResult.error) throw noteResult.error;
     if (itemsResult.error) throw itemsResult.error;
 
+    // Get handler profile
+    let handler = null;
+    if (noteResult.data.handled_by) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('user_id', noteResult.data.handled_by)
+        .single();
+      handler = profile;
+    }
+
     return {
       ...noteResult.data as unknown as OrderNote,
+      handler,
       items: itemsResult.data as OrderNoteItem[],
     };
   };
@@ -110,7 +141,6 @@ export const useOrderNotes = () => {
       created_by: string | null;
     }> = [];
 
-    // Order Start Event
     events.push({
       title: `Order Started - ${customerName}`,
       event_date: orderDate,
@@ -120,7 +150,6 @@ export const useOrderNotes = () => {
       created_by: createdBy,
     });
 
-    // Delivery Event (if date is set)
     if (deliveryDate) {
       events.push({
         title: `Delivery Due - ${customerName}`,
@@ -142,13 +171,11 @@ export const useOrderNotes = () => {
     deliveryDate: string | null,
     createdBy: string | null
   ) => {
-    // Delete existing events
     await supabase
       .from('calendar_events')
       .delete()
       .eq('order_note_id', orderNoteId);
 
-    // Create new events
     await createCalendarEvents(orderNoteId, customerName, orderDate, deliveryDate, createdBy);
   };
 
@@ -166,7 +193,6 @@ export const useOrderNotes = () => {
       if (noteError) throw noteError;
 
       if (data.items.length > 0) {
-        // Upload images first
         const itemsWithImages = await uploadItemImages(data.items as OrderNoteItem[], noteData.id);
         
         const itemsWithNoteId = itemsWithImages.map(item => ({
@@ -186,21 +212,24 @@ export const useOrderNotes = () => {
         if (itemsError) throw itemsError;
       }
 
-      // Create calendar events
-      await createCalendarEvents(
-        noteData.id,
-        data.note.customer_name,
-        data.note.order_date,
-        data.note.expected_delivery_date || null,
-        data.note.created_by || null
-      );
+      // Only create calendar events for non-draft orders
+      if (data.note.status !== 'draft') {
+        await createCalendarEvents(
+          noteData.id,
+          data.note.customer_name,
+          data.note.order_date,
+          data.note.expected_delivery_date || null,
+          data.note.created_by || null
+        );
+      }
 
       return noteData;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['order-notes'] });
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
-      toast({ title: 'Order note created successfully' });
+      const isDraft = variables.note.status === 'draft';
+      toast({ title: isDraft ? 'Draft saved successfully' : 'Order note created successfully' });
     },
     onError: (error: Error) => {
       toast({ title: 'Error creating order note', description: error.message, variant: 'destructive' });
@@ -220,7 +249,6 @@ export const useOrderNotes = () => {
 
       if (noteError) throw noteError;
 
-      // Delete existing items and insert new ones
       const { error: deleteError } = await supabase
         .from('order_note_items')
         .delete()
@@ -248,15 +276,19 @@ export const useOrderNotes = () => {
         if (itemsError) throw itemsError;
       }
 
-      // Update calendar events
       if (data.note.customer_name && data.note.order_date) {
-        await updateCalendarEvents(
-          data.id,
-          data.note.customer_name,
-          data.note.order_date,
-          data.note.expected_delivery_date || null,
-          data.note.created_by || null
-        );
+        if (data.note.status === 'draft') {
+          // Remove calendar events for drafts
+          await supabase.from('calendar_events').delete().eq('order_note_id', data.id);
+        } else {
+          await updateCalendarEvents(
+            data.id,
+            data.note.customer_name,
+            data.note.order_date,
+            data.note.expected_delivery_date || null,
+            data.note.created_by || null
+          );
+        }
       }
     },
     onSuccess: () => {
@@ -271,6 +303,11 @@ export const useOrderNotes = () => {
 
   const deleteOrderNote = useMutation({
     mutationFn: async (id: string) => {
+      // Delete calendar events first
+      await supabase.from('calendar_events').delete().eq('order_note_id', id);
+      // Delete items
+      await supabase.from('order_note_items').delete().eq('order_note_id', id);
+      // Delete order note
       const { error } = await supabase
         .from('order_notes')
         .delete()
@@ -280,6 +317,7 @@ export const useOrderNotes = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-notes'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       toast({ title: 'Order note deleted successfully' });
     },
     onError: (error: Error) => {

@@ -36,9 +36,10 @@ export interface OrderNote {
   handler?: { full_name: string | null; email: string | null };
 }
 
-export type OrderNoteStatus = 'order_noted' | 'design_approved' | 'in_production' | 'ready' | 'delivered';
+export type OrderNoteStatus = 'draft' | 'order_noted' | 'design_approved' | 'in_production' | 'ready' | 'delivered';
 
 export const ORDER_NOTE_STATUS_LABELS: Record<OrderNoteStatus, string> = {
+  draft: 'Draft',
   order_noted: 'Order Noted',
   design_approved: 'Design Approved',
   in_production: 'In Production',
@@ -47,6 +48,7 @@ export const ORDER_NOTE_STATUS_LABELS: Record<OrderNoteStatus, string> = {
 };
 
 export const ORDER_NOTE_STATUS_COLORS: Record<OrderNoteStatus, string> = {
+  draft: 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400',
   order_noted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
   design_approved: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
   in_production: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
