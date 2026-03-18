@@ -76,6 +76,12 @@ const OrderNotes = () => {
     await printOrderNote(fullNote, fullNote.items || [], handlerName);
   };
 
+  const handleDownload = async (note: OrderNote) => {
+    const fullNote = await getOrderNoteWithItems(note.id);
+    const handlerName = note.handler?.full_name || note.handler?.email || 'Not assigned';
+    await downloadOrderNotePdf(fullNote, fullNote.items || [], handlerName);
+  };
+
   const handleStatusChange = (id: string, status: OrderNoteStatus) => {
     updateStatus.mutate({ id, status });
   };
@@ -88,6 +94,7 @@ const OrderNotes = () => {
   // Stats
   const pendingOrders = orderNotes.filter(n => ['order_noted', 'design_approved', 'in_production'].includes(n.status)).length;
   const readyOrders = orderNotes.filter(n => n.status === 'ready').length;
+  const draftOrders = orderNotes.filter(n => n.status === 'draft').length;
   const totalBalance = orderNotes.reduce((sum, n) => sum + (n.balance || 0), 0);
 
   return (
@@ -105,13 +112,21 @@ const OrderNotes = () => {
         />
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Orders</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{orderNotes.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Drafts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-muted-foreground">{draftOrders}</div>
             </CardContent>
           </Card>
           <Card>
@@ -170,6 +185,7 @@ const OrderNotes = () => {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onPrint={handlePrint}
+                onDownload={handleDownload}
                 onStatusChange={handleStatusChange}
               />
             )}
@@ -190,6 +206,7 @@ const OrderNotes = () => {
         onOpenChange={setViewOpen}
         orderNote={selectedNote}
         onPrint={handlePrint}
+        onDownload={handleDownload}
       />
 
       {/* Delete Confirmation */}

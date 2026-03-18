@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Edit, Eye, Trash2, Printer } from 'lucide-react';
+import { Edit, Eye, Trash2, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -32,6 +32,7 @@ interface OrderNoteTableProps {
   onEdit: (orderNote: OrderNote) => void;
   onDelete: (orderNote: OrderNote) => void;
   onPrint: (orderNote: OrderNote) => void;
+  onDownload: (orderNote: OrderNote) => void;
   onStatusChange: (id: string, status: OrderNoteStatus) => void;
 }
 
@@ -41,6 +42,7 @@ export const OrderNoteTable = ({
   onEdit,
   onDelete,
   onPrint,
+  onDownload,
   onStatusChange,
 }: OrderNoteTableProps) => {
   const { userRole } = useAuth();
@@ -121,6 +123,9 @@ export const OrderNoteTable = ({
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => onPrint(note)}>
                     <Printer className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onDownload(note)}>
+                    <Download className="h-4 w-4" />
                   </Button>
                   {isAdmin && (
                     <Button variant="ghost" size="icon" onClick={() => onDelete(note)}>
