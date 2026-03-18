@@ -186,7 +186,7 @@ export const useOrderNotes = () => {
     }) => {
       const { data: noteData, error: noteError } = await supabase
         .from('order_notes')
-        .insert(data.note)
+        .insert(data.note as any)
         .select()
         .single();
 
