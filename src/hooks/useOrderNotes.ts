@@ -329,7 +329,7 @@ export const useOrderNotes = () => {
     mutationFn: async ({ id, status }: { id: string; status: OrderNoteStatus }) => {
       const { error } = await supabase
         .from('order_notes')
-        .update({ status })
+        .update({ status } as any)
         .eq('id', id);
 
       if (error) throw error;
