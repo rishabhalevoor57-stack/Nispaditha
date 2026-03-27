@@ -112,8 +112,26 @@ export function useInventory() {
     return products.filter(p => p.quantity <= p.low_stock_alert && p.status === 'in_stock');
   }, [products]);
 
+  const isNecklaceSetCategory = (categoryId: string | null | undefined): boolean => {
+    if (!categoryId) return false;
+    const cat = categories.find(c => c.id === categoryId);
+    return cat?.name?.toLowerCase() === 'necklace set';
+  };
+
+  const checkDuplicateSku = (sku: string, categoryId: string | null | undefined, excludeId?: string): boolean => {
+    // Allow duplicate SKUs for Necklace Set category
+    if (isNecklaceSetCategory(categoryId)) return false;
+    return products.some(p => p.sku === sku && p.id !== excludeId);
+  };
+
   const createProduct = async (formData: ProductFormData, imageFile?: File) => {
     try {
+      // Check for duplicate SKU (skip for Necklace Set)
+      if (checkDuplicateSku(formData.sku, formData.category_id)) {
+        toast({ variant: 'destructive', title: 'Duplicate SKU', description: `SKU "${formData.sku}" already exists. Duplicate SKUs are only allowed for Necklace Set category.` });
+        return false;
+      }
+
       let image_url = null;
       
       if (imageFile) {
