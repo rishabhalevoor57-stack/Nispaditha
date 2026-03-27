@@ -85,12 +85,15 @@ export function useInventory() {
   }, [filters]);
 
   const filteredProducts = useMemo(() => {
+    const searchTerm = filters.search.trim().toLowerCase();
     return products.filter((product) => {
-      const matchesSearch = 
-        product.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        product.sku.toLowerCase().includes(filters.search.toLowerCase()) ||
-        (product.description?.toLowerCase().includes(filters.search.toLowerCase())) ||
-        (product.suppliers?.name?.toLowerCase().includes(filters.search.toLowerCase()));
+      const matchesSearch = !searchTerm ||
+        product.name.toLowerCase().includes(searchTerm) ||
+        product.sku.toLowerCase().includes(searchTerm) ||
+        (product.description?.toLowerCase().includes(searchTerm)) ||
+        (product.metal_type?.toLowerCase().includes(searchTerm)) ||
+        ((product as any).categories?.name?.toLowerCase().includes(searchTerm)) ||
+        (product.suppliers?.name?.toLowerCase().includes(searchTerm));
       
       const matchesCategory = 
         filters.category === 'all' || product.category_id === filters.category;
