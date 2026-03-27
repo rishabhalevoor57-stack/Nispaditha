@@ -154,9 +154,12 @@ export function useInventory() {
       toast({ title: 'Product added successfully' });
       fetchProducts();
       return true;
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
-      toast({ variant: 'destructive', title: 'Error', description: message });
+    } catch (error: any) {
+      const pgMessage = error?.message || '';
+      const description = pgMessage.includes('products_sku_key')
+        ? `SKU "${formData.sku}" already exists. Please use a unique SKU.`
+        : pgMessage || 'An error occurred';
+      toast({ variant: 'destructive', title: 'Error', description });
       return false;
     }
   };
