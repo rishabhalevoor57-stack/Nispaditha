@@ -173,17 +173,20 @@ export function useInventory() {
       fetchProducts();
       return true;
     } catch (error: any) {
-      const pgMessage = error?.message || '';
-      const description = pgMessage.includes('products_sku_key')
-        ? `SKU "${formData.sku}" already exists. Please use a unique SKU.`
-        : pgMessage || 'An error occurred';
-      toast({ variant: 'destructive', title: 'Error', description });
+      const message = error?.message || 'An error occurred';
+      toast({ variant: 'destructive', title: 'Error', description: message });
       return false;
     }
   };
 
   const updateProduct = async (id: string, formData: ProductFormData, imageFile?: File) => {
     try {
+      // Check for duplicate SKU (skip for Necklace Set)
+      if (checkDuplicateSku(formData.sku, formData.category_id, id)) {
+        toast({ variant: 'destructive', title: 'Duplicate SKU', description: `SKU "${formData.sku}" already exists. Duplicate SKUs are only allowed for Necklace Set category.` });
+        return false;
+      }
+
       const oldProduct = products.find(p => p.id === id);
       let image_url = undefined;
       
