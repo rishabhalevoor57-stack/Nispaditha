@@ -80,6 +80,10 @@ export function useInventory() {
     setSuppliers(data || []);
   };
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const matchesSearch = 
