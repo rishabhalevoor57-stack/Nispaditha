@@ -221,8 +221,19 @@ export function useInventory() {
         ...(image_url && { image_url }),
       };
 
-      const { error } = await supabase.from('products').update(productData).eq('id', id);
+      const { data: updatedData, error } = await supabase.from('products').update(productData).eq('id', id).select('*, categories(name), suppliers(name)').single();
       if (error) throw error;
+      
+      // Optimistic local update instead of full refetch
+      if (updatedData) {
+        const typedProduct = {
+          ...updatedData,
+          type_of_work: (updatedData.type_of_work || 'Others') as TypeOfWork,
+          status: (updatedData.status || 'in_stock') as ProductStatus,
+          pricing_mode: (updatedData.pricing_mode || 'weight_based') as import('@/types/inventory').PricingMode,
+        } as Product;
+        setProducts(prev => prev.map(p => p.id === id ? typedProduct : p));
+      }
       
       logActivity({
         module: 'inventory',
@@ -234,7 +245,6 @@ export function useInventory() {
       });
 
       toast({ title: 'Product updated successfully' });
-      fetchProducts();
       return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'An error occurred';
