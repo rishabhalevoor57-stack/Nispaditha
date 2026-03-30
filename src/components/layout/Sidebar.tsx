@@ -36,6 +36,7 @@ const navItems = [
   { icon: Truck, label: 'Vendors', path: '/vendors' },
   { icon: Wallet, label: 'Expenses', path: '/expenses' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
+  { icon: Trash2, label: 'Recycle Bin', path: '/recycle-bin', adminOnly: true },
   { icon: History, label: 'Activity Log', path: '/activity-log' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];

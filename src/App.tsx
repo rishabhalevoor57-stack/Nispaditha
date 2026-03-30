@@ -143,6 +143,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/recycle-bin"
+        element={
+          <ProtectedRoute>
+            <RecycleBin />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
