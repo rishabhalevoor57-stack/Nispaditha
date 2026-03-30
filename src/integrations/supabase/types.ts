@@ -717,6 +717,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           date_ordered: string | null
+          deleted_at: string | null
           description: string | null
           gst_percentage: number
           id: string
@@ -746,6 +747,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           date_ordered?: string | null
+          deleted_at?: string | null
           description?: string | null
           gst_percentage?: number
           id?: string
@@ -775,6 +777,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           date_ordered?: string | null
+          deleted_at?: string | null
           description?: string | null
           gst_percentage?: number
           id?: string

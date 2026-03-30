@@ -17,14 +17,15 @@ import {
   History,
   ArrowLeftRight,
   Hammer,
-  BarChart3
+  BarChart3,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-const navItems = [
+const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: Package, label: 'Inventory', path: '/inventory' },
   { icon: FileText, label: 'Invoices', path: '/invoices' },
@@ -35,6 +36,7 @@ const navItems = [
   { icon: Truck, label: 'Vendors', path: '/vendors' },
   { icon: Wallet, label: 'Expenses', path: '/expenses' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
+  { icon: Trash2, label: 'Recycle Bin', path: '/recycle-bin', adminOnly: true },
   { icon: History, label: 'Activity Log', path: '/activity-log' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
@@ -65,7 +67,9 @@ const SidebarContent = ({ collapsed, onCollapse }: SidebarContentProps) => {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
-        {navItems.map((item) => {
+        {navItems
+          .filter(item => !item.adminOnly || userRole === 'admin')
+          .map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
           

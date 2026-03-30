@@ -49,6 +49,7 @@ export function useInventory() {
       const { data, error } = await supabase
         .from('products')
         .select('*, categories(name), suppliers(name)')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -256,8 +257,11 @@ export function useInventory() {
   const deleteProduct = async (id: string) => {
     try {
       const oldProduct = products.find(p => p.id === id);
-      const { error } = await supabase.from('products').delete().eq('id', id);
+      const { error } = await supabase.from('products').update({ deleted_at: new Date().toISOString() }).eq('id', id);
       if (error) throw error;
+      
+      // Remove from local state
+      setProducts(prev => prev.filter(p => p.id !== id));
       
       logActivity({
         module: 'inventory',
@@ -267,8 +271,7 @@ export function useInventory() {
         oldValue: oldProduct ? { sku: oldProduct.sku, name: oldProduct.name, selling_price: oldProduct.selling_price } : null,
       });
 
-      toast({ title: 'Product deleted' });
-      fetchProducts();
+      toast({ title: 'Product moved to recycle bin' });
       return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'An error occurred';
