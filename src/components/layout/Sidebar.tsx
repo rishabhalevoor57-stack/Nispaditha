@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-const navItems = [
+const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: Package, label: 'Inventory', path: '/inventory' },
   { icon: FileText, label: 'Invoices', path: '/invoices' },
