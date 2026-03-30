@@ -271,8 +271,7 @@ export function useInventory() {
         oldValue: oldProduct ? { sku: oldProduct.sku, name: oldProduct.name, selling_price: oldProduct.selling_price } : null,
       });
 
-      toast({ title: 'Product deleted' });
-      fetchProducts();
+      toast({ title: 'Product moved to recycle bin' });
       return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'An error occurred';
