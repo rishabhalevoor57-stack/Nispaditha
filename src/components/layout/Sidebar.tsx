@@ -67,7 +67,9 @@ const SidebarContent = ({ collapsed, onCollapse }: SidebarContentProps) => {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
-        {navItems.map((item) => {
+        {navItems
+          .filter(item => !item.adminOnly || userRole === 'admin')
+          .map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
           
