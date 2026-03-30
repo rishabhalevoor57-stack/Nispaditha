@@ -19,6 +19,7 @@ import Expenses from "./pages/Expenses";
 import ActivityLog from "./pages/ActivityLog";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import RecycleBin from "./pages/RecycleBin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
