@@ -282,30 +282,43 @@ export function useInventory() {
 
   const bulkImport = async (productsToImport: Partial<ProductFormData>[], onProgress?: (current: number, total: number) => void) => {
     try {
+      // Build lookup maps for category and vendor names
+      const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c.id]));
+      const supplierMap = new Map(suppliers.map(s => [s.name.toLowerCase(), s.id]));
+
       const validProducts = productsToImport
         .filter(p => p.sku && p.name)
-        .map(p => ({
-          sku: p.sku!,
-          name: p.name!,
-          description: p.description || null,
-          metal_type: p.metal_type || null,
-          purity: p.purity || null,
-          weight_grams: p.weight_grams || 0,
-          quantity: p.quantity || 0,
-          price_per_gram: p.price_per_gram || 0,
-          making_charges: p.making_charges || 0,
-          mrp: p.mrp || 0,
-          selling_price: p.selling_price || 0,
-          purchase_price: p.purchase_price || 0,
-          type_of_work: p.type_of_work || 'Others',
-          status: p.status || 'in_stock',
-          bangle_size: p.bangle_size || null,
-          low_stock_alert: p.low_stock_alert || 5,
-          gst_percentage: p.gst_percentage || 3,
-          pricing_mode: p.pricing_mode || 'weight_based',
-          purchase_price_per_gram: p.purchase_price_per_gram || 0,
-          purchase_making_charges: p.purchase_making_charges || 0,
-        }));
+        .map(p => {
+          const ext = p as any;
+          const categoryName = (ext._category_name || '').toLowerCase();
+          const vendorName = (ext._vendor_name || '').toLowerCase();
+
+          return {
+            sku: p.sku!,
+            name: p.name!,
+            description: p.description || null,
+            metal_type: p.metal_type || null,
+            purity: p.purity || null,
+            weight_grams: p.weight_grams || 0,
+            quantity: p.quantity || 0,
+            price_per_gram: p.price_per_gram || 0,
+            making_charges: p.making_charges || 0,
+            mrp: p.mrp || 0,
+            selling_price: p.selling_price || 0,
+            purchase_price: p.purchase_price || 0,
+            type_of_work: p.type_of_work || 'Others',
+            status: p.status || 'in_stock',
+            bangle_size: p.bangle_size || null,
+            low_stock_alert: p.low_stock_alert || 5,
+            gst_percentage: p.gst_percentage || 3,
+            pricing_mode: p.pricing_mode || 'weight_based',
+            purchase_price_per_gram: p.purchase_price_per_gram || 0,
+            purchase_making_charges: p.purchase_making_charges || 0,
+            date_ordered: p.date_ordered || new Date().toISOString().split('T')[0],
+            category_id: categoryMap.get(categoryName) || null,
+            supplier_id: supplierMap.get(vendorName) || null,
+          };
+        });
 
       if (validProducts.length === 0) {
         toast({ variant: 'destructive', title: 'No valid products', description: 'Each row must have at least SKU and Name.' });
