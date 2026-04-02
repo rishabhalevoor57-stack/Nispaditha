@@ -237,7 +237,7 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
       const rawStatus = getValue(values, indexes.status).toLowerCase().replace(/\s+/g, '_');
       const rawPricingMode = getValue(values, indexes.pricing_mode).toLowerCase().replace(/\s+/g, '_');
 
-      const product: Partial<ProductFormData> = {
+      const product: Partial<ProductFormData> & { _category_name?: string; _vendor_name?: string } = {
         sku,
         name,
         description: getValue(values, indexes.description),
@@ -250,7 +250,7 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
         mrp: parseLocalizedNumber(getValue(values, indexes.mrp)),
         selling_price: parseLocalizedNumber(getValue(values, indexes.selling_price)),
         purchase_price: parseLocalizedNumber(getValue(values, indexes.purchase_price)),
-        type_of_work: getValue(values, indexes.type_of_work),
+        type_of_work: getValue(values, indexes.type_of_work) || 'Others',
         status: rawStatus === 'sold' || rawStatus === 'for_repair' ? rawStatus : 'in_stock',
         bangle_size: getValue(values, indexes.bangle_size),
         low_stock_alert: Math.round(parseLocalizedNumber(getValue(values, indexes.low_stock_alert))),
@@ -258,6 +258,9 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
         pricing_mode: rawPricingMode === 'flat_price' || rawPricingMode === 'flat' ? 'flat_price' : 'weight_based',
         purchase_price_per_gram: parseLocalizedNumber(getValue(values, indexes.purchase_price_per_gram)),
         purchase_making_charges: parseLocalizedNumber(getValue(values, indexes.purchase_making_charges)),
+        date_ordered: getValue(values, indexes.date_ordered) || new Date().toISOString().split('T')[0],
+        _category_name: getValue(values, indexes.category),
+        _vendor_name: getValue(values, indexes.vendor),
       };
 
       products.push(product);
