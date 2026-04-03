@@ -81,6 +81,14 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/left-over-payments"
+        element={
+          <ProtectedRoute>
+            <LeftOverPayments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/order-notes"
         element={
           <ProtectedRoute>
