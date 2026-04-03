@@ -20,6 +20,7 @@ import ActivityLog from "./pages/ActivityLog";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import RecycleBin from "./pages/RecycleBin";
+import LeftOverPayments from "./pages/LeftOverPayments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,6 +77,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <ReturnsExchanges />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/left-over-payments"
+        element={
+          <ProtectedRoute>
+            <LeftOverPayments />
           </ProtectedRoute>
         }
       />

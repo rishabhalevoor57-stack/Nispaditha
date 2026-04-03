@@ -600,6 +600,47 @@ export type Database = {
           },
         ]
       }
+      order_note_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          order_note_id: string
+          payment_date: string
+          payment_mode: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_note_id: string
+          payment_date?: string
+          payment_mode?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_note_id?: string
+          payment_date?: string
+          payment_mode?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_note_payments_order_note_id_fkey"
+            columns: ["order_note_id"]
+            isOneToOne: false
+            referencedRelation: "order_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_notes: {
         Row: {
           address: string | null

@@ -20,6 +20,7 @@ import {
   SERVICE_TYPE_LABELS,
 } from '@/types/orderNote';
 import { useOrderNotes } from '@/hooks/useOrderNotes';
+import { OrderNotePaymentHistory } from './OrderNotePaymentHistory';
 
 interface ViewOrderNoteDialogProps {
   open: boolean;
@@ -142,32 +143,11 @@ export const ViewOrderNoteDialog = ({
             </CardContent>
           </Card>
 
-          {/* Payment Details */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Payment Details</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Quoted Estimate</p>
-                <p className="font-medium">₹{orderNote.quoted_estimate?.toLocaleString('en-IN') || '0'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Advance Received</p>
-                <p className="font-medium text-primary">₹{orderNote.advance_received?.toLocaleString('en-IN') || '0'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Balance</p>
-                <p className={`font-medium ${orderNote.balance > 0 ? 'text-amber-600' : ''}`}>
-                  ₹{orderNote.balance?.toLocaleString('en-IN') || '0'}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Payment Mode</p>
-                <p className="font-medium">{orderNote.payment_mode || '-'}</p>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Payment History */}
+          <OrderNotePaymentHistory
+            orderNoteId={orderNote.id}
+            quotedEstimate={orderNote.quoted_estimate || 0}
+          />
 
           {/* Delivery Details */}
           <Card>
