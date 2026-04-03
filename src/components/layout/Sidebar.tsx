@@ -35,7 +35,7 @@ const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[
   { icon: Hammer, label: 'Custom Orders', path: '/custom-orders' },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Truck, label: 'Vendors', path: '/vendors' },
-  { icon: Wallet, label: 'Expenses', path: '/expenses' },
+  { icon: Wallet, label: 'Expenses', path: '/expenses', icon: Wallet },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
   { icon: Trash2, label: 'Recycle Bin', path: '/recycle-bin', adminOnly: true },
   { icon: History, label: 'Activity Log', path: '/activity-log' },
