@@ -209,7 +209,7 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
       status: ['status', 'stock status'],
       bangle_size: ['bangle_size', 'bangle size', 'size'],
       mrp: ['mrp', 'max retail price'],
-      selling_price: ['selling_price', 'selling price', 'sale price'],
+      selling_price: ['selling_price', 'selling price', 'sale price', 'list price'],
       purchase_price: ['purchase_price', 'purchase price', 'cost price'],
       low_stock_alert: ['low_stock_alert', 'low stock alert', 'reorder level'],
     } as const;
