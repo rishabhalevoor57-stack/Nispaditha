@@ -30,6 +30,7 @@ const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[
   { icon: Package, label: 'Inventory', path: '/inventory' },
   { icon: FileText, label: 'Invoices', path: '/invoices' },
   { icon: ArrowLeftRight, label: 'Returns', path: '/returns' },
+  { icon: Wallet, label: 'Left Over Payments', path: '/left-over-payments' },
   { icon: ClipboardList, label: 'Order Notes', path: '/order-notes' },
   { icon: Hammer, label: 'Custom Orders', path: '/custom-orders' },
   { icon: Users, label: 'Clients', path: '/clients' },
