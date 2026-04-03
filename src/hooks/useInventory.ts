@@ -293,27 +293,47 @@ export function useInventory() {
           const categoryName = (ext._category_name || '').toLowerCase();
           const vendorName = (ext._vendor_name || '').toLowerCase();
 
+          const weight = p.weight_grams || 0;
+          const pricingMode = p.pricing_mode || 'weight_based';
+          const pricePerGram = p.price_per_gram || 0;
+          const makingCharges = p.making_charges || 0;
+          const purchasePricePerGram = p.purchase_price_per_gram || 0;
+          const purchaseMC = p.purchase_making_charges || 0;
+
+          // Auto-calculate selling/purchase price for weight_based if not explicitly provided
+          let sellingPrice = p.selling_price || 0;
+          let purchasePrice = p.purchase_price || 0;
+
+          if (pricingMode === 'weight_based' && weight > 0) {
+            if (!sellingPrice && pricePerGram > 0) {
+              sellingPrice = (weight * pricePerGram) + (weight * makingCharges);
+            }
+            if (!purchasePrice && purchasePricePerGram > 0) {
+              purchasePrice = (weight * purchasePricePerGram) + (weight * purchaseMC);
+            }
+          }
+
           return {
             sku: p.sku!,
             name: p.name!,
             description: p.description || null,
             metal_type: p.metal_type || null,
             purity: p.purity || null,
-            weight_grams: p.weight_grams || 0,
+            weight_grams: weight,
             quantity: p.quantity || 0,
-            price_per_gram: p.price_per_gram || 0,
-            making_charges: p.making_charges || 0,
+            price_per_gram: pricePerGram,
+            making_charges: makingCharges,
             mrp: p.mrp || 0,
-            selling_price: p.selling_price || 0,
-            purchase_price: p.purchase_price || 0,
+            selling_price: sellingPrice,
+            purchase_price: purchasePrice,
             type_of_work: p.type_of_work || 'Others',
             status: p.status || 'in_stock',
             bangle_size: p.bangle_size || null,
             low_stock_alert: p.low_stock_alert || 5,
             gst_percentage: p.gst_percentage || 3,
-            pricing_mode: p.pricing_mode || 'weight_based',
-            purchase_price_per_gram: p.purchase_price_per_gram || 0,
-            purchase_making_charges: p.purchase_making_charges || 0,
+            pricing_mode: pricingMode,
+            purchase_price_per_gram: purchasePricePerGram,
+            purchase_making_charges: purchaseMC,
             date_ordered: p.date_ordered || new Date().toISOString().split('T')[0],
             category_id: categoryMap.get(categoryName) || null,
             supplier_id: supplierMap.get(vendorName) || null,
