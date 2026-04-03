@@ -20,6 +20,7 @@ import {
   SERVICE_TYPE_LABELS,
 } from '@/types/orderNote';
 import { useOrderNotes } from '@/hooks/useOrderNotes';
+import { OrderNotePaymentHistory } from './OrderNotePaymentHistory';
 
 interface ViewOrderNoteDialogProps {
   open: boolean;
