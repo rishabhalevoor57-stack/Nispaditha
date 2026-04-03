@@ -18,7 +18,8 @@ import {
   ArrowLeftRight,
   Hammer,
   BarChart3,
-  Trash2
+  Trash2,
+  IndianRupee
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
