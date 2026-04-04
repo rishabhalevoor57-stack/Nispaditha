@@ -33,17 +33,18 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const [phoneNumber, setPhoneNumber] = useState('');
   const [orderDate, setOrderDate] = useState<Date>(new Date());
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState<Date | undefined>();
-  const [status, setStatus] = useState<CustomOrderStatus>('order_noted');
+  const [status, setStatus] = useState<CustomOrderStatus>('draft');
   const [designCharges, setDesignCharges] = useState(0);
   const [additionalCharge, setAdditionalCharge] = useState(0);
   const [additionalChargeLabel, setAdditionalChargeLabel] = useState('Additional Charge');
+  const [flatDiscount, setFlatDiscount] = useState(0);
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<CustomOrderItem[]>([]);
 
   const isEditing = !!order;
 
   const itemsTotal = items.reduce((sum, item) => sum + item.item_total, 0);
-  const totalAmount = itemsTotal + designCharges + additionalCharge;
+  const totalAmount = itemsTotal + designCharges + additionalCharge - flatDiscount;
 
   useEffect(() => {
     const load = async () => {
@@ -59,6 +60,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setDesignCharges(full.design_charges);
         setAdditionalCharge(full.additional_charge);
         setAdditionalChargeLabel(full.additional_charge_label || 'Additional Charge');
+        setFlatDiscount(full.flat_discount || 0);
         setNotes(full.notes || '');
         setItems(full.items || []);
       } else {
@@ -68,10 +70,11 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setPhoneNumber('');
         setOrderDate(new Date());
         setExpectedDeliveryDate(undefined);
-        setStatus('order_noted');
+        setStatus('draft');
         setDesignCharges(0);
         setAdditionalCharge(0);
         setAdditionalChargeLabel('Additional Charge');
+        setFlatDiscount(0);
         setNotes('');
         setItems([]);
       }
@@ -93,14 +96,18 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         design_charges: designCharges,
         additional_charge: additionalCharge,
         additional_charge_label: additionalChargeLabel,
-        total_amount: totalAmount,
+        flat_discount: flatDiscount,
+        total_amount: Math.max(0, totalAmount),
         notes: notes || null,
         converted_to_invoice_id: order?.converted_to_invoice_id || null,
         created_by: user?.id || null,
       };
 
       const itemsData = items.map(item => ({
+        product_id: item.product_id || null,
+        sku: item.sku || null,
         item_description: item.item_description,
+        category: item.category || null,
         customization_notes: item.customization_notes || null,
         reference_image_url: item.reference_image_url || null,
         quantity: item.quantity,
@@ -112,6 +119,9 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         rate_per_gram: item.rate_per_gram,
         base_price: item.base_price,
         mc_amount: item.mc_amount,
+        discount: item.discount,
+        discount_type: item.discount_type,
+        discount_value: item.discount_value,
         item_total: item.item_total,
       }));
 
@@ -128,7 +138,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Custom Order' : 'New Custom Order (Job Work)'}</DialogTitle>
         </DialogHeader>
@@ -203,10 +213,10 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Order Items</CardTitle>
-              <p className="text-xs text-muted-foreground">Live Silver Rate: ₹{silverRate}/g</p>
+              <p className="text-xs text-muted-foreground">Live Silver Rate: ₹{silverRate}/g • Search by SKU to auto-fill from inventory</p>
             </CardHeader>
             <CardContent>
-              <CustomOrderItemsTable items={items} onChange={setItems} silverRate={silverRate} />
+              <CustomOrderItemsTable items={items} onChange={setItems} silverRate={silverRate} orderId={order?.id} />
             </CardContent>
           </Card>
 
@@ -216,7 +226,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
               <CardTitle className="text-sm font-medium">Additional Charges & Total</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div className="space-y-2">
                   <Label>Design Charges</Label>
                   <Input type="number" min="0" value={designCharges} onChange={(e) => setDesignCharges(parseFloat(e.target.value) || 0)} />
@@ -226,16 +236,23 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                   <Input type="number" min="0" value={additionalCharge} onChange={(e) => setAdditionalCharge(parseFloat(e.target.value) || 0)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Custom Label for Additional Charge</Label>
+                  <Label>Flat Discount</Label>
+                  <Input type="number" min="0" value={flatDiscount} onChange={(e) => setFlatDiscount(parseFloat(e.target.value) || 0)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Custom Label</Label>
                   <Input value={additionalChargeLabel} onChange={(e) => setAdditionalChargeLabel(e.target.value)} placeholder="Additional Charge" />
                 </div>
               </div>
               <Separator className="my-4" />
               <div className="space-y-2 text-right">
-                <div className="text-sm text-muted-foreground">Items Total: ₹{itemsTotal.toLocaleString('en-IN')}</div>
-                <div className="text-sm text-muted-foreground">Design Charges: ₹{designCharges.toLocaleString('en-IN')}</div>
-                <div className="text-sm text-muted-foreground">{additionalChargeLabel}: ₹{additionalCharge.toLocaleString('en-IN')}</div>
-                <div className="text-xl font-bold">Grand Total: ₹{totalAmount.toLocaleString('en-IN')}</div>
+                <div className="text-sm text-muted-foreground">Items Total: ₹{itemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                <div className="text-sm text-muted-foreground">Design Charges: ₹{designCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                <div className="text-sm text-muted-foreground">{additionalChargeLabel}: ₹{additionalCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                {flatDiscount > 0 && (
+                  <div className="text-sm text-destructive">Flat Discount: -₹{flatDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                )}
+                <div className="text-xl font-bold">Grand Total: ₹{Math.max(0, totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
               </div>
             </CardContent>
           </Card>
@@ -253,6 +270,9 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
+            <Button variant="secondary" onClick={() => { setStatus('draft'); handleSubmit(); }} disabled={loading || !clientName.trim()}>
+              Save as Draft
+            </Button>
             <Button onClick={handleSubmit} disabled={loading || !clientName.trim()}>
               {loading ? 'Saving...' : isEditing ? 'Update Order' : 'Create Order'}
             </Button>
