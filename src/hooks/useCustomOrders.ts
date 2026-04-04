@@ -70,10 +70,7 @@ export const useCustomOrders = () => {
   };
 
   const unlockSkus = async (orderId: string) => {
-    await supabase
-      .from('products')
-      .update({ locked_by_custom_order_id: null } as any)
-      .eq('locked_by_custom_order_id' as any, orderId);
+    await (supabase.from('products').update({ locked_by_custom_order_id: null } as any).eq('locked_by_custom_order_id', orderId) as any);
   };
 
   const createOrder = useMutation({
