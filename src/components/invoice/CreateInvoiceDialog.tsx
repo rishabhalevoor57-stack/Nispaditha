@@ -74,6 +74,8 @@ export function CreateInvoiceDialog({
       .from('products')
       .select('*, categories(name)')
       .gt('quantity', 0)
+      .is('deleted_at', null)
+      .is('locked_by_custom_order_id' as any, null)
       .order('name');
     // Map pricing_mode to the Product type
     const mapped = (data || []).map(p => ({
