@@ -234,10 +234,14 @@ export type Database = {
       custom_order_items: {
         Row: {
           base_price: number
+          category: string | null
           created_at: string
           custom_order_id: string
           customization_notes: string | null
+          discount: number
           discount_on_mc: number | null
+          discount_type: string
+          discount_value: number
           expected_weight: number | null
           flat_price: number | null
           id: string
@@ -246,16 +250,22 @@ export type Database = {
           mc_amount: number
           mc_per_gram: number | null
           pricing_mode: string
+          product_id: string | null
           quantity: number
           rate_per_gram: number | null
           reference_image_url: string | null
+          sku: string | null
         }
         Insert: {
           base_price?: number
+          category?: string | null
           created_at?: string
           custom_order_id: string
           customization_notes?: string | null
+          discount?: number
           discount_on_mc?: number | null
+          discount_type?: string
+          discount_value?: number
           expected_weight?: number | null
           flat_price?: number | null
           id?: string
@@ -264,16 +274,22 @@ export type Database = {
           mc_amount?: number
           mc_per_gram?: number | null
           pricing_mode?: string
+          product_id?: string | null
           quantity?: number
           rate_per_gram?: number | null
           reference_image_url?: string | null
+          sku?: string | null
         }
         Update: {
           base_price?: number
+          category?: string | null
           created_at?: string
           custom_order_id?: string
           customization_notes?: string | null
+          discount?: number
           discount_on_mc?: number | null
+          discount_type?: string
+          discount_value?: number
           expected_weight?: number | null
           flat_price?: number | null
           id?: string
@@ -282,9 +298,11 @@ export type Database = {
           mc_amount?: number
           mc_per_gram?: number | null
           pricing_mode?: string
+          product_id?: string | null
           quantity?: number
           rate_per_gram?: number | null
           reference_image_url?: string | null
+          sku?: string | null
         }
         Relationships: [
           {
@@ -292,6 +310,13 @@ export type Database = {
             columns: ["custom_order_id"]
             isOneToOne: false
             referencedRelation: "custom_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -306,6 +331,7 @@ export type Database = {
           created_by: string | null
           design_charges: number
           expected_delivery_date: string | null
+          flat_discount: number
           id: string
           notes: string | null
           order_date: string
@@ -324,6 +350,7 @@ export type Database = {
           created_by?: string | null
           design_charges?: number
           expected_delivery_date?: string | null
+          flat_discount?: number
           id?: string
           notes?: string | null
           order_date?: string
@@ -342,6 +369,7 @@ export type Database = {
           created_by?: string | null
           design_charges?: number
           expected_delivery_date?: string | null
+          flat_discount?: number
           id?: string
           notes?: string | null
           order_date?: string
@@ -763,6 +791,7 @@ export type Database = {
           gst_percentage: number
           id: string
           image_url: string | null
+          locked_by_custom_order_id: string | null
           low_stock_alert: number
           making_charges: number
           metal_type: string | null
@@ -793,6 +822,7 @@ export type Database = {
           gst_percentage?: number
           id?: string
           image_url?: string | null
+          locked_by_custom_order_id?: string | null
           low_stock_alert?: number
           making_charges?: number
           metal_type?: string | null
@@ -823,6 +853,7 @@ export type Database = {
           gst_percentage?: number
           id?: string
           image_url?: string | null
+          locked_by_custom_order_id?: string | null
           low_stock_alert?: number
           making_charges?: number
           metal_type?: string | null
@@ -849,6 +880,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_locked_by_custom_order_id_fkey"
+            columns: ["locked_by_custom_order_id"]
+            isOneToOne: false
+            referencedRelation: "custom_orders"
             referencedColumns: ["id"]
           },
           {
