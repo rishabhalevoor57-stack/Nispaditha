@@ -6,7 +6,7 @@ import { Hammer, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CUSTOM_ORDER_STATUS_LABELS, CUSTOM_ORDER_STATUS_COLORS, CustomOrderStatus } from '@/types/customOrder';
 
-const TRACKED_STATUSES: CustomOrderStatus[] = ['order_noted', 'design_approved', 'in_production', 'ready'];
+const TRACKED_STATUSES: CustomOrderStatus[] = ['draft', 'confirmed', 'in_production', 'ready'];
 
 export const CustomOrdersSummary = () => {
   const { customOrders, isLoading } = useCustomOrders();

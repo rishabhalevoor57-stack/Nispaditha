@@ -154,7 +154,7 @@ const CustomOrders = () => {
 
   const handleNew = () => { setSelected(null); setFormOpen(true); };
 
-  const pendingOrders = customOrders.filter(o => ['order_noted', 'design_approved', 'in_production'].includes(o.status)).length;
+  const pendingOrders = customOrders.filter(o => ['draft', 'confirmed', 'in_production'].includes(o.status)).length;
   const readyOrders = customOrders.filter(o => o.status === 'ready').length;
   const totalValue = customOrders.reduce((sum, o) => sum + o.total_amount, 0);
 

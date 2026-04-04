@@ -259,7 +259,7 @@ export const useReports = () => {
   const customOrderStats = useMemo(() => {
     const inProduction = customOrders.filter((o: any) => o.status === 'in_production').length;
     const delivered = customOrders.filter((o: any) => o.status === 'delivered').length;
-    const pending = customOrders.filter((o: any) => ['order_noted', 'design_approved'].includes(o.status)).length;
+    const pending = customOrders.filter((o: any) => ['draft', 'confirmed'].includes(o.status)).length;
     const ready = customOrders.filter((o: any) => o.status === 'ready').length;
     const totalValue = customOrders.reduce((s: number, o: any) => s + Number(o.total_amount), 0);
     return { inProduction, delivered, pending, ready, total: customOrders.length, totalValue };

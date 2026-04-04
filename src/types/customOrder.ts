@@ -1,7 +1,10 @@
 export interface CustomOrderItem {
   id?: string;
   custom_order_id?: string;
+  product_id?: string | null;
+  sku?: string | null;
   item_description: string;
+  category?: string | null;
   customization_notes?: string;
   reference_image_url?: string;
   quantity: number;
@@ -13,6 +16,9 @@ export interface CustomOrderItem {
   rate_per_gram: number;
   base_price: number;
   mc_amount: number;
+  discount: number;
+  discount_type: 'fixed' | 'percentage';
+  discount_value: number;
   item_total: number;
   created_at?: string;
 }
@@ -28,6 +34,7 @@ export interface CustomOrder {
   design_charges: number;
   additional_charge: number;
   additional_charge_label: string;
+  flat_discount: number;
   total_amount: number;
   notes: string | null;
   converted_to_invoice_id: string | null;
@@ -37,20 +44,22 @@ export interface CustomOrder {
   items?: CustomOrderItem[];
 }
 
-export type CustomOrderStatus = 'order_noted' | 'design_approved' | 'in_production' | 'ready' | 'delivered';
+export type CustomOrderStatus = 'draft' | 'confirmed' | 'in_production' | 'ready' | 'delivered' | 'released';
 
 export const CUSTOM_ORDER_STATUS_LABELS: Record<CustomOrderStatus, string> = {
-  order_noted: 'Order Noted',
-  design_approved: 'Design Approved',
+  draft: 'Draft',
+  confirmed: 'Confirmed',
   in_production: 'In Production',
   ready: 'Ready',
   delivered: 'Delivered',
+  released: 'Released',
 };
 
 export const CUSTOM_ORDER_STATUS_COLORS: Record<CustomOrderStatus, string> = {
-  order_noted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  design_approved: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  draft: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+  confirmed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
   in_production: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
   ready: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  delivered: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+  delivered: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  released: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
 };

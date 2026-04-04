@@ -50,8 +50,27 @@ export const useCustomOrders = () => {
 
     return {
       ...orderResult.data as unknown as CustomOrder,
-      items: itemsResult.data as unknown as CustomOrderItem[],
+      items: (itemsResult.data || []).map((item: any) => ({
+        ...item,
+        discount: item.discount || 0,
+        discount_type: item.discount_type || 'fixed',
+        discount_value: item.discount_value || 0,
+      })) as CustomOrderItem[],
     };
+  };
+
+  // Lock/unlock SKUs when creating/updating orders
+  const lockSkus = async (items: { product_id?: string | null }[], orderId: string) => {
+    const productIds = items.filter(i => i.product_id).map(i => i.product_id!);
+    if (productIds.length > 0) {
+      for (const pid of productIds) {
+        await (supabase.from('products').update({ locked_by_custom_order_id: orderId } as any).eq('id', pid) as any);
+      }
+    }
+  };
+
+  const unlockSkus = async (orderId: string) => {
+    await (supabase.from('products').update({ locked_by_custom_order_id: null } as any).eq('locked_by_custom_order_id', orderId) as any);
   };
 
   const createOrder = useMutation({
@@ -80,6 +99,11 @@ export const useCustomOrders = () => {
         if (itemsError) throw itemsError;
       }
 
+      // Lock SKUs
+      if (data.order.status !== 'released') {
+        await lockSkus(data.items, orderData.id);
+      }
+
       return orderData;
     },
     onSuccess: () => {
@@ -104,12 +128,18 @@ export const useCustomOrders = () => {
 
       if (orderError) throw orderError;
 
+      // Unlock old SKUs first
+      await unlockSkus(data.id);
+
       // Delete existing items and re-insert
       await supabase.from('custom_order_items').delete().eq('custom_order_id', data.id);
 
       if (data.items.length > 0) {
         const itemsWithId = data.items.map(item => ({
+          product_id: item.product_id || null,
+          sku: item.sku || null,
           item_description: item.item_description,
+          category: item.category || null,
           customization_notes: item.customization_notes,
           reference_image_url: item.reference_image_url,
           quantity: item.quantity,
@@ -121,6 +151,9 @@ export const useCustomOrders = () => {
           rate_per_gram: item.rate_per_gram,
           base_price: item.base_price,
           mc_amount: item.mc_amount,
+          discount: item.discount,
+          discount_type: item.discount_type,
+          discount_value: item.discount_value,
           item_total: item.item_total,
           custom_order_id: data.id,
         }));
@@ -130,6 +163,11 @@ export const useCustomOrders = () => {
           .insert(itemsWithId);
 
         if (itemsError) throw itemsError;
+      }
+
+      // Lock new SKUs (unless released)
+      if (data.order.status !== 'released') {
+        await lockSkus(data.items, data.id);
       }
     },
     onSuccess: () => {
@@ -143,6 +181,8 @@ export const useCustomOrders = () => {
 
   const deleteOrder = useMutation({
     mutationFn: async (id: string) => {
+      // Unlock SKUs first
+      await unlockSkus(id);
       const { error } = await supabase.from('custom_orders').delete().eq('id', id);
       if (error) throw error;
     },
@@ -163,6 +203,11 @@ export const useCustomOrders = () => {
         .eq('id', id);
 
       if (error) throw error;
+
+      // If released, unlock all SKUs
+      if (status === 'released') {
+        await unlockSkus(id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
