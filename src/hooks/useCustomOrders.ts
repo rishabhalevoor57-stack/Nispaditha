@@ -63,10 +63,9 @@ export const useCustomOrders = () => {
   const lockSkus = async (items: { product_id?: string | null }[], orderId: string) => {
     const productIds = items.filter(i => i.product_id).map(i => i.product_id!);
     if (productIds.length > 0) {
-      await supabase
-        .from('products')
-        .update({ locked_by_custom_order_id: orderId } as any)
-        .in('id', productIds);
+      for (const pid of productIds) {
+        await (supabase.from('products').update({ locked_by_custom_order_id: orderId } as any).eq('id', pid) as any);
+      }
     }
   };
 
