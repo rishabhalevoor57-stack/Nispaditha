@@ -81,7 +81,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/left-over-payments"
+        path="/pending-payments"
         element={
           <ProtectedRoute>
             <LeftOverPayments />

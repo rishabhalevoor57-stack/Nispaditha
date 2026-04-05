@@ -56,7 +56,6 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
     const isBeads = isBeadsCategory(item.category);
 
     if (item.pricing_mode === 'flat_price' || isBeads) {
-      // Flat/Beads: use flat_price (or rate_per_gram as price per string for beads), no MC
       const grossPrice = isBeads
         ? item.rate_per_gram * item.quantity
         : item.flat_price * item.quantity;
@@ -158,7 +157,6 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
       if (i !== index) return item;
       let newItem = { ...item, [field]: value };
       
-      // If switching mode, reset MC for flat
       if (field === 'pricing_mode') {
         if (value === 'flat_price') {
           newItem.mc_per_gram = 0;
@@ -181,9 +179,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
     const t = term.toLowerCase().trim();
     return products
       .filter(p => {
-        // Don't show already-added SKUs
         const alreadyAdded = items.some(item => item.product_id === p.id);
-        // Don't show locked products (unless locked by current order)
         const isLocked = p.locked_by_custom_order_id && p.locked_by_custom_order_id !== orderId;
         return !alreadyAdded && !isLocked && (
           p.sku.toLowerCase().includes(t) ||
@@ -201,21 +197,21 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>SKU</TableHead>
+              <TableHead className="w-[100px]">SKU</TableHead>
               <TableHead>Item</TableHead>
-              <TableHead>Mode</TableHead>
-              <TableHead className="text-center">Qty</TableHead>
-              <TableHead className="text-right">Weight</TableHead>
-              <TableHead className="text-right">Rate</TableHead>
-              <TableHead className="text-right">MC/g</TableHead>
-              <TableHead className="text-right">Discount</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="w-[80px]">Mode</TableHead>
+              <TableHead className="w-[60px] text-center">Qty</TableHead>
+              <TableHead className="w-[80px] text-right">Weight</TableHead>
+              <TableHead className="w-[90px] text-right">Rate</TableHead>
+              <TableHead className="w-[80px] text-right">MC/g</TableHead>
+              <TableHead className="w-[90px] text-right">Discount</TableHead>
+              <TableHead className="w-[100px] text-right">Total</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground">No items</TableCell>
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-6">No items</TableCell>
               </TableRow>
             ) : (
               <>
@@ -223,12 +219,12 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                   const isBeads = isBeadsCategory(item.category);
                   return (
                     <TableRow key={i}>
-                      <TableCell className="font-mono text-xs">{item.sku || '-'}</TableCell>
+                      <TableCell className="font-mono text-xs text-primary">{item.sku || '-'}</TableCell>
                       <TableCell>
-                        <div>{item.item_description}</div>
+                        <div className="font-medium text-sm">{item.item_description}</div>
                         {item.category && <div className="text-xs text-muted-foreground">{item.category}</div>}
                       </TableCell>
-                      <TableCell className="capitalize">
+                      <TableCell className="text-xs">
                         {isBeads ? 'Beads' : item.pricing_mode === 'flat_price' ? 'Flat' : 'Normal'}
                       </TableCell>
                       <TableCell className="text-center">{item.quantity}{isBeads ? ' str' : ''}</TableCell>
@@ -242,13 +238,13 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                       <TableCell className="text-right">
                         {item.discount > 0 ? `₹${item.discount.toLocaleString('en-IN')}` : '-'}
                       </TableCell>
-                      <TableCell className="text-right font-medium">₹{item.item_total.toLocaleString('en-IN')}</TableCell>
+                      <TableCell className="text-right font-semibold">₹{item.item_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
                     </TableRow>
                   );
                 })}
                 <TableRow className="font-bold bg-muted/50">
                   <TableCell colSpan={8} className="text-right">Items Total:</TableCell>
-                  <TableCell className="text-right">₹{grandTotal.toLocaleString('en-IN')}</TableCell>
+                  <TableCell className="text-right">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
                 </TableRow>
               </>
             )}
@@ -259,28 +255,28 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="min-w-[200px]">SKU / Product</TableHead>
+            <TableRow className="bg-muted/30">
+              <TableHead className="min-w-[180px]">SKU / Product</TableHead>
               <TableHead className="w-[100px]">Mode</TableHead>
-              <TableHead className="w-[80px]">Qty</TableHead>
+              <TableHead className="w-[80px] text-center">Qty</TableHead>
               <TableHead className="w-[90px]">Weight(g)</TableHead>
-              <TableHead className="w-[90px]">Rate</TableHead>
-              <TableHead className="w-[80px]">MC/g</TableHead>
+              <TableHead className="w-[100px]">Rate</TableHead>
+              <TableHead className="w-[90px]">MC/g</TableHead>
               <TableHead className="w-[80px]">MC Disc%</TableHead>
-              <TableHead className="w-[80px]">Flat ₹</TableHead>
-              <TableHead className="w-[90px]">Discount</TableHead>
-              <TableHead className="w-[100px] text-right">Total</TableHead>
+              <TableHead className="w-[100px]">Flat ₹</TableHead>
+              <TableHead className="w-[120px]">Discount</TableHead>
+              <TableHead className="w-[110px] text-right">Total</TableHead>
               <TableHead className="w-[40px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center text-muted-foreground">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                   No items added. Click "Add Item" to start.
                 </TableCell>
               </TableRow>
@@ -292,20 +288,20 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                 const filtered = getFilteredProducts(searchTerm);
 
                 return (
-                  <TableRow key={index}>
-                    <TableCell>
+                  <TableRow key={index} className="align-top">
+                    {/* SKU / Product */}
+                    <TableCell className="py-3">
                       <div className="relative">
                         {item.product_id ? (
-                          <div className="space-y-1">
-                            <div className="font-mono text-xs text-muted-foreground">{item.sku}</div>
-                            <div className="text-sm font-medium">{item.item_description}</div>
+                          <div className="space-y-0.5">
+                            <div className="font-mono text-xs text-primary font-semibold">{item.sku}</div>
+                            <div className="text-sm font-medium leading-tight">{item.item_description}</div>
                             {item.category && <div className="text-xs text-muted-foreground">{item.category}</div>}
                             <Button
-                              variant="ghost"
+                              variant="link"
                               size="sm"
-                              className="h-6 px-2 text-xs"
+                              className="h-5 px-0 text-xs text-muted-foreground hover:text-primary"
                               onClick={() => {
-                                updateItem(index, 'product_id', '');
                                 const updated = [...items];
                                 updated[index] = {
                                   ...updated[index],
@@ -325,9 +321,9 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                             </Button>
                           </div>
                         ) : (
-                          <div>
+                          <div className="space-y-1.5">
                             <div className="relative">
-                              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                               <Input
                                 placeholder="Search SKU..."
                                 value={searchTerm}
@@ -336,18 +332,20 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                                   setOpenDropdown(index);
                                 }}
                                 onFocus={() => searchTerm && setOpenDropdown(index)}
-                                className="pl-7 h-8 text-sm"
+                                onBlur={() => setTimeout(() => setOpenDropdown(null), 200)}
+                                className="pl-8 h-9 text-sm"
                               />
                             </div>
                             {openDropdown === index && filtered.length > 0 && (
-                              <div className="absolute z-50 mt-1 w-64 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                              <div className="absolute z-50 mt-1 w-72 bg-popover border rounded-md shadow-lg max-h-52 overflow-y-auto">
                                 {filtered.map((p) => (
                                   <button
                                     key={p.id}
+                                    onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => handleSelectProduct(index, p)}
-                                    className="w-full px-3 py-2 text-left hover:bg-accent transition-colors"
+                                    className="w-full px-3 py-2 text-left hover:bg-accent transition-colors border-b last:border-0"
                                   >
-                                    <span className="font-mono text-xs text-muted-foreground">{p.sku}</span>
+                                    <span className="font-mono text-xs text-primary font-semibold">{p.sku}</span>
                                     <p className="text-sm font-medium">{p.name}</p>
                                     <p className="text-xs text-muted-foreground">
                                       {p.weight_grams}g • {p.categories?.name || '-'} • Stock: {p.quantity}
@@ -360,21 +358,23 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                               placeholder="Or type name"
                               value={item.item_description}
                               onChange={(e) => updateItem(index, 'item_description', e.target.value)}
-                              className="mt-1 h-8 text-sm"
+                              className="h-9 text-sm"
                             />
                           </div>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+
+                    {/* Mode */}
+                    <TableCell className="py-3">
                       {isBeads ? (
-                        <span className="text-xs font-medium px-2 py-1 rounded bg-accent">Beads</span>
+                        <span className="text-xs font-medium px-2 py-1 rounded bg-accent text-accent-foreground">Beads</span>
                       ) : (
                         <Select
                           value={item.pricing_mode}
                           onValueChange={(v) => updateItem(index, 'pricing_mode', v)}
                         >
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="h-9 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -384,75 +384,104 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                         </Select>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <div>
+
+                    {/* Quantity */}
+                    <TableCell className="py-3">
+                      <div className="space-y-0.5">
                         <Input
-                          type="number" min="1"
+                          type="number"
+                          min="1"
                           value={item.quantity}
                           onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                          className="h-8 text-sm"
+                          className="h-9 text-sm text-center w-full"
                         />
-                        {isBeads && <span className="text-[10px] text-muted-foreground">strings</span>}
+                        {isBeads && <span className="text-[10px] text-muted-foreground block text-center">strings</span>}
                       </div>
                     </TableCell>
-                    <TableCell>
+
+                    {/* Weight */}
+                    <TableCell className="py-3">
                       <Input
-                        type="number" min="0" step="0.01"
-                        value={item.expected_weight}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.expected_weight || ''}
                         onChange={(e) => updateItem(index, 'expected_weight', parseFloat(e.target.value) || 0)}
-                        disabled={isFlat}
-                        className="h-8 text-sm"
+                        className="h-9 text-sm"
+                        placeholder="0"
                       />
                     </TableCell>
-                    <TableCell>
+
+                    {/* Rate */}
+                    <TableCell className="py-3">
                       <Input
-                        type="number" min="0" step="0.01"
-                        value={item.rate_per_gram}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.rate_per_gram || ''}
                         onChange={(e) => updateItem(index, 'rate_per_gram', parseFloat(e.target.value) || 0)}
-                        className="h-8 text-sm"
+                        className="h-9 text-sm"
+                        placeholder="0"
                       />
                     </TableCell>
-                    <TableCell>
+
+                    {/* MC/g */}
+                    <TableCell className="py-3">
                       <Input
-                        type="number" min="0" step="0.01"
-                        value={item.mc_per_gram}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.mc_per_gram || ''}
                         onChange={(e) => updateItem(index, 'mc_per_gram', parseFloat(e.target.value) || 0)}
                         disabled={isFlat}
-                        className="h-8 text-sm"
+                        className="h-9 text-sm disabled:opacity-40"
+                        placeholder="0"
                       />
                     </TableCell>
-                    <TableCell>
+
+                    {/* MC Disc% */}
+                    <TableCell className="py-3">
                       <Input
-                        type="number" min="0" max="100"
-                        value={item.discount_on_mc}
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={item.discount_on_mc || ''}
                         onChange={(e) => updateItem(index, 'discount_on_mc', parseFloat(e.target.value) || 0)}
                         disabled={isFlat}
-                        className="h-8 text-sm"
+                        className="h-9 text-sm disabled:opacity-40"
+                        placeholder="0"
                       />
                     </TableCell>
-                    <TableCell>
+
+                    {/* Flat ₹ */}
+                    <TableCell className="py-3">
                       <Input
-                        type="number" min="0"
-                        value={item.flat_price}
+                        type="number"
+                        min="0"
+                        value={item.flat_price || ''}
                         onChange={(e) => updateItem(index, 'flat_price', parseFloat(e.target.value) || 0)}
                         disabled={!isFlat || isBeads}
-                        className="h-8 text-sm"
+                        className="h-9 text-sm disabled:opacity-40"
+                        placeholder="0"
                       />
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
+
+                    {/* Discount */}
+                    <TableCell className="py-3">
+                      <div className="flex gap-1 items-center">
                         <Input
-                          type="number" min="0"
-                          value={item.discount_value}
+                          type="number"
+                          min="0"
+                          value={item.discount_value || ''}
                           onChange={(e) => updateItem(index, 'discount_value', parseFloat(e.target.value) || 0)}
-                          className="h-8 text-sm w-16"
+                          className="h-9 text-sm flex-1 min-w-[50px]"
                           placeholder="0"
                         />
                         <Select
                           value={item.discount_type}
                           onValueChange={(v) => updateItem(index, 'discount_type', v)}
                         >
-                          <SelectTrigger className="h-8 w-14 text-xs">
+                          <SelectTrigger className="h-9 w-14 text-xs px-1.5">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -462,10 +491,14 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                         </Select>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right font-medium">
+
+                    {/* Total */}
+                    <TableCell className="text-right font-semibold py-3 text-sm">
                       ₹{item.item_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </TableCell>
-                    <TableCell>
+
+                    {/* Delete */}
+                    <TableCell className="py-3">
                       <Button variant="ghost" size="icon" onClick={() => removeItem(index)} className="h-8 w-8">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -477,15 +510,18 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
           </TableBody>
         </Table>
       </div>
-      <Button type="button" variant="outline" size="sm" onClick={addItem}>
-        <Plus className="h-4 w-4 mr-2" />
-        Add Item
-      </Button>
-      {items.length > 0 && (
-        <div className="text-right font-medium">
-          Items Total: ₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-        </div>
-      )}
+
+      <div className="flex items-center justify-between">
+        <Button type="button" variant="outline" size="sm" onClick={addItem}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Item
+        </Button>
+        {items.length > 0 && (
+          <div className="text-right font-semibold text-base">
+            Items Total: ₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

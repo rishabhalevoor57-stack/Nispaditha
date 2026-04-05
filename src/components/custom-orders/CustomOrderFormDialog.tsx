@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,13 @@ import { CustomOrderItemsTable } from './CustomOrderItemsTable';
 import { CustomOrder, CustomOrderItem, CustomOrderStatus, CUSTOM_ORDER_STATUS_LABELS } from '@/types/customOrder';
 import { useCustomOrders } from '@/hooks/useCustomOrders';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Client {
+  id: string;
+  name: string;
+  phone: string | null;
+}
 
 interface CustomOrderFormDialogProps {
   open: boolean;
@@ -41,10 +48,42 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<CustomOrderItem[]>([]);
 
+  // Client search
+  const [clientSearch, setClientSearch] = useState('');
+  const [clients, setClients] = useState<Client[]>([]);
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+
   const isEditing = !!order;
 
   const itemsTotal = items.reduce((sum, item) => sum + item.item_total, 0);
   const totalAmount = itemsTotal + designCharges + additionalCharge - flatDiscount;
+
+  // Fetch clients for search
+  useEffect(() => {
+    if (!open) return;
+    const fetchClients = async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('id, name, phone')
+        .order('name');
+      setClients((data || []) as Client[]);
+    };
+    fetchClients();
+  }, [open]);
+
+  const filteredClients = clientSearch.length > 0
+    ? clients.filter(c =>
+        c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+        c.phone?.toLowerCase().includes(clientSearch.toLowerCase())
+      ).slice(0, 8)
+    : [];
+
+  const handleSelectClient = (client: Client) => {
+    setClientName(client.name);
+    setPhoneNumber(client.phone || '');
+    setClientSearch('');
+    setShowClientDropdown(false);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -192,19 +231,55 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
             </CardContent>
           </Card>
 
-          {/* Customer */}
+          {/* Customer - with client search */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Customer Details</CardTitle>
+              <p className="text-xs text-muted-foreground">Search from existing clients or enter new details</p>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Client Name *</Label>
-                <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Enter client name" />
-              </div>
-              <div className="space-y-2">
-                <Label>Phone Number</Label>
-                <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Enter phone number" />
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Client search */}
+                <div className="space-y-2 relative">
+                  <Label>Search Client</Label>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by name or phone..."
+                      value={clientSearch}
+                      onChange={(e) => {
+                        setClientSearch(e.target.value);
+                        setShowClientDropdown(true);
+                      }}
+                      onFocus={() => clientSearch && setShowClientDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+                      className="pl-8"
+                    />
+                  </div>
+                  {showClientDropdown && filteredClients.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {filteredClients.map((c) => (
+                        <button
+                          key={c.id}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleSelectClient(c)}
+                          className="w-full px-3 py-2 text-left hover:bg-accent transition-colors border-b last:border-0"
+                        >
+                          <p className="text-sm font-medium">{c.name}</p>
+                          <p className="text-xs text-muted-foreground">{c.phone || 'No phone'}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Client Name *</Label>
+                  <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Enter client name" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Enter phone number" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -229,15 +304,15 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div className="space-y-2">
                   <Label>Design Charges</Label>
-                  <Input type="number" min="0" value={designCharges} onChange={(e) => setDesignCharges(parseFloat(e.target.value) || 0)} />
+                  <Input type="number" min="0" value={designCharges || ''} onChange={(e) => setDesignCharges(parseFloat(e.target.value) || 0)} placeholder="0" />
                 </div>
                 <div className="space-y-2">
                   <Label>{additionalChargeLabel}</Label>
-                  <Input type="number" min="0" value={additionalCharge} onChange={(e) => setAdditionalCharge(parseFloat(e.target.value) || 0)} />
+                  <Input type="number" min="0" value={additionalCharge || ''} onChange={(e) => setAdditionalCharge(parseFloat(e.target.value) || 0)} placeholder="0" />
                 </div>
                 <div className="space-y-2">
                   <Label>Flat Discount</Label>
-                  <Input type="number" min="0" value={flatDiscount} onChange={(e) => setFlatDiscount(parseFloat(e.target.value) || 0)} />
+                  <Input type="number" min="0" value={flatDiscount || ''} onChange={(e) => setFlatDiscount(parseFloat(e.target.value) || 0)} placeholder="0" />
                 </div>
                 <div className="space-y-2">
                   <Label>Custom Label</Label>
@@ -245,14 +320,14 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                 </div>
               </div>
               <Separator className="my-4" />
-              <div className="space-y-2 text-right">
+              <div className="space-y-1.5 text-right">
                 <div className="text-sm text-muted-foreground">Items Total: ₹{itemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                <div className="text-sm text-muted-foreground">Design Charges: ₹{designCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                <div className="text-sm text-muted-foreground">{additionalChargeLabel}: ₹{additionalCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                {designCharges > 0 && <div className="text-sm text-muted-foreground">Design Charges: ₹{designCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
+                {additionalCharge > 0 && <div className="text-sm text-muted-foreground">{additionalChargeLabel}: ₹{additionalCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
                 {flatDiscount > 0 && (
                   <div className="text-sm text-destructive">Flat Discount: -₹{flatDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                 )}
-                <div className="text-xl font-bold">Grand Total: ₹{Math.max(0, totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                <div className="text-xl font-bold pt-1">Grand Total: ₹{Math.max(0, totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
               </div>
             </CardContent>
           </Card>
