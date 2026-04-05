@@ -80,11 +80,9 @@ const CustomOrders = () => {
 
   const handleConvertToInvoice = async (order: CustomOrder, items: CustomOrderItem[]) => {
     try {
-      // Generate invoice number
       const { data: invoiceNumber, error: numError } = await supabase.rpc('generate_invoice_number');
       if (numError) throw numError;
 
-      // Create invoice
       const { data: invoice, error: invError } = await supabase
         .from('invoices')
         .insert({
@@ -104,7 +102,6 @@ const CustomOrders = () => {
 
       if (invError) throw invError;
 
-      // Create invoice items from custom order items
       if (items.length > 0) {
         const invoiceItems = items.map(item => ({
           invoice_id: invoice.id,
@@ -121,13 +118,12 @@ const CustomOrders = () => {
           gst_amount: 0,
           total: item.item_total,
           mrp: item.pricing_mode === 'flat_price' ? item.flat_price : 0,
-          category: 'Custom Order',
+          category: item.category || 'Custom Order',
         }));
 
         await supabase.from('invoice_items').insert(invoiceItems);
       }
 
-      // Update custom order with invoice reference
       await supabase
         .from('custom_orders')
         .update({ converted_to_invoice_id: invoice.id })
@@ -150,6 +146,39 @@ const CustomOrders = () => {
     } catch (error: any) {
       toast({ title: 'Conversion failed', description: error.message, variant: 'destructive' });
     }
+  };
+
+  const handleSendToInvoicePage = (order: CustomOrder, items: CustomOrderItem[]) => {
+    // Store custom order data in sessionStorage for the invoice page to pick up
+    const invoiceData = {
+      fromCustomOrder: true,
+      customOrderId: order.id,
+      referenceNumber: order.reference_number,
+      clientName: order.client_name,
+      phoneNumber: order.phone_number,
+      notes: `From Custom Order ${order.reference_number}${order.notes ? '\n' + order.notes : ''}`,
+      items: items.map(item => ({
+        product_name: item.item_description,
+        product_id: item.product_id,
+        sku: item.sku,
+        quantity: item.quantity,
+        weight_grams: item.expected_weight || 0,
+        rate_per_gram: item.rate_per_gram || 0,
+        making_charges: item.mc_per_gram || 0,
+        discount: item.discount_on_mc || 0,
+        mrp: item.pricing_mode === 'flat_price' ? item.flat_price : 0,
+        category: item.category || 'Custom Order',
+        total: item.item_total,
+      })),
+      designCharges: order.design_charges,
+      additionalCharge: order.additional_charge,
+      flatDiscount: order.flat_discount,
+      totalAmount: order.total_amount,
+    };
+    sessionStorage.setItem('customOrderToInvoice', JSON.stringify(invoiceData));
+    setViewOpen(false);
+    toast({ title: 'Sent to Invoice Page', description: 'Open the invoice page to review and finalize.' });
+    navigate('/invoices');
   };
 
   const handleNew = () => { setSelected(null); setFormOpen(true); };
