@@ -31,7 +31,7 @@ export default function LeftOverPayments() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data: records = [], isLoading } = useQuery({
-    queryKey: ['left-over-payments'],
+    queryKey: ['pending-payments'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('order_notes')
