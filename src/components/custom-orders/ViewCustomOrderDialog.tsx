@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { FileText } from 'lucide-react';
+import { FileText, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -15,9 +15,10 @@ interface ViewCustomOrderDialogProps {
   onOpenChange: (open: boolean) => void;
   order: CustomOrder | null;
   onConvertToInvoice?: (order: CustomOrder, items: CustomOrderItem[]) => void;
+  onSendToInvoicePage?: (order: CustomOrder, items: CustomOrderItem[]) => void;
 }
 
-export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToInvoice }: ViewCustomOrderDialogProps) => {
+export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToInvoice, onSendToInvoicePage }: ViewCustomOrderDialogProps) => {
   const { getOrderWithItems, silverRate } = useCustomOrders();
   const [items, setItems] = useState<CustomOrderItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,21 +45,33 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToIn
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="flex flex-row items-center justify-between">
-          <div>
-            <DialogTitle className="text-xl">{order.reference_number}</DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1">Created on {format(new Date(order.created_at), 'PPP')}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className={CUSTOM_ORDER_STATUS_COLORS[order.status]}>
-              {CUSTOM_ORDER_STATUS_LABELS[order.status]}
-            </Badge>
-            {!order.converted_to_invoice_id && onConvertToInvoice && (
-              <Button variant="outline" size="sm" onClick={() => onConvertToInvoice(order, items)}>
-                <FileText className="h-4 w-4 mr-2" />
-                Convert to Invoice
-              </Button>
-            )}
+        <DialogHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <DialogTitle className="text-xl">{order.reference_number}</DialogTitle>
+              <p className="text-sm text-muted-foreground mt-1">Created on {format(new Date(order.created_at), 'PPP')}</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge className={CUSTOM_ORDER_STATUS_COLORS[order.status]}>
+                {CUSTOM_ORDER_STATUS_LABELS[order.status]}
+              </Badge>
+              {!order.converted_to_invoice_id && (
+                <>
+                  {onConvertToInvoice && (
+                    <Button variant="default" size="sm" onClick={() => onConvertToInvoice(order, items)}>
+                      <FileText className="h-4 w-4 mr-1.5" />
+                      Generate Invoice
+                    </Button>
+                  )}
+                  {onSendToInvoicePage && (
+                    <Button variant="outline" size="sm" onClick={() => onSendToInvoicePage(order, items)}>
+                      <Send className="h-4 w-4 mr-1.5" />
+                      Send to Invoice Page
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
@@ -103,8 +116,15 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToIn
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex justify-between"><span className="text-muted-foreground">Items Total</span><span>₹{itemsTotal.toLocaleString('en-IN')}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Design Charges</span><span>₹{order.design_charges.toLocaleString('en-IN')}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{order.additional_charge_label}</span><span>₹{order.additional_charge.toLocaleString('en-IN')}</span></div>
+              {order.design_charges > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Design Charges</span><span>₹{order.design_charges.toLocaleString('en-IN')}</span></div>
+              )}
+              {order.additional_charge > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">{order.additional_charge_label}</span><span>₹{order.additional_charge.toLocaleString('en-IN')}</span></div>
+              )}
+              {order.flat_discount > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Flat Discount</span><span className="text-destructive">-₹{order.flat_discount.toLocaleString('en-IN')}</span></div>
+              )}
               <Separator />
               <div className="flex justify-between text-lg font-bold"><span>Grand Total</span><span>₹{order.total_amount.toLocaleString('en-IN')}</span></div>
             </CardContent>
@@ -119,7 +139,7 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToIn
           {order.notes && (
             <Card>
               <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Notes</CardTitle></CardHeader>
-              <CardContent><p className="whitespace-pre-wrap">{order.notes}</p></CardContent>
+              <CardContent><p className="whitespace-pre-wrap text-sm">{order.notes}</p></CardContent>
             </Card>
           )}
         </div>
