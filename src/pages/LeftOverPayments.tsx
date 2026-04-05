@@ -105,7 +105,7 @@ export default function LeftOverPayments() {
     <AppLayout>
       <div className="space-y-6">
         <PageHeader
-          title="Left Over Payments"
+          title="Pending Payments"
           description="Track pending balances from order notes — oldest first"
         />
 
