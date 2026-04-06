@@ -369,8 +369,37 @@ export function useInventory() {
           };
         });
 
-      if (validProducts.length === 0) {
-        toast({ variant: 'destructive', title: 'No valid products', description: 'Each row must have at least SKU and Name.' });
+      // Filter out duplicate SKUs: check against existing DB products AND within the import batch
+      const existingSkus = new Set(products.map(p => p.sku));
+      const seenSkus = new Set<string>();
+      const skippedSkus: string[] = [];
+
+      const deduplicatedProducts = validProducts.filter(p => {
+        const categoryId = p.category_id;
+        const isAllowed = isDuplicateAllowedCategory(categoryId);
+
+        // Check against existing products in DB
+        if (!isAllowed && existingSkus.has(p.sku)) {
+          skippedSkus.push(p.sku);
+          return false;
+        }
+
+        // Check within the current import batch
+        if (!isAllowed && seenSkus.has(p.sku)) {
+          skippedSkus.push(p.sku);
+          return false;
+        }
+
+        seenSkus.add(p.sku);
+        return true;
+      });
+
+      if (skippedSkus.length > 0) {
+        toast({ title: `Skipped ${skippedSkus.length} duplicate SKU(s)`, description: `Duplicates: ${skippedSkus.slice(0, 5).join(', ')}${skippedSkus.length > 5 ? '...' : ''}. Only Necklace Set & Pendant Set allow duplicates.` });
+      }
+
+      if (deduplicatedProducts.length === 0) {
+        toast({ variant: 'destructive', title: 'No valid products', description: 'All products were duplicates or missing SKU/Name.' });
         return false;
       }
 
