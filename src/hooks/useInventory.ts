@@ -280,6 +280,30 @@ export function useInventory() {
     }
   };
 
+  const parseDateSafe = (dateStr: string | undefined): string | null => {
+    if (!dateStr) return null;
+    // Already valid ISO date
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    // Try DD-MM-YYYY or DD/MM/YYYY
+    const dmy = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+    // Try MM/DD/YYYY
+    const mdy = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
+    if (mdy) return `20${mdy[3]}-${mdy[1].padStart(2,'0')}-${mdy[2].padStart(2,'0')}`;
+    // Handle Mon-YY like "Sep-25" → 2025-09-01
+    const monthNames: Record<string, string> = { jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12' };
+    const monYr = dateStr.match(/^([A-Za-z]{3})-?(\d{2,4})$/);
+    if (monYr) {
+      const mon = monthNames[monYr[1].toLowerCase()];
+      const yr = monYr[2].length === 2 ? `20${monYr[2]}` : monYr[2];
+      if (mon) return `${yr}-${mon}-01`;
+    }
+    // Fallback: try native Date parsing
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    return null;
+  };
+
   const bulkImport = async (productsToImport: Partial<ProductFormData>[], onProgress?: (current: number, total: number) => void) => {
     try {
       // Build lookup maps for category and vendor names
