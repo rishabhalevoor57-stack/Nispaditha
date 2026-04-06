@@ -46,16 +46,18 @@ export default function RecycleBin() {
   const [deletedProducts, setDeletedProducts] = useState<DeletedProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const isAdmin = useIsAdmin();
+  const { userRole, loading: authLoading } = useAuth();
+  const isAdmin = userRole === 'admin';
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (authLoading) return; // Wait for role to load
     if (!isAdmin) {
       navigate('/inventory');
       return;
     }
     fetchDeleted();
-  }, [isAdmin]);
+  }, [isAdmin, authLoading]);
 
   const fetchDeleted = async () => {
     setIsLoading(true);
