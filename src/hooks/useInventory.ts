@@ -120,15 +120,20 @@ export function useInventory() {
     return products.filter(p => p.quantity <= p.low_stock_alert && p.status === 'in_stock');
   }, [products]);
 
-  const isNecklaceSetCategory = (categoryId: string | null | undefined): boolean => {
+  const isDuplicateAllowedCategory = (categoryId: string | null | undefined): boolean => {
     if (!categoryId) return false;
     const cat = categories.find(c => c.id === categoryId);
-    return cat?.name?.toLowerCase() === 'necklace set';
+    const name = cat?.name?.toLowerCase() || '';
+    return name === 'necklace set' || name === 'pendants' || name === 'pendant set';
+  };
+
+  const isDuplicateAllowedCategoryName = (categoryName: string): boolean => {
+    const name = categoryName.toLowerCase().trim();
+    return name === 'necklace set' || name === 'pendants' || name === 'pendant set';
   };
 
   const checkDuplicateSku = (sku: string, categoryId: string | null | undefined, excludeId?: string): boolean => {
-    // Allow duplicate SKUs for Necklace Set category
-    if (isNecklaceSetCategory(categoryId)) return false;
+    if (isDuplicateAllowedCategory(categoryId)) return false;
     return products.some(p => p.sku === sku && p.id !== excludeId);
   };
 
@@ -136,7 +141,7 @@ export function useInventory() {
     try {
       // Check for duplicate SKU (skip for Necklace Set)
       if (checkDuplicateSku(formData.sku, formData.category_id)) {
-        toast({ variant: 'destructive', title: 'Duplicate SKU', description: `SKU "${formData.sku}" already exists. Duplicate SKUs are only allowed for Necklace Set category.` });
+        toast({ variant: 'destructive', title: 'Duplicate SKU', description: `SKU "${formData.sku}" already exists. Duplicate SKUs are only allowed for Necklace Set and Pendant Set categories.` });
         return false;
       }
 
@@ -189,9 +194,9 @@ export function useInventory() {
 
   const updateProduct = async (id: string, formData: ProductFormData, imageFile?: File) => {
     try {
-      // Check for duplicate SKU (skip for Necklace Set)
+      // Check for duplicate SKU (skip for Necklace Set / Pendant Set)
       if (checkDuplicateSku(formData.sku, formData.category_id, id)) {
-        toast({ variant: 'destructive', title: 'Duplicate SKU', description: `SKU "${formData.sku}" already exists. Duplicate SKUs are only allowed for Necklace Set category.` });
+        toast({ variant: 'destructive', title: 'Duplicate SKU', description: `SKU "${formData.sku}" already exists. Duplicate SKUs are only allowed for Necklace Set and Pendant Set categories.` });
         return false;
       }
 
@@ -364,8 +369,37 @@ export function useInventory() {
           };
         });
 
-      if (validProducts.length === 0) {
-        toast({ variant: 'destructive', title: 'No valid products', description: 'Each row must have at least SKU and Name.' });
+      // Filter out duplicate SKUs: check against existing DB products AND within the import batch
+      const existingSkus = new Set(products.map(p => p.sku));
+      const seenSkus = new Set<string>();
+      const skippedSkus: string[] = [];
+
+      const deduplicatedProducts = validProducts.filter(p => {
+        const categoryId = p.category_id;
+        const isAllowed = isDuplicateAllowedCategory(categoryId);
+
+        // Check against existing products in DB
+        if (!isAllowed && existingSkus.has(p.sku)) {
+          skippedSkus.push(p.sku);
+          return false;
+        }
+
+        // Check within the current import batch
+        if (!isAllowed && seenSkus.has(p.sku)) {
+          skippedSkus.push(p.sku);
+          return false;
+        }
+
+        seenSkus.add(p.sku);
+        return true;
+      });
+
+      if (skippedSkus.length > 0) {
+        toast({ title: `Skipped ${skippedSkus.length} duplicate SKU(s)`, description: `Duplicates: ${skippedSkus.slice(0, 5).join(', ')}${skippedSkus.length > 5 ? '...' : ''}. Only Necklace Set & Pendant Set allow duplicates.` });
+      }
+
+      if (deduplicatedProducts.length === 0) {
+        toast({ variant: 'destructive', title: 'No valid products', description: 'All products were duplicates or missing SKU/Name.' });
         return false;
       }
 
@@ -373,13 +407,13 @@ export function useInventory() {
       const BATCH_SIZE = 50;
       let imported = 0;
 
-      for (let i = 0; i < validProducts.length; i += BATCH_SIZE) {
-        const batch = validProducts.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < deduplicatedProducts.length; i += BATCH_SIZE) {
+        const batch = deduplicatedProducts.slice(i, i + BATCH_SIZE);
         const { error } = await supabase.from('products').insert(batch);
         if (error) throw error;
 
         imported += batch.length;
-        onProgress?.(imported, validProducts.length);
+        onProgress?.(imported, deduplicatedProducts.length);
 
         // Yield to UI thread
         await new Promise(resolve => setTimeout(resolve, 50));
