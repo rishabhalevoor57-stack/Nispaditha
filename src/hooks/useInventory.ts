@@ -334,7 +334,7 @@ export function useInventory() {
             pricing_mode: pricingMode,
             purchase_price_per_gram: purchasePricePerGram,
             purchase_making_charges: purchaseMC,
-            date_ordered: p.date_ordered || new Date().toISOString().split('T')[0],
+            date_ordered: parseDateSafe(p.date_ordered) || new Date().toISOString().split('T')[0],
             category_id: categoryMap.get(categoryName) || null,
             supplier_id: supplierMap.get(vendorName) || null,
           };
