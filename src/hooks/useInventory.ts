@@ -194,9 +194,9 @@ export function useInventory() {
 
   const updateProduct = async (id: string, formData: ProductFormData, imageFile?: File) => {
     try {
-      // Check for duplicate SKU (skip for Necklace Set)
+      // Check for duplicate SKU (skip for Necklace Set / Pendant Set)
       if (checkDuplicateSku(formData.sku, formData.category_id, id)) {
-        toast({ variant: 'destructive', title: 'Duplicate SKU', description: `SKU "${formData.sku}" already exists. Duplicate SKUs are only allowed for Necklace Set category.` });
+        toast({ variant: 'destructive', title: 'Duplicate SKU', description: `SKU "${formData.sku}" already exists. Duplicate SKUs are only allowed for Necklace Set and Pendant Set categories.` });
         return false;
       }
 
