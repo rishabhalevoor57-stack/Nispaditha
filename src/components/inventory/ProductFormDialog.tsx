@@ -356,8 +356,7 @@ export function ProductFormDialog({
             </div>
           </div>
 
-          {/* Metal Details - only for weight_based */}
-          {formData.pricing_mode === 'weight_based' && (
+          {/* Metal Details - always visible */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="metal_type">Metal Type</Label>
@@ -378,15 +377,18 @@ export function ProductFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="weight">Weight (grams) *</Label>
+              <Label htmlFor="weight">Weight (grams) {formData.pricing_mode === 'weight_based' ? '*' : ''}</Label>
               <Input
                 id="weight"
                 type="number"
                 step="0.001"
                 value={formData.weight_grams}
                 onChange={(e) => updateField('weight_grams', parseFloat(e.target.value) || 0)}
-                required
+                required={formData.pricing_mode === 'weight_based'}
               />
+              {formData.pricing_mode === 'flat_price' && (
+                <p className="text-xs text-muted-foreground">For reference only — not used in price calculations</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="bangle_size">Bangle Size</Label>
@@ -398,7 +400,6 @@ export function ProductFormDialog({
               />
             </div>
           </div>
-          )}
 
           {/* Quantity & Stock */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
