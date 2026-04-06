@@ -120,15 +120,20 @@ export function useInventory() {
     return products.filter(p => p.quantity <= p.low_stock_alert && p.status === 'in_stock');
   }, [products]);
 
-  const isNecklaceSetCategory = (categoryId: string | null | undefined): boolean => {
+  const isDuplicateAllowedCategory = (categoryId: string | null | undefined): boolean => {
     if (!categoryId) return false;
     const cat = categories.find(c => c.id === categoryId);
-    return cat?.name?.toLowerCase() === 'necklace set';
+    const name = cat?.name?.toLowerCase() || '';
+    return name === 'necklace set' || name === 'pendants' || name === 'pendant set';
+  };
+
+  const isDuplicateAllowedCategoryName = (categoryName: string): boolean => {
+    const name = categoryName.toLowerCase().trim();
+    return name === 'necklace set' || name === 'pendants' || name === 'pendant set';
   };
 
   const checkDuplicateSku = (sku: string, categoryId: string | null | undefined, excludeId?: string): boolean => {
-    // Allow duplicate SKUs for Necklace Set category
-    if (isNecklaceSetCategory(categoryId)) return false;
+    if (isDuplicateAllowedCategory(categoryId)) return false;
     return products.some(p => p.sku === sku && p.id !== excludeId);
   };
 
