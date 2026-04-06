@@ -407,13 +407,13 @@ export function useInventory() {
       const BATCH_SIZE = 50;
       let imported = 0;
 
-      for (let i = 0; i < validProducts.length; i += BATCH_SIZE) {
-        const batch = validProducts.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < deduplicatedProducts.length; i += BATCH_SIZE) {
+        const batch = deduplicatedProducts.slice(i, i + BATCH_SIZE);
         const { error } = await supabase.from('products').insert(batch);
         if (error) throw error;
 
         imported += batch.length;
-        onProgress?.(imported, validProducts.length);
+        onProgress?.(imported, deduplicatedProducts.length);
 
         // Yield to UI thread
         await new Promise(resolve => setTimeout(resolve, 50));
