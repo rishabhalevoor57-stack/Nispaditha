@@ -271,6 +271,12 @@ export default function Settings() {
             </TabsTrigger>
           )}
           {isAdmin && (
+            <TabsTrigger value="backup" className="flex items-center gap-2">
+              <HardDrive className="w-4 h-4" />
+              Backup & Restore
+            </TabsTrigger>
+          )}
+          {isAdmin && (
             <TabsTrigger value="data" className="flex items-center gap-2">
               <Trash2 className="w-4 h-4" />
               Data Management
