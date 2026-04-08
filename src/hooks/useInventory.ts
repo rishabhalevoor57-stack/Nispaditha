@@ -123,13 +123,13 @@ export function useInventory() {
   const isDuplicateAllowedCategory = (categoryId: string | null | undefined): boolean => {
     if (!categoryId) return false;
     const cat = categories.find(c => c.id === categoryId);
-    const name = cat?.name?.toLowerCase() || '';
-    return name === 'necklace set' || name === 'pendants' || name === 'pendant set';
+    const name = cat?.name?.toLowerCase().trim() || '';
+    return name.includes('necklace set') || name.includes('pendant') || name.includes('pendent');
   };
 
   const isDuplicateAllowedCategoryName = (categoryName: string): boolean => {
     const name = categoryName.toLowerCase().trim();
-    return name === 'necklace set' || name === 'pendants' || name === 'pendant set';
+    return name.includes('necklace set') || name.includes('pendant') || name.includes('pendent');
   };
 
   const checkDuplicateSku = (sku: string, categoryId: string | null | undefined, excludeId?: string): boolean => {
