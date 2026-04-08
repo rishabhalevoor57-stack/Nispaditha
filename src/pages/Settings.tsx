@@ -574,6 +574,11 @@ export default function Settings() {
           </TabsContent>
         )}
 
+        {/* Backup & Restore Tab */}
+        {isAdmin && <TabsContent value="backup">
+          <BackupRestore />
+        </TabsContent>}
+
         {/* Data Management Tab */}
         {isAdmin && <TabsContent value="data">
           <Card className="shadow-card border-destructive/20">
