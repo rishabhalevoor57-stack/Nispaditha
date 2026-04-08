@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTypesOfWork } from '@/hooks/useTypesOfWork';
-import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle, Pencil, Check, X, Hammer, Shield } from 'lucide-react';
+import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle, Pencil, Check, X, Hammer, Shield, HardDrive } from 'lucide-react';
 import { UserManagement } from '@/components/settings/UserManagement';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import {
