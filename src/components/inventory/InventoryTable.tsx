@@ -161,7 +161,15 @@ export function InventoryTable({
                   </TableCell>
                   <TableCell>{product.categories?.name || '-'}</TableCell>
                   <TableCell className="text-right">{product.weight_grams}g</TableCell>
-                  <TableCell className="text-right font-medium">{product.quantity}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    {product.quantity}
+                    {(() => {
+                      const catName = product.categories?.name?.toLowerCase() || '';
+                      if (catName.includes('bangle')) return <span className="text-muted-foreground text-xs ml-1">, Pair</span>;
+                      if (catName.includes('bead')) return <span className="text-muted-foreground text-xs ml-1">, Strings</span>;
+                      return null;
+                    })()}
+                  </TableCell>
                   <TableCell className="text-center">
                     <Badge variant={product.pricing_mode === 'flat_price' ? 'secondary' : 'outline'} className="text-xs">
                       {product.pricing_mode === 'flat_price' ? 'Flat' : 'Weight'}

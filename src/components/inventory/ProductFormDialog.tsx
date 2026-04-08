@@ -404,14 +404,29 @@ export function ProductFormDialog({
           {/* Quantity & Stock */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="quantity">Number of Pieces *</Label>
-              <Input
-                id="quantity"
-                type="number"
-                value={formData.quantity}
-                onChange={(e) => updateField('quantity', parseInt(e.target.value) || 0)}
-                required
-              />
+              <Label htmlFor="quantity">
+                {(() => {
+                  const catName = categories.find(c => c.id === formData.category_id)?.name?.toLowerCase() || '';
+                  if (catName.includes('bangle')) return 'Quantity (Pair) *';
+                  if (catName.includes('bead')) return 'Quantity (Strings) *';
+                  return 'Number of Pieces *';
+                })()}
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="quantity"
+                  type="number"
+                  value={formData.quantity}
+                  onChange={(e) => updateField('quantity', parseInt(e.target.value) || 0)}
+                  required
+                />
+                {(() => {
+                  const catName = categories.find(c => c.id === formData.category_id)?.name?.toLowerCase() || '';
+                  if (catName.includes('bangle')) return <span className="text-sm text-muted-foreground whitespace-nowrap">, Pair</span>;
+                  if (catName.includes('bead')) return <span className="text-sm text-muted-foreground whitespace-nowrap">, Strings</span>;
+                  return null;
+                })()}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="low_stock">Low Stock Alert Level</Label>
