@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTypesOfWork } from '@/hooks/useTypesOfWork';
-import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle, Pencil, Check, X, Hammer, Shield } from 'lucide-react';
+import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle, Pencil, Check, X, Hammer, Shield, HardDrive } from 'lucide-react';
 import { UserManagement } from '@/components/settings/UserManagement';
+import { BackupRestore } from '@/components/settings/BackupRestore';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import {
   AlertDialog,
@@ -267,6 +268,12 @@ export default function Settings() {
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
               User Management
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="backup" className="flex items-center gap-2">
+              <HardDrive className="w-4 h-4" />
+              Backup & Restore
             </TabsTrigger>
           )}
           {isAdmin && (
@@ -566,6 +573,11 @@ export default function Settings() {
             <UserManagement />
           </TabsContent>
         )}
+
+        {/* Backup & Restore Tab */}
+        {isAdmin && <TabsContent value="backup">
+          <BackupRestore />
+        </TabsContent>}
 
         {/* Data Management Tab */}
         {isAdmin && <TabsContent value="data">

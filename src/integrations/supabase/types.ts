@@ -53,6 +53,45 @@ export type Database = {
         }
         Relationships: []
       }
+      backups: {
+        Row: {
+          backup_type: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          notes: string | null
+          status: string
+          tables_included: Json | null
+        }
+        Insert: {
+          backup_type?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          notes?: string | null
+          status?: string
+          tables_included?: Json | null
+        }
+        Update: {
+          backup_type?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          notes?: string | null
+          status?: string
+          tables_included?: Json | null
+        }
+        Relationships: []
+      }
       business_settings: {
         Row: {
           address: string | null
