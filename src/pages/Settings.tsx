@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTypesOfWork } from '@/hooks/useTypesOfWork';
 import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle, Pencil, Check, X, Hammer, Shield, HardDrive } from 'lucide-react';
 import { UserManagement } from '@/components/settings/UserManagement';
+import { BackupRestore } from '@/components/settings/BackupRestore';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import {
   AlertDialog,
