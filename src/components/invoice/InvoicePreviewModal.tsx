@@ -6,7 +6,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { FileText } from 'lucide-react';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
 
@@ -23,12 +22,18 @@ interface InvoicePreviewModalProps {
   businessSettings: BusinessSettings | null;
   notes?: string;
   showMakingCharges?: boolean;
+  gstPercentage?: number;
+  roundOff?: number;
+  advancePaid?: number;
 }
+
+const PURPLE = '#4a2060';
+const PURPLE_LIGHT = '#f5eeff';
+const ROW_ALT = '#fdf9ff';
+const PURPLE_BORDER = '#6b3a8a';
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
@@ -57,16 +62,17 @@ export function InvoicePreviewModal({
   totals,
   businessSettings,
   notes,
-  showMakingCharges = true,
+  gstPercentage = 3,
+  roundOff = 0,
+  advancePaid = 0,
 }: InvoicePreviewModalProps) {
   const [logoLoaded, setLogoLoaded] = useState(false);
 
   useEffect(() => {
-    // Preload logo
     const img = new Image();
     img.onload = () => setLogoLoaded(true);
     img.onerror = () => setLogoLoaded(false);
-    img.src = '/images/nispaditha-logo.png';
+    img.src = '/nispaditha-logo.png';
   }, []);
 
   if (!businessSettings) return null;
@@ -77,9 +83,14 @@ export function InvoicePreviewModal({
     year: 'numeric',
   });
 
+  const cgst = (totals.gstAmount || 0) / 2;
+  const sgst = (totals.gstAmount || 0) / 2;
+  const grandTotal = (totals.grandTotal || 0) + roundOff;
+  const balanceDue = grandTotal - advancePaid;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] p-0">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
         <DialogHeader className="px-6 pt-6 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
@@ -88,102 +99,132 @@ export function InvoicePreviewModal({
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(90vh-80px)]">
-          {/* Invoice Preview - Mimics PDF Layout */}
-          <div className="p-8 bg-white text-black" id="invoice-preview">
-            {/* Logo */}
-            {logoLoaded && (
-              <div className="flex justify-center mb-4">
-                <img 
-                  src="/images/nispaditha-logo.png" 
-                  alt="Logo" 
-                  className="h-16 object-contain"
-                />
+          <div className="bg-white text-black" id="invoice-preview" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+            {/* PURPLE HEADER BAR */}
+            <div
+              className="grid grid-cols-3 items-center px-6 py-3"
+              style={{ background: PURPLE, color: '#fff', minHeight: 70, maxHeight: 70 }}
+            >
+              <div>
+                <div className="font-bold text-[13px] leading-tight">
+                  {businessSettings.business_name || 'Nispaditha Ventures LLP'}
+                </div>
+                {businessSettings.address && (
+                  <div className="text-[8px] leading-snug mt-0.5 opacity-95">
+                    {businessSettings.address}
+                  </div>
+                )}
               </div>
-            )}
-
-            {/* Header */}
-            <div className="text-center mb-4">
-              <h1 className="text-xl font-bold">{businessSettings.business_name}</h1>
-              {businessSettings.address && (
-                <p className="text-sm text-gray-600">{businessSettings.address}</p>
-              )}
-              {businessSettings.phone && (
-                <p className="text-sm text-gray-600">Phone: {businessSettings.phone}</p>
-              )}
-              {businessSettings.gst_number && (
-                <p className="text-sm text-gray-600">GSTIN: {businessSettings.gst_number}</p>
-              )}
+              <div className="flex justify-center">
+                {logoLoaded && (
+                  <img
+                    src="/nispaditha-logo.png"
+                    alt="Logo"
+                    className="object-contain"
+                    style={{ height: 64, filter: 'brightness(0) invert(1)' }}
+                  />
+                )}
+              </div>
+              <div className="text-right text-[10px] leading-snug">
+                {businessSettings.phone && <div>Phone: {businessSettings.phone}</div>}
+                {businessSettings.gst_number && (
+                  <div className="mt-0.5">GSTIN: {businessSettings.gst_number}</div>
+                )}
+              </div>
             </div>
 
-            <Separator className="my-4 bg-gray-400" />
-
-            {/* TAX INVOICE Title */}
-            <h2 className="text-center text-lg font-bold mb-4">TAX INVOICE</h2>
-
-            {/* Invoice Info Row */}
-            <div className="grid grid-cols-3 text-sm mb-4">
-              <div>Invoice No: {invoiceNumber}</div>
-              <div>Date: {dateStr}</div>
-              <div>Payment: {formatPaymentMode(paymentMode)}</div>
+            {/* TAX INVOICE BAND */}
+            <div
+              className="text-center py-2 font-bold uppercase"
+              style={{
+                background: PURPLE_LIGHT,
+                color: PURPLE,
+                letterSpacing: '4px',
+                borderTop: `2px solid ${PURPLE_BORDER}`,
+                fontSize: 13,
+              }}
+            >
+              Tax Invoice
             </div>
 
-            <Separator className="my-3 bg-gray-300" />
-
-            {/* Bill To */}
-            <div className="mb-4">
-              <p className="font-bold text-sm">Bill To:</p>
-              <p className="text-sm">{clientName || 'Walk-in Customer'}</p>
-              {clientPhone && <p className="text-sm">Phone: {clientPhone}</p>}
+            {/* META ROW */}
+            <div className="grid grid-cols-3 border-b" style={{ borderColor: '#e5e0ee' }}>
+              {[
+                { label: 'INVOICE NO', value: invoiceNumber },
+                { label: 'INVOICE DATE', value: dateStr },
+                { label: 'PAYMENT MODE', value: formatPaymentMode(paymentMode) },
+              ].map((c, i) => (
+                <div
+                  key={c.label}
+                  className="px-4 py-3"
+                  style={{
+                    borderRight: i < 2 ? `1px solid #e5e0ee` : undefined,
+                  }}
+                >
+                  <div className="text-[9px] tracking-wider text-gray-500">{c.label}</div>
+                  <div className="text-[12px] font-semibold mt-0.5">{c.value}</div>
+                </div>
+              ))}
             </div>
 
-            {/* Items Table */}
-            <div className="border border-gray-300 rounded overflow-hidden mb-4">
-              <table className="w-full text-xs">
-                <thead className="bg-gray-800 text-white">
-                  <tr>
-                    <th className="px-2 py-2 text-center w-[5%]">Sr</th>
-                    <th className="px-2 py-2 text-left w-[22%]">Description</th>
-                    <th className="px-2 py-2 text-left w-[10%]">SKU</th>
-                     <th className="px-2 py-2 text-right w-[8%]">Wt(G)</th>
-                     <th className="px-2 py-2 text-center w-[5%]">Qty</th>
-                    <th className="px-2 py-2 text-right w-[10%]">Rate/g</th>
-                    {showMakingCharges && (
-                      <>
-                        <th className="px-2 py-2 text-right w-[10%]">MC</th>
-                        <th className="px-2 py-2 text-right w-[8%]">MC/g</th>
-                        <th className="px-2 py-2 text-right w-[5%]">Disc</th>
-                       </>
-                     )}
-                     <th className="px-2 py-2 text-right w-[8%]">MRP</th>
-                     <th className="px-2 py-2 text-right w-[12%]">Total</th>
+            {/* BILL TO ROW */}
+            <div className="px-6 py-4 flex items-center justify-between">
+              <div>
+                <div className="text-[18px]" style={{ fontFamily: 'Georgia, serif', fontWeight: 700 }}>
+                  {clientName || 'Walk-in Customer'}
+                </div>
+                {clientPhone && (
+                  <div className="text-[11px] text-gray-500 mt-0.5">{clientPhone}</div>
+                )}
+              </div>
+              <div
+                className="text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full"
+                style={{ background: PURPLE }}
+              >
+                {formatPaymentMode(paymentMode)}
+              </div>
+            </div>
+
+            {/* PRODUCT TABLE */}
+            <div className="px-6">
+              <table className="w-full text-[11px] border-collapse">
+                <thead>
+                  <tr style={{ background: PURPLE, color: '#fff' }}>
+                    <th className="px-2 py-2 text-center font-semibold">Sr</th>
+                    <th className="px-2 py-2 text-left font-semibold">Product Name</th>
+                    <th className="px-2 py-2 text-left font-semibold">SKU</th>
+                    <th className="px-2 py-2 text-right font-semibold">Wt(G)</th>
+                    <th className="px-2 py-2 text-center font-semibold">Qty</th>
+                    <th className="px-2 py-2 text-right font-semibold">MC (₹)</th>
+                    <th className="px-2 py-2 text-right font-semibold">Disc (₹)</th>
+                    <th className="px-2 py-2 text-right font-semibold">MRP (₹)</th>
+                    <th className="px-2 py-2 text-right font-semibold">Total (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item, index) => {
+                  {items.map((item, i) => {
                     const isFlat = item.pricing_mode === 'flat_price';
                     return (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-2 py-2 text-center border-t border-gray-200">{index + 1}</td>
-                        <td className="px-2 py-2 text-left border-t border-gray-200">{item.product_name}</td>
-                        <td className="px-2 py-2 text-left border-t border-gray-200 font-mono">{item.sku}</td>
-                        <td className="px-2 py-2 text-right border-t border-gray-200">{isFlat ? '-' : item.weight_grams.toFixed(2)}</td>
-                        <td className="px-2 py-2 text-center border-t border-gray-200">{item.quantity}</td>
-                        <td className="px-2 py-2 text-right border-t border-gray-200">{isFlat ? '-' : formatCurrency(item.rate_per_gram)}</td>
-                        {showMakingCharges && (
-                          <>
-                            <td className="px-2 py-2 text-right border-t border-gray-200">{isFlat ? '-' : formatCurrency(item.making_charges)}</td>
-                            <td className="px-2 py-2 text-right border-t border-gray-200 text-gray-500">
-                              {isFlat ? '-' : `${formatCurrency(item.making_charges_per_gram)}/g`}
-                            </td>
-                            <td className="px-2 py-2 text-right border-t border-gray-200">
-                              {item.discount > 0 ? formatCurrency(item.discount) : '-'}
-                            </td>
-                          </>
-                         )}
-                        <td className="px-2 py-2 text-right border-t border-gray-200 text-gray-500">
+                      <tr key={i} style={{ background: i % 2 === 1 ? ROW_ALT : '#fff' }}>
+                        <td className="px-2 py-2 text-center border-t" style={{ borderColor: '#eee' }}>{i + 1}</td>
+                        <td className="px-2 py-2 border-t" style={{ borderColor: '#eee' }}>{item.product_name}</td>
+                        <td className="px-2 py-2 border-t font-mono text-[10px]" style={{ borderColor: '#eee' }}>{item.sku}</td>
+                        <td className="px-2 py-2 text-right border-t" style={{ borderColor: '#eee' }}>
+                          {isFlat ? '-' : Number(item.weight_grams).toFixed(2)}
+                        </td>
+                        <td className="px-2 py-2 text-center border-t" style={{ borderColor: '#eee' }}>{item.quantity}</td>
+                        <td className="px-2 py-2 text-right border-t" style={{ borderColor: '#eee' }}>
+                          {isFlat ? '-' : formatCurrency(item.making_charges || 0)}
+                        </td>
+                        <td className="px-2 py-2 text-right border-t" style={{ borderColor: '#eee' }}>
+                          {item.discount > 0 ? formatCurrency(item.discount) : '-'}
+                        </td>
+                        <td className="px-2 py-2 text-right border-t" style={{ borderColor: '#eee' }}>
                           {item.mrp > 0 ? formatCurrency(item.mrp) : '-'}
                         </td>
-                        <td className="px-2 py-2 text-right border-t border-gray-200 font-medium">{formatCurrency(item.line_total)}</td>
+                        <td className="px-2 py-2 text-right border-t font-semibold" style={{ borderColor: '#eee' }}>
+                          {formatCurrency(item.line_total)}
+                        </td>
                       </tr>
                     );
                   })}
@@ -191,47 +232,91 @@ export function InvoicePreviewModal({
               </table>
             </div>
 
-            {/* Totals */}
-            <div className="flex justify-end mb-4">
-              <div className="w-64 text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>{formatCurrency(totals.subtotal)}</span>
-                </div>
+            {/* TOTALS BLOCK */}
+            <div className="px-6 mt-4 flex justify-end">
+              <div className="w-72 text-[12px] space-y-1.5">
+                <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>₹ {formatCurrency(totals.subtotal)}</span></div>
                 {totals.discountAmount > 0 && (
-                  <div className="flex justify-between text-destructive">
-                    <span>Total Discount:</span>
-                    <span>-{formatCurrency(totals.discountAmount)}</span>
+                  <div className="flex justify-between text-red-700">
+                    <span>Total Discount</span><span>− ₹ {formatCurrency(totals.discountAmount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span>GST (3%):</span>
-                  <span>{formatCurrency(totals.gstAmount)}</span>
+                <div className="flex justify-between"><span className="text-gray-600">CGST @ {(gstPercentage / 2).toFixed(2)}%</span><span>₹ {formatCurrency(cgst)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">SGST @ {(gstPercentage / 2).toFixed(2)}%</span><span>₹ {formatCurrency(sgst)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Round Off</span><span>{roundOff >= 0 ? '+' : '−'} ₹ {formatCurrency(Math.abs(roundOff))}</span></div>
+              </div>
+            </div>
+
+            {/* GRAND TOTAL BAND */}
+            <div
+              className="mx-6 mt-3 px-4 py-3 flex items-center justify-between text-white font-bold"
+              style={{ background: PURPLE, fontSize: 16 }}
+            >
+              <span className="uppercase tracking-wider text-[13px]">Grand Total</span>
+              <span>₹ {formatCurrency(grandTotal)}</span>
+            </div>
+
+            {/* BOTTOM SECTION (T&C + Payment Summary) */}
+            <div className="px-6 mt-5 grid grid-cols-2 gap-4">
+              <div className="border rounded" style={{ borderColor: PURPLE_BORDER }}>
+                <div
+                  className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider"
+                  style={{ background: PURPLE_LIGHT, color: PURPLE }}
+                >
+                  Terms & Conditions
                 </div>
-                <Separator className="my-2" />
-                <div className="flex justify-between font-bold text-base">
-                  <span>Grand Total:</span>
-                  <span>{formatCurrency(totals.grandTotal)}</span>
+                <ol className="px-4 py-2 text-[10px] text-gray-700 list-decimal list-inside space-y-1 leading-snug">
+                  <li>Payment due within 5 days. Late payments attract 3% per month interest.</li>
+                  <li>No return or refund except manufacturing defects or transit damage.</li>
+                  <li>Exchange/repurchase: Material value only. No compensation for making charges, designing charges, wastage, or taxes.</li>
+                </ol>
+              </div>
+              <div className="space-y-2">
+                <div className="border rounded px-3 py-2 flex justify-between items-center" style={{ borderColor: PURPLE_BORDER }}>
+                  <span className="text-[11px] text-gray-700">Grand Total</span>
+                  <span className="font-bold">₹ {formatCurrency(grandTotal)}</span>
+                </div>
+                <div className="border rounded px-3 py-2 flex justify-between items-center" style={{ borderColor: PURPLE_BORDER }}>
+                  <span className="text-[11px] text-gray-700">Advance Paid</span>
+                  <span className="font-bold">₹ {formatCurrency(advancePaid)}</span>
+                </div>
+                <div
+                  className="rounded px-3 py-2 flex justify-between items-center text-white font-bold"
+                  style={{ background: PURPLE }}
+                >
+                  <span className="text-[11px] uppercase tracking-wider">Balance Due</span>
+                  <span>₹ {formatCurrency(balanceDue)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Notes */}
+            {/* NOTES */}
             {notes && (
-              <div className="text-sm italic text-gray-600 mb-6">
-                Note: {notes}
-              </div>
+              <div className="px-6 mt-4 text-[10px] italic text-gray-500">Note: {notes}</div>
             )}
 
-            {/* Footer */}
-            <div className="flex justify-between items-end mt-8 pt-4 border-t border-gray-300">
+            {/* SIGNATURE ROW */}
+            <div className="px-6 mt-10 grid grid-cols-2 gap-8 pb-6">
               <div>
-                <div className="w-32 border-t border-gray-400 mt-8"></div>
-                <p className="text-xs">Authorized Signature</p>
+                <div className="border-t border-gray-400 mt-6"></div>
+                <div className="text-[10px] text-gray-600 mt-1">Customer Signature</div>
               </div>
               <div className="text-right">
-                <p className="font-bold text-sm">Thank you for your business!</p>
-                <p className="text-xs text-gray-500">This is a computer generated invoice.</p>
+                <div className="border-t border-gray-400 mt-6"></div>
+                <div className="text-[10px] text-gray-600 mt-1">Authorized Signature</div>
+              </div>
+            </div>
+
+            {/* PURPLE FOOTER BAR */}
+            <div
+              className="px-6 py-2.5 flex items-center justify-between"
+              style={{ background: PURPLE, color: '#fff' }}
+            >
+              <div className="italic text-[12px]" style={{ fontFamily: 'Georgia, serif' }}>
+                Thank you for your business!
+              </div>
+              <div className="text-[9px] opacity-90">
+                Computer generated invoice · Nispaditha Ventures LLP
               </div>
             </div>
           </div>
