@@ -225,6 +225,53 @@ export type Database = {
           },
         ]
       }
+      client_schemes: {
+        Row: {
+          amount_paid: number
+          client_id: string
+          created_at: string
+          duration_months: number
+          id: string
+          monthly_amount: number
+          name: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number
+          client_id: string
+          created_at?: string
+          duration_months?: number
+          id?: string
+          monthly_amount?: number
+          name: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          client_id?: string
+          created_at?: string
+          duration_months?: number
+          id?: string
+          monthly_amount?: number
+          name?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_schemes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -237,6 +284,8 @@ export type Database = {
           name: string
           outstanding_balance: number
           phone: string | null
+          polish_total_allowed: number
+          polish_used: number
           total_purchases: number
           updated_at: string
         }
@@ -251,6 +300,8 @@ export type Database = {
           name: string
           outstanding_balance?: number
           phone?: string | null
+          polish_total_allowed?: number
+          polish_used?: number
           total_purchases?: number
           updated_at?: string
         }
@@ -265,6 +316,8 @@ export type Database = {
           name?: string
           outstanding_balance?: number
           phone?: string | null
+          polish_total_allowed?: number
+          polish_used?: number
           total_purchases?: number
           updated_at?: string
         }
@@ -471,6 +524,7 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string
+          description: string | null
           discount: number
           discounted_making: number
           gold_value: number
@@ -491,6 +545,7 @@ export type Database = {
         Insert: {
           category?: string | null
           created_at?: string
+          description?: string | null
           discount?: number
           discounted_making?: number
           gold_value?: number
@@ -511,6 +566,7 @@ export type Database = {
         Update: {
           category?: string | null
           created_at?: string
+          description?: string | null
           discount?: number
           discounted_making?: number
           gold_value?: number
@@ -547,12 +603,14 @@ export type Database = {
       }
       invoices: {
         Row: {
+          advance_paid: number
           client_id: string | null
           created_at: string
           created_by: string | null
           discount_amount: number
           grand_total: number
           gst_amount: number
+          gst_percentage: number
           id: string
           invoice_date: string
           invoice_number: string
@@ -560,6 +618,7 @@ export type Database = {
           paid_at: string | null
           payment_mode: string | null
           payment_status: string
+          round_off: number
           sent_at: string | null
           status: string
           store_id: string | null
@@ -567,12 +626,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          advance_paid?: number
           client_id?: string | null
           created_at?: string
           created_by?: string | null
           discount_amount?: number
           grand_total?: number
           gst_amount?: number
+          gst_percentage?: number
           id?: string
           invoice_date?: string
           invoice_number: string
@@ -580,6 +641,7 @@ export type Database = {
           paid_at?: string | null
           payment_mode?: string | null
           payment_status?: string
+          round_off?: number
           sent_at?: string | null
           status?: string
           store_id?: string | null
@@ -587,12 +649,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          advance_paid?: number
           client_id?: string | null
           created_at?: string
           created_by?: string | null
           discount_amount?: number
           grand_total?: number
           gst_amount?: number
+          gst_percentage?: number
           id?: string
           invoice_date?: string
           invoice_number?: string
@@ -600,6 +664,7 @@ export type Database = {
           paid_at?: string | null
           payment_mode?: string | null
           payment_status?: string
+          round_off?: number
           sent_at?: string | null
           status?: string
           store_id?: string | null
