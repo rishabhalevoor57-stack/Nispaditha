@@ -489,12 +489,12 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   return doc;
 }
 
-export async function downloadInvoicePdf(data: InvoicePdfData) {
+export async function downloadInvoicePdf(data: InvoicePdfData, _showMakingCharges = true) {
   const doc = await generateInvoicePdf(data);
   doc.save(`${data.invoiceNumber}.pdf`);
 }
 
-export async function printInvoice(data: InvoicePdfData) {
+export async function printInvoice(data: InvoicePdfData, _showMakingCharges = true) {
   const doc = await generateInvoicePdf(data);
   const pdfBlob = doc.output('blob');
   const pdfUrl = URL.createObjectURL(pdfBlob);
