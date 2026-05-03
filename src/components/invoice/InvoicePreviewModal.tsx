@@ -72,7 +72,7 @@ export function InvoicePreviewModal({
     const img = new Image();
     img.onload = () => setLogoLoaded(true);
     img.onerror = () => setLogoLoaded(false);
-    img.src = '/nispaditha-logo.png';
+    img.src = '/images/nispaditha-logo.png';
   }, []);
 
   if (!businessSettings) return null;
@@ -118,7 +118,7 @@ export function InvoicePreviewModal({
               <div className="flex justify-center">
                 {logoLoaded && (
                   <img
-                    src="/nispaditha-logo.png"
+                    src="/images/nispaditha-logo.png"
                     alt="Logo"
                     className="object-contain"
                     style={{ height: 64, filter: 'brightness(0) invert(1)' }}
