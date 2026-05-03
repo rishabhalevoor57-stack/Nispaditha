@@ -222,13 +222,14 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   yPos += 14;
   doc.setTextColor(0, 0, 0);
 
-  // ================== PRODUCT TABLE (NO MC column on print) ==================
+  // ================== PRODUCT TABLE ==================
   const tableColumns = [
     { header: 'Sr', dataKey: 'sr' },
     { header: 'Product Name', dataKey: 'name' },
     { header: 'SKU', dataKey: 'sku' },
     { header: 'Wt(G)', dataKey: 'weight' },
     { header: 'Qty', dataKey: 'qty' },
+    { header: `MC (${RUPEE})`, dataKey: 'mc' },
     { header: `Disc (${RUPEE})`, dataKey: 'disc' },
     { header: `MRP (${RUPEE})`, dataKey: 'mrp' },
     { header: `Total (${RUPEE})`, dataKey: 'total' },
@@ -242,6 +243,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       sku: item.sku,
       weight: isFlat ? '-' : Number(item.weight_grams).toFixed(2),
       qty: item.quantity.toString(),
+      mc: isFlat || !item.making_charges ? '-' : formatCurrency(item.making_charges),
       disc: item.discount > 0 ? formatCurrency(item.discount) : '-',
       mrp: item.mrp > 0 ? formatCurrency(item.mrp) : '-',
       total: formatCurrency(item.line_total),
@@ -256,11 +258,11 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     tableWidth: contentWidth,
     styles: {
       font: FONT,
-      fontSize: 8,
-      cellPadding: 2.8,
+      fontSize: 7.5,
+      cellPadding: 2.2,
       lineWidth: 0.1,
       lineColor: [220, 215, 230],
-      overflow: 'linebreak',
+      overflow: 'ellipsize',
       textColor: [30, 30, 30],
     },
     headStyles: {
@@ -268,20 +270,22 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       fillColor: PURPLE,
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8.5,
+      fontSize: 7.8,
       halign: 'center',
-      cellPadding: 3,
+      cellPadding: 2.5,
+      overflow: 'visible',
     },
     alternateRowStyles: { fillColor: ROW_ALT },
     columnStyles: {
-      0: { cellWidth: contentWidth * 0.05, halign: 'center' },
-      1: { cellWidth: contentWidth * 0.30, halign: 'left' },
-      2: { cellWidth: contentWidth * 0.13, halign: 'left' },
-      3: { cellWidth: contentWidth * 0.09, halign: 'right' },
-      4: { cellWidth: contentWidth * 0.07, halign: 'center' },
-      5: { cellWidth: contentWidth * 0.11, halign: 'right' },
-      6: { cellWidth: contentWidth * 0.11, halign: 'right' },
-      7: { cellWidth: contentWidth * 0.14, halign: 'right' },
+      0: { cellWidth: contentWidth * 0.04, halign: 'center' },
+      1: { cellWidth: contentWidth * 0.28, halign: 'left', overflow: 'ellipsize' },
+      2: { cellWidth: contentWidth * 0.14, halign: 'left', overflow: 'ellipsize' },
+      3: { cellWidth: contentWidth * 0.08, halign: 'right' },
+      4: { cellWidth: contentWidth * 0.05, halign: 'center' },
+      5: { cellWidth: contentWidth * 0.10, halign: 'right' },
+      6: { cellWidth: contentWidth * 0.08, halign: 'right' },
+      7: { cellWidth: contentWidth * 0.11, halign: 'right' },
+      8: { cellWidth: contentWidth * 0.12, halign: 'right' },
     },
   });
 
