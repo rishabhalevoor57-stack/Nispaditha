@@ -187,7 +187,17 @@ export function InvoicePreviewModal({
 
             {/* PRODUCT TABLE */}
             <div className="px-6">
-              <table className="w-full text-[11px] border-collapse">
+              <table className="w-full text-[11px] border-collapse" style={{ tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '5%' }} />
+                  <col style={{ width: '30%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '9%' }} />
+                  <col style={{ width: '7%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '14%' }} />
+                </colgroup>
                 <thead>
                   <tr style={{ background: PURPLE, color: '#fff' }}>
                     <th className="px-2 py-2 text-center font-semibold">Sr</th>
@@ -195,7 +205,6 @@ export function InvoicePreviewModal({
                     <th className="px-2 py-2 text-left font-semibold">SKU</th>
                     <th className="px-2 py-2 text-right font-semibold">Wt(G)</th>
                     <th className="px-2 py-2 text-center font-semibold">Qty</th>
-                    <th className="px-2 py-2 text-right font-semibold">MC (₹)</th>
                     <th className="px-2 py-2 text-right font-semibold">Disc (₹)</th>
                     <th className="px-2 py-2 text-right font-semibold">MRP (₹)</th>
                     <th className="px-2 py-2 text-right font-semibold">Total (₹)</th>
@@ -207,15 +216,12 @@ export function InvoicePreviewModal({
                     return (
                       <tr key={i} style={{ background: i % 2 === 1 ? ROW_ALT : '#fff' }}>
                         <td className="px-2 py-2 text-center border-t" style={{ borderColor: '#eee' }}>{i + 1}</td>
-                        <td className="px-2 py-2 border-t" style={{ borderColor: '#eee' }}>{item.product_name}</td>
-                        <td className="px-2 py-2 border-t font-mono text-[10px]" style={{ borderColor: '#eee' }}>{item.sku}</td>
+                        <td className="px-2 py-2 border-t break-words" style={{ borderColor: '#eee' }}>{item.product_name}</td>
+                        <td className="px-2 py-2 border-t font-mono text-[10px] break-all" style={{ borderColor: '#eee' }}>{item.sku}</td>
                         <td className="px-2 py-2 text-right border-t" style={{ borderColor: '#eee' }}>
                           {isFlat ? '-' : Number(item.weight_grams).toFixed(2)}
                         </td>
                         <td className="px-2 py-2 text-center border-t" style={{ borderColor: '#eee' }}>{item.quantity}</td>
-                        <td className="px-2 py-2 text-right border-t" style={{ borderColor: '#eee' }}>
-                          {isFlat ? '-' : formatCurrency(item.making_charges || 0)}
-                        </td>
                         <td className="px-2 py-2 text-right border-t" style={{ borderColor: '#eee' }}>
                           {item.discount > 0 ? formatCurrency(item.discount) : '-'}
                         </td>
@@ -235,15 +241,15 @@ export function InvoicePreviewModal({
             {/* TOTALS BLOCK */}
             <div className="px-6 mt-4 flex justify-end">
               <div className="w-72 text-[12px] space-y-1.5">
-                <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>₹ {formatCurrency(totals.subtotal)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span>{`\u20B9 ${formatCurrency(totals.subtotal)}`}</span></div>
                 {totals.discountAmount > 0 && (
                   <div className="flex justify-between text-red-700">
-                    <span>Total Discount</span><span>− ₹ {formatCurrency(totals.discountAmount)}</span>
+                    <span>Total Discount</span><span>{`\u2212 \u20B9 ${formatCurrency(totals.discountAmount)}`}</span>
                   </div>
                 )}
-                <div className="flex justify-between"><span className="text-gray-600">CGST @ {(gstPercentage / 2).toFixed(2)}%</span><span>₹ {formatCurrency(cgst)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-600">SGST @ {(gstPercentage / 2).toFixed(2)}%</span><span>₹ {formatCurrency(sgst)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-600">Round Off</span><span>{roundOff >= 0 ? '+' : '−'} ₹ {formatCurrency(Math.abs(roundOff))}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">CGST @ {(gstPercentage / 2).toFixed(2)}%</span><span>{`\u20B9 ${formatCurrency(cgst)}`}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">SGST @ {(gstPercentage / 2).toFixed(2)}%</span><span>{`\u20B9 ${formatCurrency(sgst)}`}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Round Off</span><span>{`${roundOff >= 0 ? '+' : '\u2212'} \u20B9 ${formatCurrency(Math.abs(roundOff))}`}</span></div>
               </div>
             </div>
 
@@ -253,7 +259,7 @@ export function InvoicePreviewModal({
               style={{ background: PURPLE, fontSize: 16 }}
             >
               <span className="uppercase tracking-wider text-[13px]">Grand Total</span>
-              <span>₹ {formatCurrency(grandTotal)}</span>
+              <span>{`\u20B9 ${formatCurrency(grandTotal)}`}</span>
             </div>
 
             {/* BOTTOM SECTION (T&C + Payment Summary) */}
@@ -274,23 +280,49 @@ export function InvoicePreviewModal({
               <div className="space-y-2">
                 <div className="border rounded px-3 py-2 flex justify-between items-center" style={{ borderColor: PURPLE_BORDER }}>
                   <span className="text-[11px] text-gray-700">Grand Total</span>
-                  <span className="font-bold">₹ {formatCurrency(grandTotal)}</span>
+                  <span className="font-bold whitespace-nowrap">{`\u20B9 ${formatCurrency(grandTotal)}`}</span>
                 </div>
                 <div className="border rounded px-3 py-2 flex justify-between items-center" style={{ borderColor: PURPLE_BORDER }}>
                   <span className="text-[11px] text-gray-700">Advance Paid</span>
-                  <span className="font-bold">₹ {formatCurrency(advancePaid)}</span>
+                  <span className="font-bold whitespace-nowrap">{`\u20B9 ${formatCurrency(advancePaid)}`}</span>
                 </div>
-                <div
-                  className="rounded px-3 py-2 flex justify-between items-center text-white font-bold"
-                  style={{ background: PURPLE }}
-                >
-                  <span className="text-[11px] uppercase tracking-wider">Balance Due</span>
-                  <span>₹ {formatCurrency(balanceDue)}</span>
-                </div>
+                {(() => {
+                  const isPaidFull = advancePaid >= grandTotal && grandTotal > 0;
+                  const isOverpaid = advancePaid > grandTotal;
+                  const isPartial = advancePaid > 0 && advancePaid < grandTotal;
+                  if (isPaidFull && !isOverpaid) {
+                    return (
+                      <div
+                        className="rounded px-3 py-2 flex justify-center items-center text-white font-bold uppercase tracking-wider"
+                        style={{ background: '#27ae60', fontSize: 12 }}
+                      >
+                        ✓ PAID IN FULL
+                      </div>
+                    );
+                  }
+                  return (
+                    <>
+                      <div
+                        className="rounded px-3 py-2 flex justify-between items-center text-white font-bold"
+                        style={{ background: PURPLE }}
+                      >
+                        <span className="text-[11px] uppercase tracking-wider">Balance Due</span>
+                        <span className="whitespace-nowrap">{`\u20B9 ${formatCurrency(Math.max(0, balanceDue))}`}</span>
+                      </div>
+                      {isPartial && (
+                        <div className="text-[10px] text-red-700 px-1">Partial Payment Received</div>
+                      )}
+                      {isOverpaid && (
+                        <div className="text-[10px] px-1" style={{ color: '#d97706' }}>
+                          {`Excess: \u20B9 ${formatCurrency(advancePaid - grandTotal)} (to be adjusted)`}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
-            {/* NOTES */}
             {notes && (
               <div className="px-6 mt-4 text-[10px] italic text-gray-500">Note: {notes}</div>
             )}
