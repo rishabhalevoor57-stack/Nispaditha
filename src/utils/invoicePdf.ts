@@ -23,18 +23,19 @@ const PURPLE_LIGHT: [number, number, number] = [245, 238, 255];
 const ROW_ALT: [number, number, number] = [253, 249, 255];
 const PURPLE_BORDER: [number, number, number] = [107, 58, 138];
 const GREEN_PAID: [number, number, number] = [39, 174, 96];
-const ORANGE: [number, number, number] = [217, 119, 6];
+const GREEN_BG: [number, number, number] = [234, 250, 241];
+const ORANGE: [number, number, number] = [230, 126, 34];
+const ORANGE_BG: [number, number, number] = [255, 243, 224];
 
 const RUPEE = '\u20B9';
 
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-IN', {
+const fmt = (amount: number): string =>
+  new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
-};
+  }).format(amount || 0);
 
-const money = (n: number) => `${RUPEE} ${formatCurrency(n)}`;
+const money = (n: number) => `${RUPEE} ${fmt(n)}`;
 
 const formatPaymentMode = (mode: string): string => {
   const modes: Record<string, string> = {
@@ -63,7 +64,6 @@ async function loadLogoDataUrl(): Promise<string | null> {
   }
 }
 
-// White-tint a PNG so it shows on the purple header
 async function whitenLogo(dataUrl: string): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -94,7 +94,7 @@ async function whitenLogo(dataUrl: string): Promise<string> {
 
 export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   await ensureNotoLoaded();
-  const doc = new jsPDF();
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const fontRegistered = registerNotoFont(doc);
   const FONT = fontRegistered ? 'NotoSans' : 'helvetica';
   doc.setFont(FONT, 'normal');
@@ -108,30 +108,31 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const roundOff = data.roundOff ?? 0;
   const advancePaid = data.advancePaid ?? 0;
 
-  // ================== PURPLE HEADER ==================
-  const headerHeight = 26;
+  // ================== PURPLE HEADER (compact, ~22mm) ==================
+  const headerHeight = 22;
   doc.setFillColor(...PURPLE);
   doc.rect(0, 0, pageWidth, headerHeight, 'F');
 
   doc.setTextColor(255, 255, 255);
   doc.setFont(FONT, 'bold');
-  doc.setFontSize(12);
-  doc.text(data.businessSettings.business_name || 'Nispaditha Ventures LLP', margin, 9);
+  doc.setFontSize(11);
+  doc.text(data.businessSettings.business_name || 'Nispaditha Ventures LLP', margin, 8);
   doc.setFont(FONT, 'normal');
   doc.setFontSize(7);
-  if (data.businessSettings.address) {
-    const wrapped = doc.splitTextToSize(data.businessSettings.address, pageWidth * 0.38);
-    doc.text(wrapped, margin, 13);
-  }
+  const addr =
+    data.businessSettings.address ||
+    '60 Feet Rd, AECS Layout - C Block, Kundalahalli, Brookefield, Bengaluru, Karnataka 560037';
+  const wrapped = doc.splitTextToSize(addr, pageWidth * 0.4);
+  doc.text(wrapped, margin, 12);
 
   // CENTER logo (white-tinted)
   try {
     const raw = await loadLogoDataUrl();
     if (raw) {
       const white = await whitenLogo(raw);
-      const logoH = 18;
-      const logoW = 30;
-      doc.addImage(white, 'PNG', pageWidth / 2 - logoW / 2, 4, logoW, logoH);
+      const logoH = 16;
+      const logoW = 26;
+      doc.addImage(white, 'PNG', pageWidth / 2 - logoW / 2, 3, logoW, logoH);
     }
   } catch {
     /* logo optional */
@@ -139,18 +140,28 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
 
   doc.setFont(FONT, 'normal');
   doc.setFontSize(8);
-  if (data.businessSettings.phone) {
-    doc.text(`Phone: ${data.businessSettings.phone}`, pageWidth - margin, 10, { align: 'right' });
-  }
-  if (data.businessSettings.gst_number) {
-    doc.text(`GSTIN: ${data.businessSettings.gst_number}`, pageWidth - margin, 15, { align: 'right' });
-  }
+  doc.text(
+    `Phone: ${data.businessSettings.phone || '99868 64152'}`,
+    pageWidth - margin,
+    9,
+    { align: 'right' },
+  );
+  // GSTIN as a soft pill
+  const gstText = `GSTIN: ${data.businessSettings.gst_number || '29AAAQFN9742E1ZO'}`;
+  doc.setFontSize(7.5);
+  const gstWidth = doc.getTextWidth(gstText) + 5;
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(pageWidth - margin - gstWidth, 12, gstWidth, 5, 1, 1);
+  doc.text(gstText, pageWidth - margin - 2.5, 15.5, { align: 'right' });
 
   doc.setTextColor(0, 0, 0);
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.1);
 
   // ================== TAX INVOICE BAND ==================
   let yPos = headerHeight;
-  const bandHeight = 8;
+  const bandHeight = 7;
   doc.setFillColor(...PURPLE_LIGHT);
   doc.rect(0, yPos, pageWidth, bandHeight, 'F');
   doc.setDrawColor(...PURPLE_BORDER);
@@ -160,16 +171,16 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
 
   doc.setTextColor(...PURPLE);
   doc.setFont(FONT, 'bold');
-  doc.setFontSize(11);
-  doc.text('TAX  INVOICE', pageWidth / 2, yPos + 5.5, { align: 'center' });
+  doc.setFontSize(10);
+  doc.text('TAX  INVOICE', pageWidth / 2, yPos + 4.8, { align: 'center' });
   yPos += bandHeight;
 
   // ================== META ROW ==================
   doc.setTextColor(0, 0, 0);
-  const metaHeight = 12;
+  const metaHeight = 11;
   const colWidth = contentWidth / 3;
 
-  doc.setDrawColor(220, 220, 220);
+  doc.setDrawColor(220, 215, 230);
   doc.setLineWidth(0.2);
   doc.line(margin, yPos + metaHeight, pageWidth - margin, yPos + metaHeight);
   doc.line(margin + colWidth, yPos + 1, margin + colWidth, yPos + metaHeight - 1);
@@ -192,9 +203,9 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.text(dateStr, margin + colWidth + 2, yPos + 9);
   doc.text(formatPaymentMode(data.paymentMode), margin + colWidth * 2 + 2, yPos + 9);
 
-  yPos += metaHeight + 4;
+  yPos += metaHeight + 3;
 
-  // ================== BILL TO ROW ==================
+  // ================== BILL TO ROW (no payment mode pill) ==================
   doc.setFont(FONT, 'bold');
   doc.setFontSize(13);
   doc.setTextColor(40, 40, 40);
@@ -205,20 +216,6 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.setTextColor(110, 110, 110);
     doc.text(data.clientPhone, margin, yPos + 10);
   }
-
-  const pillText = formatPaymentMode(data.paymentMode);
-  doc.setFontSize(8);
-  doc.setFont(FONT, 'bold');
-  const pillTextWidth = doc.getTextWidth(pillText.toUpperCase());
-  const pillW = pillTextWidth + 8;
-  const pillH = 6;
-  const pillX = pageWidth - margin - pillW;
-  const pillY = yPos + 2;
-  doc.setFillColor(...PURPLE);
-  doc.roundedRect(pillX, pillY, pillW, pillH, 2, 2, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.text(pillText.toUpperCase(), pillX + pillW / 2, pillY + 4.2, { align: 'center' });
-
   yPos += 14;
   doc.setTextColor(0, 0, 0);
 
@@ -243,10 +240,10 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       sku: item.sku,
       weight: isFlat ? '-' : Number(item.weight_grams).toFixed(2),
       qty: item.quantity.toString(),
-      mc: isFlat || !item.making_charges ? '-' : formatCurrency(item.making_charges),
-      disc: item.discount > 0 ? formatCurrency(item.discount) : '-',
-      mrp: item.mrp > 0 ? formatCurrency(item.mrp) : '-',
-      total: formatCurrency(item.line_total),
+      mc: isFlat || !item.making_charges ? '-' : fmt(item.making_charges),
+      disc: item.discount > 0 ? fmt(item.discount) : '-',
+      mrp: item.mrp > 0 ? fmt(item.mrp) : '-',
+      total: fmt(item.line_total),
     };
   });
 
@@ -258,7 +255,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     tableWidth: contentWidth,
     styles: {
       font: FONT,
-      fontSize: 7.5,
+      fontSize: 8,
       cellPadding: 2.2,
       lineWidth: 0.1,
       lineColor: [220, 215, 230],
@@ -270,7 +267,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       fillColor: PURPLE,
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 7.8,
+      fontSize: 8,
       halign: 'center',
       cellPadding: 2.5,
       overflow: 'visible',
@@ -278,21 +275,21 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     alternateRowStyles: { fillColor: ROW_ALT },
     columnStyles: {
       0: { cellWidth: contentWidth * 0.04, halign: 'center' },
-      1: { cellWidth: contentWidth * 0.28, halign: 'left', overflow: 'ellipsize' },
-      2: { cellWidth: contentWidth * 0.14, halign: 'left', overflow: 'ellipsize' },
-      3: { cellWidth: contentWidth * 0.08, halign: 'right' },
+      1: { cellWidth: contentWidth * 0.27, halign: 'left', overflow: 'ellipsize' },
+      2: { cellWidth: contentWidth * 0.13, halign: 'left', overflow: 'ellipsize' },
+      3: { cellWidth: contentWidth * 0.07, halign: 'right' },
       4: { cellWidth: contentWidth * 0.05, halign: 'center' },
       5: { cellWidth: contentWidth * 0.10, halign: 'right' },
       6: { cellWidth: contentWidth * 0.08, halign: 'right' },
-      7: { cellWidth: contentWidth * 0.11, halign: 'right' },
-      8: { cellWidth: contentWidth * 0.12, halign: 'right' },
+      7: { cellWidth: contentWidth * 0.13, halign: 'right' },
+      8: { cellWidth: contentWidth * 0.13, halign: 'right' },
     },
   });
 
-  let finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
+  let finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 5;
   yPos = finalY;
 
-  // ================== TOTALS BLOCK ==================
+  // ================== TOTALS BLOCK (right aligned) ==================
   const totalsX = pageWidth - margin - 75;
   const valueX = pageWidth - margin - 1;
 
@@ -305,13 +302,13 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setFont(FONT, 'normal');
   doc.setTextColor(60, 60, 60);
 
-  const rowGap = 5.2;
+  const rowGap = 5;
   doc.text('Subtotal', totalsX, yPos);
   doc.text(money(data.totals.subtotal), valueX, yPos, { align: 'right' });
   yPos += rowGap;
 
   if (data.totals.discountAmount > 0) {
-    doc.setTextColor(180, 0, 0);
+    doc.setTextColor(180, 30, 30);
     doc.text('Total Discount', totalsX, yPos);
     doc.text(`- ${money(data.totals.discountAmount)}`, valueX, yPos, { align: 'right' });
     doc.setTextColor(60, 60, 60);
@@ -328,129 +325,143 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.text('Round Off', totalsX, yPos);
   const roundSign = roundOff >= 0 ? '+ ' : '- ';
   doc.text(`${roundSign}${money(Math.abs(roundOff))}`, valueX, yPos, { align: 'right' });
-  yPos += rowGap + 1;
+  yPos += rowGap + 2;
 
-  // Grand Total band
-  const bandH = 9;
+  // ================== GRAND TOTAL BAND ==================
+  const bandH = 10;
   doc.setFillColor(...PURPLE);
   doc.rect(margin, yPos, contentWidth, bandH, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont(FONT, 'bold');
   doc.setFontSize(12);
-  doc.text('GRAND TOTAL', margin + 4, yPos + 6);
-  doc.text(money(grandTotalWithRound), pageWidth - margin - 4, yPos + 6, { align: 'right' });
-  yPos += bandH + 6;
+  doc.text('GRAND TOTAL', margin + 4, yPos + 6.7);
+  doc.setFontSize(14);
+  doc.text(money(grandTotalWithRound), pageWidth - margin - 4, yPos + 6.8, { align: 'right' });
+  yPos += bandH + 5;
   doc.setTextColor(0, 0, 0);
 
-  // ================== BOTTOM SECTION ==================
-  const bottomColGap = 6;
-  const bottomColW = (contentWidth - bottomColGap) / 2;
-  const bottomY = yPos;
+  // ================== STATUS DETERMINATION ==================
+  const isPaidFull = advancePaid >= grandTotalWithRound && grandTotalWithRound > 0;
+  const isOverpaid = advancePaid > grandTotalWithRound && grandTotalWithRound > 0;
+  const isPartial = advancePaid > 0 && advancePaid < grandTotalWithRound;
 
-  // Terms box
+  // Reserve space for footer + signature + status section
+  const footerH = 11;
+  const sigReserve = 14;
+
+  // ================== STATUS STAMP / PAYMENT SUMMARY ==================
+  const rightX = margin + contentWidth / 2 + 3;
+  const rightW = contentWidth / 2 - 3;
+  const leftW = contentWidth / 2 - 3;
+
+  // Compute terms box height first (needs to align with right side)
   const termsLines = [
     '1. Payment due within 5 days. Late payments attract 3% per month interest.',
     '2. No return or refund except manufacturing defects or transit damage.',
     '3. Exchange/repurchase: Material value only. No compensation for making',
     '   charges, designing charges, wastage, or taxes.',
   ];
-  const termsBoxH = 32;
+
+  const bottomY = yPos;
+  let rightInnerY = bottomY;
+  const boxH = 9;
+
+  if (isPaidFull && !isOverpaid) {
+    // Full-width green PAID stamp inside right column
+    const stampH = 14;
+    doc.setFillColor(...GREEN_BG);
+    doc.setDrawColor(...GREEN_PAID);
+    doc.setLineWidth(0.6);
+    doc.roundedRect(rightX, rightInnerY, rightW, stampH, 2, 2, 'FD');
+    // green circle
+    doc.setFillColor(...GREEN_PAID);
+    doc.circle(rightX + 8, rightInnerY + stampH / 2, 3.5, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(10);
+    doc.text('\u2713', rightX + 8, rightInnerY + stampH / 2 + 1.4, { align: 'center' });
+    doc.setTextColor(...GREEN_PAID);
+    doc.setFontSize(13);
+    doc.text('PAID IN FULL', rightX + 16, rightInnerY + stampH / 2 + 1.6);
+    rightInnerY += stampH + 3;
+    doc.setLineWidth(0.1);
+  } else {
+    // Advance Paid box
+    doc.setDrawColor(...PURPLE_BORDER);
+    doc.setLineWidth(0.3);
+    doc.rect(rightX, rightInnerY, rightW, boxH);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont(FONT, 'normal');
+    doc.setFontSize(9);
+    doc.text('Advance Paid', rightX + 3, rightInnerY + 5.7);
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...GREEN_PAID);
+    doc.text(money(advancePaid), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+    rightInnerY += boxH + 1.5;
+
+    // Balance Due box (purple)
+    doc.setFillColor(...PURPLE);
+    doc.rect(rightX, rightInnerY, rightW, boxH, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(9);
+    doc.text('Balance Due', rightX + 3, rightInnerY + 5.7);
+    doc.setFontSize(11);
+    doc.text(money(Math.max(0, balanceDue)), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+    rightInnerY += boxH + 1.5;
+
+    if (isPartial) {
+      doc.setFillColor(...ORANGE_BG);
+      doc.setDrawColor(...ORANGE);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(rightX, rightInnerY, rightW, 6, 1, 1, 'FD');
+      doc.setTextColor(...ORANGE);
+      doc.setFont(FONT, 'bold');
+      doc.setFontSize(8);
+      doc.text('PARTIAL PAYMENT', rightX + rightW / 2, rightInnerY + 4, { align: 'center' });
+      rightInnerY += 7;
+      doc.setLineWidth(0.1);
+    }
+    if (isOverpaid) {
+      doc.setTextColor(...ORANGE);
+      doc.setFont(FONT, 'normal');
+      doc.setFontSize(8);
+      doc.text(
+        `Excess: ${money(advancePaid - grandTotalWithRound)} (to be adjusted)`,
+        rightX + 3,
+        rightInnerY + 3,
+      );
+      rightInnerY += 5;
+    }
+  }
+
+  // Terms box on left — height matches right side
+  const rightHeight = rightInnerY - bottomY;
+  const termsBoxH = Math.max(rightHeight, 30);
   doc.setDrawColor(...PURPLE_BORDER);
   doc.setLineWidth(0.3);
-  doc.rect(margin, bottomY, bottomColW, termsBoxH);
+  doc.rect(margin, bottomY, leftW, termsBoxH);
 
   doc.setFillColor(...PURPLE_LIGHT);
-  doc.rect(margin, bottomY, bottomColW, 6, 'F');
+  doc.rect(margin, bottomY, leftW, 6, 'F');
   doc.setTextColor(...PURPLE);
   doc.setFont(FONT, 'bold');
-  doc.setFontSize(8.5);
-  doc.text('TERMS & CONDITIONS', margin + 3, bottomY + 4.2);
+  doc.setFontSize(8);
+  doc.text('TERMS & CONDITIONS', margin + 3, bottomY + 4);
 
-  doc.setTextColor(50, 50, 50);
+  doc.setTextColor(60, 60, 60);
   doc.setFont(FONT, 'normal');
   doc.setFontSize(7.5);
   let tY = bottomY + 10;
   termsLines.forEach((l) => {
-    doc.text(l, margin + 3, tY);
-    tY += 4.2;
+    doc.text(l, margin + 3, tY, { maxWidth: leftW - 6 });
+    tY += 4;
   });
 
-  // Right side payment summary boxes with status logic
-  const rightX = margin + bottomColW + bottomColGap;
-  const boxH = 9.5;
-  let bY = bottomY;
-
-  const drawBox = (
-    label: string,
-    valueText: string,
-    accent: 'none' | 'purple' | 'green',
-  ) => {
-    if (accent === 'purple') {
-      doc.setFillColor(...PURPLE);
-      doc.rect(rightX, bY, bottomColW, boxH, 'F');
-      doc.setTextColor(255, 255, 255);
-    } else if (accent === 'green') {
-      doc.setFillColor(...GREEN_PAID);
-      doc.rect(rightX, bY, bottomColW, boxH, 'F');
-      doc.setTextColor(255, 255, 255);
-    } else {
-      doc.setDrawColor(...PURPLE_BORDER);
-      doc.setLineWidth(0.3);
-      doc.rect(rightX, bY, bottomColW, boxH);
-      doc.setTextColor(70, 70, 70);
-    }
-    doc.setFont(FONT, accent === 'none' ? 'normal' : 'bold');
-    doc.setFontSize(9);
-    doc.text(label, rightX + 3, bY + 6);
-    if (valueText) {
-      doc.setFont(FONT, 'bold');
-      doc.setFontSize(accent !== 'none' ? 11 : 10);
-      doc.text(valueText, rightX + bottomColW - 3, bY + 6.5, { align: 'right' });
-    }
-    bY += boxH + 1.5;
-  };
-
-  drawBox('Grand Total', money(grandTotalWithRound), 'none');
-  drawBox('Advance Paid', money(advancePaid), 'none');
-
-  // Payment status logic
-  const isPaidFull = advancePaid >= grandTotalWithRound && grandTotalWithRound > 0;
-  const isOverpaid = advancePaid > grandTotalWithRound;
-  const isPartial = advancePaid > 0 && advancePaid < grandTotalWithRound;
-
-  if (isPaidFull && !isOverpaid) {
-    // Replace Balance Due with PAID IN FULL stamp
-    doc.setFillColor(...GREEN_PAID);
-    doc.rect(rightX, bY, bottomColW, boxH + 1, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont(FONT, 'bold');
-    doc.setFontSize(11);
-    doc.text('\u2713 PAID IN FULL', rightX + bottomColW / 2, bY + 6.5, { align: 'center' });
-    bY += boxH + 1.5;
-  } else {
-    drawBox('Balance Due', money(Math.max(0, balanceDue)), 'purple');
-    if (isPartial) {
-      doc.setFont(FONT, 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(180, 0, 0);
-      doc.text('Partial Payment Received', rightX + 3, bY + 0.5);
-      bY += 4;
-    }
-    if (isOverpaid) {
-      doc.setFont(FONT, 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(...ORANGE);
-      doc.text(
-        `Excess: ${money(advancePaid - grandTotalWithRound)} (to be adjusted)`,
-        rightX + 3,
-        bY + 0.5,
-      );
-      bY += 4;
-    }
-  }
-
-  yPos = bottomY + termsBoxH + 8;
+  yPos = bottomY + Math.max(termsBoxH, rightHeight) + 6;
   doc.setTextColor(0, 0, 0);
+  doc.setLineWidth(0.1);
 
   if (data.notes) {
     doc.setFont(FONT, 'italic');
@@ -460,21 +471,18 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     yPos += 6;
   }
 
-  // ================== SIGNATURE ROW ==================
-  const sigY = Math.max(yPos + 6, pageHeight - 28);
+  // ================== SIGNATURE (right only) ==================
+  const sigY = Math.max(yPos + 6, pageHeight - footerH - sigReserve);
   doc.setDrawColor(120, 120, 120);
   doc.setLineWidth(0.3);
-  doc.line(margin, sigY, margin + 60, sigY);
   doc.line(pageWidth - margin - 60, sigY, pageWidth - margin, sigY);
 
   doc.setFont(FONT, 'normal');
   doc.setFontSize(8);
   doc.setTextColor(70, 70, 70);
-  doc.text('Customer Signature', margin, sigY + 4);
   doc.text('Authorized Signature', pageWidth - margin, sigY + 4, { align: 'right' });
 
-  // ================== FOOTER ==================
-  const footerH = 11;
+  // ================== FOOTER (always at bottom) ==================
   doc.setFillColor(...PURPLE);
   doc.rect(0, pageHeight - footerH, pageWidth, footerH, 'F');
   doc.setTextColor(255, 255, 255);
@@ -498,39 +506,26 @@ export async function downloadInvoicePdf(data: InvoicePdfData, _showMakingCharge
   doc.save(`${data.invoiceNumber}.pdf`);
 }
 
-export async function printInvoice(data: InvoicePdfData, _showMakingCharges = true) {
+export async function printInvoicePdf(data: InvoicePdfData, _showMakingCharges = true) {
   const doc = await generateInvoicePdf(data);
-  const pdfBlob = doc.output('blob');
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
   const iframe = document.createElement('iframe');
   iframe.style.position = 'fixed';
   iframe.style.right = '0';
   iframe.style.bottom = '0';
   iframe.style.width = '0';
   iframe.style.height = '0';
-  iframe.style.border = 'none';
-  iframe.src = pdfUrl;
-
+  iframe.style.border = '0';
+  iframe.src = url;
   document.body.appendChild(iframe);
-
   iframe.onload = () => {
     setTimeout(() => {
       iframe.contentWindow?.print();
-    }, 100);
+    }, 200);
   };
-
-  window.addEventListener(
-    'afterprint',
-    () => {
-      document.body.removeChild(iframe);
-      URL.revokeObjectURL(pdfUrl);
-    },
-    { once: true }
-  );
-
-  const newWindow = window.open(pdfUrl, '_blank');
-  if (!newWindow) {
-    doc.save(`${data.invoiceNumber}-preview.pdf`);
-  }
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    document.body.removeChild(iframe);
+  }, 60000);
 }
