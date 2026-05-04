@@ -506,7 +506,7 @@ export async function downloadInvoicePdf(data: InvoicePdfData, _showMakingCharge
   doc.save(`${data.invoiceNumber}.pdf`);
 }
 
-export async function printInvoicePdf(data: InvoicePdfData, _showMakingCharges = true) {
+export async function printInvoice(data: InvoicePdfData, _showMakingCharges = true) {
   const doc = await generateInvoicePdf(data);
   const blob = doc.output('blob');
   const url = URL.createObjectURL(blob);
