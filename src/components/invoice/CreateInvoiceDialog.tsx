@@ -141,7 +141,10 @@ export function CreateInvoiceDialog({
     setInvoiceItems([]);
     setPaymentMode('cash');
     setNotes('');
+    setInvoiceDate(new Date());
+    setMetalRate('silver');
   };
+
 
   const handleCreateInvoice = async () => {
     if (invoiceItems.length === 0) {
