@@ -58,14 +58,24 @@ export function CreateInvoiceDialog({
   const [notes, setNotes] = useState('');
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [showPreview, setShowPreview] = useState(false);
-  
+  const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
+  const [metalRate, setMetalRate] = useState<MetalRateOption>('silver');
+
   const { toast } = useToast();
   const { user } = useAuth();
   const { totals } = useInvoiceCalculations(invoiceItems);
   const { logActivity } = useActivityLogger();
 
-  // Get the default silver rate from settings
-  const defaultRate = businessSettings?.silver_rate_per_gram || 95;
+  // Resolve the active rate based on metal toggle
+  const goldRate = businessSettings?.gold_rate_per_gram || 0;
+  const silverRate = businessSettings?.silver_rate_per_gram || 95;
+  const defaultRate = (() => {
+    if (metalRate === 'gold_22k') return goldRate;
+    if (metalRate === 'gold_18k') return goldRate * (18 / 22);
+    if (metalRate === 'silver') return silverRate;
+    return 0;
+  })();
+
 
   useEffect(() => {
     if (open) {
