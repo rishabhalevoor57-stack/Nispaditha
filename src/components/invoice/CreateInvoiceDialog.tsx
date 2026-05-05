@@ -232,7 +232,9 @@ export function CreateInvoiceDialog({
         gst_amount: item.line_total * (item.gst_percentage / 100),
         total: item.line_total + (item.line_total * (item.gst_percentage / 100)),
         mrp: item.mrp || 0,
+        description: item.description || null,
       }));
+
 
       const { error: itemsError } = await supabase
         .from('invoice_items')
