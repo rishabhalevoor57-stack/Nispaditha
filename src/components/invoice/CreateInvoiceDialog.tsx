@@ -487,7 +487,7 @@ export function CreateInvoiceDialog({
         open={showPreview}
         onOpenChange={setShowPreview}
         invoiceNumber="PREVIEW"
-        invoiceDate={new Date().toISOString()}
+        invoiceDate={invoiceDate.toISOString()}
         clientName={clientName || 'Walk-in Customer'}
         clientPhone={clientPhone}
         paymentMode={paymentMode}
