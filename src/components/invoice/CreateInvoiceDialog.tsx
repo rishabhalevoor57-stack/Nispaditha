@@ -19,14 +19,20 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, Download, Printer, Eye } from 'lucide-react';
+import { Calculator, Download, Printer, Eye, CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { InvoiceItemsTable } from './InvoiceItemsTable';
 import { InvoiceTotalsSection } from './InvoiceTotalsSection';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
+import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
+
 
 interface CreateInvoiceDialogProps {
   open: boolean;
@@ -52,14 +58,24 @@ export function CreateInvoiceDialog({
   const [notes, setNotes] = useState('');
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [showPreview, setShowPreview] = useState(false);
-  
+  const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
+  const [metalRate, setMetalRate] = useState<MetalRateOption>('silver');
+
   const { toast } = useToast();
   const { user } = useAuth();
   const { totals } = useInvoiceCalculations(invoiceItems);
   const { logActivity } = useActivityLogger();
 
-  // Get the default silver rate from settings
-  const defaultRate = businessSettings?.silver_rate_per_gram || 95;
+  // Resolve the active rate based on metal toggle
+  const goldRate = businessSettings?.gold_rate_per_gram || 0;
+  const silverRate = businessSettings?.silver_rate_per_gram || 95;
+  const defaultRate = (() => {
+    if (metalRate === 'gold_22k') return goldRate;
+    if (metalRate === 'gold_18k') return goldRate * (18 / 22);
+    if (metalRate === 'silver') return silverRate;
+    return 0;
+  })();
+
 
   useEffect(() => {
     if (open) {
@@ -125,7 +141,10 @@ export function CreateInvoiceDialog({
     setInvoiceItems([]);
     setPaymentMode('cash');
     setNotes('');
+    setInvoiceDate(new Date());
+    setMetalRate('silver');
   };
+
 
   const handleCreateInvoice = async () => {
     if (invoiceItems.length === 0) {
@@ -178,6 +197,7 @@ export function CreateInvoiceDialog({
         .insert([{
           invoice_number: invoiceNum,
           client_id: finalClientId,
+          invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
           subtotal: totals.subtotal,
           discount_amount: totals.discountAmount,
           gst_amount: totals.gstAmount,
@@ -190,6 +210,7 @@ export function CreateInvoiceDialog({
         }])
         .select()
         .single();
+
 
       if (invoiceError) throw invoiceError;
 
@@ -211,7 +232,9 @@ export function CreateInvoiceDialog({
         gst_amount: item.line_total * (item.gst_percentage / 100),
         total: item.line_total + (item.line_total * (item.gst_percentage / 100)),
         mrp: item.mrp || 0,
+        description: item.description || null,
       }));
+
 
       const { error: itemsError } = await supabase
         .from('invoice_items')
@@ -225,7 +248,7 @@ export function CreateInvoiceDialog({
       if (businessSettings) {
         downloadInvoicePdf({
           invoiceNumber: invoiceNum,
-          invoiceDate: new Date().toISOString(),
+          invoiceDate: invoiceDate.toISOString(),
           clientName: clientName || 'Walk-in Customer',
           clientPhone,
           paymentMode,
@@ -235,6 +258,7 @@ export function CreateInvoiceDialog({
           notes,
         }, true); // Always admin view since all users are admin
       }
+
 
       logActivity({
         module: 'invoice',
@@ -264,7 +288,7 @@ export function CreateInvoiceDialog({
 
     printInvoice({
       invoiceNumber: 'PREVIEW',
-      invoiceDate: new Date().toISOString(),
+      invoiceDate: invoiceDate.toISOString(),
       clientName: clientName || 'Walk-in Customer',
       clientPhone,
       paymentMode,
@@ -274,6 +298,7 @@ export function CreateInvoiceDialog({
       notes,
     }, true); // Always admin view
   };
+
 
   return (
     <>
@@ -299,7 +324,7 @@ export function CreateInvoiceDialog({
           )}
 
           {/* Client & Invoice Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label>Select Client</Label>
               <Select value={selectedClient} onValueChange={handleClientChange}>
@@ -347,6 +372,32 @@ export function CreateInvoiceDialog({
               />
             </div>
             <div className="space-y-2">
+              <Label>Invoice Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !invoiceDate && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {invoiceDate ? format(invoiceDate, 'dd MMM yyyy') : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={invoiceDate}
+                    onSelect={(d) => d && setInvoiceDate(d)}
+                    initialFocus
+                    className={cn('p-3 pointer-events-auto')}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
               <Label>Payment Mode</Label>
               <Select value={paymentMode} onValueChange={setPaymentMode}>
                 <SelectTrigger>
@@ -362,6 +413,15 @@ export function CreateInvoiceDialog({
               </Select>
             </div>
           </div>
+
+          {/* Metal Rate Toggle (form-only, NOT printed) */}
+          <MetalRateToggle
+            value={metalRate}
+            onChange={setMetalRate}
+            goldRate={goldRate}
+            silverRate={silverRate}
+          />
+
 
           {/* Product Items Table */}
           <InvoiceItemsTable
@@ -427,7 +487,7 @@ export function CreateInvoiceDialog({
         open={showPreview}
         onOpenChange={setShowPreview}
         invoiceNumber="PREVIEW"
-        invoiceDate={new Date().toISOString()}
+        invoiceDate={invoiceDate.toISOString()}
         clientName={clientName || 'Walk-in Customer'}
         clientPhone={clientPhone}
         paymentMode={paymentMode}

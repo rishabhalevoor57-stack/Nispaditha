@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, Fragment } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -36,8 +36,17 @@ export function InvoiceItemsTable({
   defaultRate,
   onItemsChange,
 }: InvoiceItemsTableProps) {
-  const { createInvoiceItem, updateItemDiscount, updateItemQuantity, updateItemRate } = useInvoiceCalculations(items);
-  
+  const {
+    createInvoiceItem,
+    updateItemDiscount,
+    updateItemQuantity,
+    updateItemRate,
+    updateItemWeight,
+    updateItemMakingCharges,
+  } = useInvoiceCalculations(items);
+
+  const searchWrapperRef = useRef<HTMLDivElement | null>(null);
+
   const [rateConfirmDialog, setRateConfirmDialog] = useState<{
     open: boolean;
     index: number;
@@ -52,9 +61,6 @@ export function InvoiceItemsTable({
     productName: '',
   });
 
-  const hasWeightBasedItems = items.some(item => item.pricing_mode !== 'flat_price');
-  const hasFlatPriceItems = items.some(item => item.pricing_mode === 'flat_price');
-
   const handleAddProduct = (product: Product) => {
     const existingIndex = items.findIndex(item => item.product_id === product.id);
     if (existingIndex >= 0) {
@@ -65,24 +71,22 @@ export function InvoiceItemsTable({
     onItemsChange([...items, newItem]);
   };
 
+  const focusProductSearch = () => {
+    const input = searchWrapperRef.current?.querySelector('input');
+    if (input) (input as HTMLInputElement).focus();
+  };
+
   const handleDiscountChange = (index: number, value: number, type?: DiscountType) => {
     const item = items[index];
     const discountType = type || item.discount_type;
     let clampedValue = Math.max(0, value);
     if (item.pricing_mode === 'flat_price') {
-      // Flat price: discount on total amount
       const grossTotal = (item.selling_price || item.base_price) * item.quantity;
-      if (discountType === 'percentage') {
-        clampedValue = Math.min(100, clampedValue);
-      } else {
-        clampedValue = Math.min(grossTotal, clampedValue);
-      }
+      if (discountType === 'percentage') clampedValue = Math.min(100, clampedValue);
+      else clampedValue = Math.min(grossTotal, clampedValue);
     } else {
-      if (discountType === 'percentage') {
-        clampedValue = Math.min(100, clampedValue);
-      } else {
-        clampedValue = Math.min(item.making_charges, clampedValue);
-      }
+      if (discountType === 'percentage') clampedValue = Math.min(100, clampedValue);
+      else clampedValue = Math.min(item.making_charges, clampedValue);
     }
     const updatedItems = [...items];
     updatedItems[index] = updateItemDiscount(updatedItems[index], clampedValue, discountType);
@@ -98,6 +102,18 @@ export function InvoiceItemsTable({
     if (quantity < 1) return;
     const updatedItems = [...items];
     updatedItems[index] = updateItemQuantity(updatedItems[index], quantity);
+    onItemsChange(updatedItems);
+  };
+
+  const handleWeightChange = (index: number, weight: number) => {
+    const updatedItems = [...items];
+    updatedItems[index] = updateItemWeight(updatedItems[index], weight);
+    onItemsChange(updatedItems);
+  };
+
+  const handleMcPerGramChange = (index: number, mcg: number) => {
+    const updatedItems = [...items];
+    updatedItems[index] = updateItemMakingCharges(updatedItems[index], mcg);
     onItemsChange(updatedItems);
   };
 
@@ -133,9 +149,15 @@ export function InvoiceItemsTable({
     onItemsChange(items.filter((_, i) => i !== index));
   };
 
+  const handleDescriptionChange = (index: number, description: string) => {
+    const updatedItems = [...items];
+    updatedItems[index] = { ...updatedItems[index], description };
+    onItemsChange(updatedItems);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
+      <div className="space-y-2" ref={searchWrapperRef}>
         <label className="text-sm font-medium">Add Product</label>
         <ProductSearchInput
           products={products.filter(p => p.quantity > 0)}
@@ -152,15 +174,15 @@ export function InvoiceItemsTable({
             <thead className="bg-muted/50">
               <tr>
                 <th className="px-3 py-3 text-left font-medium">SKU</th>
-                <th className="px-3 py-3 text-left font-medium">Description</th>
+                <th className="px-3 py-3 text-left font-medium">Product Name</th>
                 <th className="px-3 py-3 text-center font-medium">Mode</th>
                 <th className="px-3 py-3 text-right font-medium">Wt(G)</th>
                 <th className="px-3 py-3 text-center font-medium">Qty</th>
+                <th className="px-3 py-3 text-right font-medium">Disc (₹)</th>
                 <th className="px-3 py-3 text-right font-medium">Rate/g</th>
                 <th className="px-3 py-3 text-right font-medium">Metal Price</th>
                 <th className="px-3 py-3 text-right font-medium">MC</th>
                 <th className="px-3 py-3 text-right font-medium">MC/g</th>
-                <th className="px-3 py-3 text-right font-medium">Discount</th>
                 <th className="px-3 py-3 text-right font-medium">MRP</th>
                 <th className="px-3 py-3 text-right font-medium">Total</th>
                 <th className="px-3 py-3 text-center font-medium w-12"></th>
@@ -170,99 +192,143 @@ export function InvoiceItemsTable({
               {items.map((item, index) => {
                 const isFlat = item.pricing_mode === 'flat_price';
                 return (
-                  <tr key={index} className="border-t">
-                    <td className="px-3 py-3 font-mono text-xs">{item.sku}</td>
-                    <td className="px-3 py-3">
-                      <div>
-                        <p className="font-medium">{item.product_name}</p>
-                        <p className="text-xs text-muted-foreground">{item.category}</p>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <Badge variant={isFlat ? 'secondary' : 'outline'} className="text-xs">
-                        {isFlat ? 'Flat' : 'Wt'}
-                      </Badge>
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      {isFlat ? '-' : item.weight_grams.toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
-                        className="w-16 h-8 text-center"
-                      />
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      {isFlat ? '-' : (
+                  <Fragment key={index}>
+                    <tr className="border-t group">
+                      <td className="px-3 py-3 font-mono text-xs align-middle">{item.sku}</td>
+                      <td className="px-3 py-3 align-middle">
+                        <div>
+                          <p className="font-medium">{item.product_name}</p>
+                          <p className="text-xs text-muted-foreground">{item.category}</p>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-center align-middle">
+                        <Badge variant={isFlat ? 'secondary' : 'outline'} className="text-xs">
+                          {isFlat ? 'Flat' : 'Wt'}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-3 text-right align-middle">
+                        {isFlat ? '-' : (
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.weight_grams}
+                            onChange={(e) => handleWeightChange(index, parseFloat(e.target.value) || 0)}
+                            className="w-20 h-8 text-right"
+                          />
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-center align-middle">
                         <Input
                           type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.rate_per_gram}
-                          onChange={(e) => handleRateInputChange(index, parseFloat(e.target.value) || 0)}
-                          className="w-24 h-8 text-right"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
+                          className="w-16 h-8 text-center"
                         />
-                      )}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      {isFlat ? formatCurrency(item.selling_price || item.base_price) : formatCurrency(item.base_price)}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      {isFlat ? '-' : formatCurrency(item.making_charges)}
-                    </td>
-                    <td className="px-3 py-3 text-right text-xs text-muted-foreground">
-                      {isFlat ? '-' : `${formatCurrency(item.making_charges_per_gram)}/g`}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <div className="flex items-center gap-1">
-                        <Select
-                          value={item.discount_type}
-                          onValueChange={(val) => handleDiscountTypeChange(index, val as DiscountType)}
+                      </td>
+                      <td className="px-3 py-3 text-right align-middle">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Select
+                            value={item.discount_type}
+                            onValueChange={(val) => handleDiscountTypeChange(index, val as DiscountType)}
+                          >
+                            <SelectTrigger className="w-14 h-8 text-xs px-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="fixed">₹</SelectItem>
+                              <SelectItem value="percentage">%</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            min="0"
+                            max={isFlat
+                              ? (item.discount_type === 'percentage' ? 100 : (item.selling_price || item.base_price) * item.quantity)
+                              : (item.discount_type === 'percentage' ? 100 : item.making_charges)
+                            }
+                            value={item.discount_value}
+                            onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
+                            className="w-20 h-8 text-right"
+                            title={isFlat ? "Discount on total amount" : "Discount applies only on MC"}
+                          />
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-right align-middle">
+                        {isFlat ? '-' : (
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.rate_per_gram}
+                            onChange={(e) => handleRateInputChange(index, parseFloat(e.target.value) || 0)}
+                            className="w-24 h-8 text-right"
+                          />
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-right align-middle">
+                        {isFlat ? formatCurrency(item.selling_price || item.base_price) : formatCurrency(item.base_price)}
+                      </td>
+                      <td className="px-3 py-3 text-right align-middle">
+                        {isFlat ? '-' : formatCurrency(item.making_charges)}
+                      </td>
+                      <td className="px-3 py-3 text-right align-middle">
+                        {isFlat ? '-' : (
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.making_charges_per_gram}
+                            onChange={(e) => handleMcPerGramChange(index, parseFloat(e.target.value) || 0)}
+                            className="w-20 h-8 text-right"
+                            title="MC per gram"
+                          />
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-right text-muted-foreground align-middle">{item.mrp > 0 ? formatCurrency(item.mrp) : '-'}</td>
+                      <td className="px-3 py-3 text-right font-medium align-middle">{formatCurrency(item.line_total)}</td>
+                      <td className="px-3 py-3 text-center align-middle">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={() => handleRemoveItem(index)}
+                          title="Remove row"
                         >
-                          <SelectTrigger className="w-14 h-8 text-xs px-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="fixed">₹</SelectItem>
-                            <SelectItem value="percentage">%</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                    <tr className="border-t border-dashed border-border/40">
+                      <td colSpan={13} className="px-3 py-2 bg-muted/10">
                         <Input
-                          type="number"
-                          min="0"
-                          max={isFlat
-                            ? (item.discount_type === 'percentage' ? 100 : (item.selling_price || item.base_price) * item.quantity)
-                            : (item.discount_type === 'percentage' ? 100 : item.making_charges)
-                          }
-                          value={item.discount_value}
-                          onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
-                          className="w-20 h-8 text-right"
-                          title={isFlat ? "Discount on total amount" : "Discount applies only on MC"}
+                          type="text"
+                          value={item.description || ''}
+                          onChange={(e) => handleDescriptionChange(index, e.target.value)}
+                          placeholder="Description (optional) — custom notes or instructions for this item"
+                          className="h-8 text-xs bg-background/50"
                         />
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-right text-muted-foreground">{item.mrp > 0 ? formatCurrency(item.mrp) : '-'}</td>
-                    <td className="px-3 py-3 text-right font-medium">{formatCurrency(item.line_total)}</td>
-                    <td className="px-3 py-3 text-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => handleRemoveItem(index)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
+                  </Fragment>
                 );
               })}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Add Product Row button */}
+      <button
+        type="button"
+        onClick={focusProductSearch}
+        className="w-full py-3 px-4 rounded-lg border-2 border-dashed text-sm font-medium transition-colors flex items-center justify-center gap-2"
+        style={{ borderColor: '#4a2060', color: '#4a2060' }}
+      >
+        <Plus className="w-4 h-4" />
+        Add Product Row
+      </button>
 
       {items.length === 0 && (
         <div className="border border-dashed rounded-lg p-8 text-center text-muted-foreground">

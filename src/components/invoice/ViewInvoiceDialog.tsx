@@ -1,19 +1,37 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Download, Printer, FileText, Eye, Calendar, Clock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Download, Printer, FileText, Eye, Calendar as CalendarBadgeIcon, Clock, CalendarIcon, Pencil, Save, XCircle } from 'lucide-react';
 import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { InvoiceStatusBadge, InvoiceStatusActions } from './InvoiceStatusActions';
-import type { BusinessSettings, InvoiceItem, InvoiceTotals, InvoiceStatus } from '@/types/invoice';
+import { InvoiceItemsTable } from './InvoiceItemsTable';
+import { InvoiceTotalsSection } from './InvoiceTotalsSection';
+import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
+import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
+import { useActivityLogger } from '@/hooks/useActivityLog';
+import { cn } from '@/lib/utils';
+import type { BusinessSettings, InvoiceItem, InvoiceTotals, InvoiceStatus, Product } from '@/types/invoice';
 import { format } from 'date-fns';
 
 interface ViewInvoiceDialogProps {
@@ -38,11 +56,13 @@ interface InvoiceDetails {
   sent_at: string | null;
   paid_at: string | null;
   created_at: string;
+  client_id: string | null;
   clients: { name: string; phone: string | null } | null;
 }
 
 interface InvoiceItemRow {
   id: string;
+  product_id: string | null;
   product_name: string;
   category: string | null;
   weight_grams: number;
@@ -57,6 +77,7 @@ interface InvoiceItemRow {
   gst_amount: number;
   total: number;
   mrp: number;
+  description: string | null;
   products: { sku: string } | null;
 }
 
@@ -77,23 +98,49 @@ export function ViewInvoiceDialog({
   const [invoice, setInvoice] = useState<InvoiceDetails | null>(null);
   const [items, setItems] = useState<InvoiceItemRow[]>([]);
   const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
-  const { userRole } = useAuth();
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editClientName, setEditClientName] = useState('');
+  const [editClientPhone, setEditClientPhone] = useState('');
+  const [editPaymentMode, setEditPaymentMode] = useState('cash');
+  const [editInvoiceDate, setEditInvoiceDate] = useState<Date>(new Date());
+  const [editNotes, setEditNotes] = useState('');
+  const [editItems, setEditItems] = useState<InvoiceItem[]>([]);
+  const [editMetalRate, setEditMetalRate] = useState<MetalRateOption>('silver');
+
+  const { toast } = useToast();
+  const { user, userRole } = useAuth();
   const isAdmin = userRole === 'admin';
+  const { logActivity } = useActivityLogger();
+  const { totals: editTotals } = useInvoiceCalculations(editItems);
+
+  const goldRate = businessSettings?.gold_rate_per_gram || 0;
+  const silverRate = businessSettings?.silver_rate_per_gram || 95;
+  const editDefaultRate = (() => {
+    if (editMetalRate === 'gold_22k') return goldRate;
+    if (editMetalRate === 'gold_18k') return goldRate * (18 / 22);
+    if (editMetalRate === 'silver') return silverRate;
+    return 0;
+  })();
 
   useEffect(() => {
     if (open && invoiceId) {
+      setIsEditing(false);
       fetchInvoiceDetails();
       fetchBusinessSettings();
+      fetchProducts();
     }
   }, [open, invoiceId]);
 
   const fetchInvoiceDetails = async () => {
     if (!invoiceId) return;
-    
     setIsLoading(true);
-    
+
     const [invoiceResult, itemsResult] = await Promise.all([
       supabase
         .from('invoices')
@@ -117,9 +164,9 @@ export function ViewInvoiceDialog({
       } as InvoiceDetails);
     }
     if (itemsResult.data) {
-      setItems(itemsResult.data as InvoiceItemRow[]);
+      setItems(itemsResult.data as unknown as InvoiceItemRow[]);
     }
-    
+
     setIsLoading(false);
   };
 
@@ -128,20 +175,149 @@ export function ViewInvoiceDialog({
       .from('business_settings')
       .select('*')
       .maybeSingle();
-    if (data) {
-      setBusinessSettings(data as BusinessSettings);
+    if (data) setBusinessSettings(data as BusinessSettings);
+  };
+
+  const fetchProducts = async () => {
+    const { data } = await supabase
+      .from('products')
+      .select('*, categories(name)')
+      .is('deleted_at', null)
+      .order('name');
+    const mapped = (data || []).map((p: Record<string, unknown>) => ({
+      ...p,
+      pricing_mode: (p.pricing_mode as string || 'weight_based') as 'weight_based' | 'flat_price',
+      mrp: Number(p.mrp) || 0,
+    }));
+    setProducts(mapped as unknown as Product[]);
+  };
+
+  const enterEditMode = () => {
+    if (!invoice) return;
+    setEditClientName(invoice.clients?.name || '');
+    setEditClientPhone(invoice.clients?.phone || '');
+    setEditPaymentMode(invoice.payment_mode || 'cash');
+    setEditInvoiceDate(new Date(invoice.invoice_date));
+    setEditNotes(invoice.notes || '');
+    setEditItems(getInvoiceItems());
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!invoice || editItems.length === 0) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Add at least one product' });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // 1) Restore stock for ALL existing items (so trigger can re-deduct on insert)
+      for (const oldItem of items) {
+        if (!oldItem.product_id) continue;
+        const { data: prod } = await supabase
+          .from('products')
+          .select('quantity')
+          .eq('id', oldItem.product_id)
+          .single();
+        const currentQty = prod?.quantity || 0;
+        await supabase
+          .from('products')
+          .update({ quantity: currentQty + oldItem.quantity })
+          .eq('id', oldItem.product_id);
+        await supabase.from('stock_history').insert({
+          product_id: oldItem.product_id,
+          quantity_change: oldItem.quantity,
+          type: 'in',
+          reason: `Invoice ${invoice.invoice_number} edit — restore`,
+          reference_id: invoice.id,
+          created_by: user?.id,
+        });
+      }
+
+      // 2) Delete existing invoice items
+      await supabase.from('invoice_items').delete().eq('invoice_id', invoice.id);
+
+      // 3) Update invoice header
+      await supabase
+        .from('invoices')
+        .update({
+          invoice_date: format(editInvoiceDate, 'yyyy-MM-dd'),
+          payment_mode: editPaymentMode,
+          payment_status: editPaymentMode === 'pay_later' ? 'pending' : 'paid',
+          notes: editNotes || null,
+          subtotal: editTotals.subtotal,
+          discount_amount: editTotals.discountAmount,
+          gst_amount: editTotals.gstAmount,
+          grand_total: editTotals.grandTotal,
+        })
+        .eq('id', invoice.id);
+
+      // 4) Update client info if linked
+      if (invoice.client_id) {
+        const updates: Record<string, unknown> = {};
+        if (editClientName) updates.name = editClientName;
+        if (editClientPhone) updates.phone = editClientPhone;
+        if (Object.keys(updates).length > 0) {
+          await supabase.from('clients').update(updates).eq('id', invoice.client_id);
+        }
+      }
+
+      // 5) Insert new invoice items (trigger will reduce stock)
+      const itemsToInsert = editItems.map((item) => ({
+        invoice_id: invoice.id,
+        product_id: item.product_id || null,
+        product_name: item.product_name,
+        category: item.category,
+        weight_grams: item.pricing_mode === 'flat_price' ? 0 : item.weight_grams,
+        quantity: item.quantity,
+        rate_per_gram: item.pricing_mode === 'flat_price' ? 0 : item.rate_per_gram,
+        gold_value: item.base_price,
+        making_charges: item.pricing_mode === 'flat_price' ? 0 : item.making_charges,
+        discount: item.discount,
+        discounted_making: item.pricing_mode === 'flat_price' ? 0 : item.discounted_making,
+        subtotal: item.line_total,
+        gst_percentage: item.gst_percentage,
+        gst_amount: item.line_total * (item.gst_percentage / 100),
+        total: item.line_total + (item.line_total * (item.gst_percentage / 100)),
+        mrp: item.mrp || 0,
+        description: item.description || null,
+      }));
+
+      const { error: insertErr } = await supabase.from('invoice_items').insert(itemsToInsert);
+      if (insertErr) throw insertErr;
+
+      logActivity({
+        module: 'invoice',
+        action: 'update',
+        recordId: invoice.id,
+        recordLabel: invoice.invoice_number,
+        newValue: { grand_total: editTotals.grandTotal, items_count: editItems.length },
+      });
+
+      toast({ title: 'Invoice updated successfully' });
+      setIsEditing(false);
+      await fetchInvoiceDetails();
+      onStatusChange?.();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Update failed';
+      toast({ variant: 'destructive', title: 'Error', description: message });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const getInvoiceItems = (): InvoiceItem[] => {
-    return items.map(item => {
+    return items.map((item) => {
       const isFlat = Number(item.rate_per_gram) === 0 && Number(item.making_charges) === 0;
       const weightGrams = Number(item.weight_grams);
       const makingCharges = Number(item.making_charges);
-      // MC per gram: derive from stored total MC and weight
       const makingChargesPerGram = weightGrams > 0 ? makingCharges / weightGrams : 0;
       return {
-        product_id: '',
+        product_id: item.product_id || '',
         sku: item.products?.sku || 'N/A',
         product_name: item.product_name,
         category: item.category || '',
@@ -157,8 +333,9 @@ export function ViewInvoiceDialog({
         discounted_making: Number(item.discounted_making),
         line_total: Number(item.subtotal),
         gst_percentage: Number(item.gst_percentage),
-        pricing_mode: isFlat ? 'flat_price' as const : 'weight_based' as const,
+        pricing_mode: isFlat ? ('flat_price' as const) : ('weight_based' as const),
         mrp: Number(item.mrp) || 0,
+        description: item.description || '',
       };
     });
   };
@@ -175,7 +352,6 @@ export function ViewInvoiceDialog({
 
   const handleDownload = () => {
     if (!invoice || !businessSettings) return;
-
     downloadInvoicePdf({
       invoiceNumber: invoice.invoice_number,
       invoiceDate: invoice.invoice_date,
@@ -191,7 +367,6 @@ export function ViewInvoiceDialog({
 
   const handlePrint = () => {
     if (!invoice || !businessSettings) return;
-
     printInvoice({
       invoiceNumber: invoice.invoice_number,
       invoiceDate: invoice.invoice_date,
@@ -225,186 +400,287 @@ export function ViewInvoiceDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-primary" />
               Invoice {invoice.invoice_number}
+              {isEditing && <span className="text-xs font-normal text-muted-foreground ml-2">(Editing)</span>}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
             {/* Status and Actions Bar */}
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <InvoiceStatusBadge status={invoice.status} />
-                  <InvoiceStatusActions
-                    invoiceId={invoice.id}
-                    currentStatus={invoice.status}
-                    onStatusChange={handleStatusChange}
-                  />
-                </div>
-              </div>
-
-              {/* Status History */}
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-muted-foreground">Created</p>
-                      <p className="font-medium">{format(new Date(invoice.created_at), 'dd MMM yyyy, HH:mm')}</p>
-                    </div>
+            {!isEditing && (
+              <div className="bg-muted/30 rounded-lg p-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <InvoiceStatusBadge status={invoice.status} />
+                    <InvoiceStatusActions
+                      invoiceId={invoice.id}
+                      currentStatus={invoice.status}
+                      onStatusChange={handleStatusChange}
+                    />
                   </div>
-                  {invoice.sent_at && (
+                  <Button variant="outline" size="sm" onClick={enterEditMode}>
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Edit Invoice
+                  </Button>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-border/50">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-blue-500" />
+                      <CalendarBadgeIcon className="w-4 h-4 text-muted-foreground" />
                       <div>
-                        <p className="text-muted-foreground">Sent</p>
-                        <p className="font-medium">{format(new Date(invoice.sent_at), 'dd MMM yyyy, HH:mm')}</p>
+                        <p className="text-muted-foreground">Created</p>
+                        <p className="font-medium">{format(new Date(invoice.created_at), 'dd MMM yyyy, HH:mm')}</p>
                       </div>
                     </div>
-                  )}
-                  {invoice.paid_at && (
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-green-500" />
-                      <div>
-                        <p className="text-muted-foreground">Paid</p>
-                        <p className="font-medium">{format(new Date(invoice.paid_at), 'dd MMM yyyy, HH:mm')}</p>
+                    {invoice.sent_at && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-blue-500" />
+                        <div>
+                          <p className="text-muted-foreground">Sent</p>
+                          <p className="font-medium">{format(new Date(invoice.sent_at), 'dd MMM yyyy, HH:mm')}</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Invoice Header */}
-            <div className="bg-muted/30 rounded-lg p-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Invoice Number</p>
-                  <p className="font-medium">{invoice.invoice_number}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Date</p>
-                  <p className="font-medium">{new Date(invoice.invoice_date).toLocaleDateString('en-IN')}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Client</p>
-                  <p className="font-medium">{invoice.clients?.name || 'Walk-in Customer'}</p>
-                  {invoice.clients?.phone && (
-                    <p className="text-xs text-muted-foreground">{invoice.clients.phone}</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Payment Mode</p>
-                  <p className="font-medium capitalize">{invoice.payment_mode || '-'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Items Table */}
-            <div className="border rounded-lg overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr>
-                     <th className="px-3 py-3 text-left font-medium">SKU</th>
-                     <th className="px-3 py-3 text-left font-medium">Description</th>
-                     <th className="px-3 py-3 text-right font-medium">Wt(G)</th>
-                     <th className="px-3 py-3 text-center font-medium">Qty</th>
-                    <th className="px-3 py-3 text-right font-medium">Rate/g</th>
-                    {isAdmin && (
-                      <>
-                        <th className="px-3 py-3 text-right font-medium">MC</th>
-                        <th className="px-3 py-3 text-right font-medium">MC/g</th>
-                        <th className="px-3 py-3 text-right font-medium">Discount</th>
-                      </>
                     )}
-                    <th className="px-3 py-3 text-right font-medium">MRP</th>
-                    <th className="px-3 py-3 text-right font-medium">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => {
-                    const isFlat = Number(item.rate_per_gram) === 0 && Number(item.making_charges) === 0;
-                    return (
-                      <tr key={item.id} className="border-t">
-                        <td className="px-3 py-3 font-mono text-xs">{item.products?.sku || 'N/A'}</td>
-                        <td className="px-3 py-3">
-                          <div>
-                            <p className="font-medium">{item.product_name}</p>
-                            {item.category && <p className="text-xs text-muted-foreground">{item.category}</p>}
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 text-right">{isFlat ? '-' : Number(item.weight_grams).toFixed(2)}</td>
-                        <td className="px-3 py-3 text-center">{item.quantity}</td>
-                        <td className="px-3 py-3 text-right">{isFlat ? '-' : formatCurrency(Number(item.rate_per_gram))}</td>
-                        {isAdmin && (
-                          <>
-                            <td className="px-3 py-3 text-right">{isFlat ? '-' : formatCurrency(Number(item.making_charges))}</td>
-                            <td className="px-3 py-3 text-right text-xs text-muted-foreground">
-                              {isFlat ? '-' : (Number(item.weight_grams) > 0 ? formatCurrency(Number(item.making_charges) / Number(item.weight_grams)) + '/g' : '-')}
-                            </td>
-                            <td className="px-3 py-3 text-right text-destructive">
-                              {Number(item.discount) > 0 ? `-${formatCurrency(Number(item.discount))}` : '-'}
-                            </td>
-                          </>
-                        )}
-                        <td className="px-3 py-3 text-right text-muted-foreground">{Number(item.mrp) > 0 ? formatCurrency(Number(item.mrp)) : '-'}</td>
-                        <td className="px-3 py-3 text-right font-medium">{formatCurrency(Number(item.subtotal))}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Totals */}
-            <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatCurrency(Number(invoice.subtotal))}</span>
-              </div>
-              {isAdmin && Number(invoice.discount_amount) > 0 && (
-                <div className="flex justify-between text-destructive">
-                  <span>Total Discount</span>
-                  <span>-{formatCurrency(Number(invoice.discount_amount))}</span>
+                    {invoice.paid_at && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-green-500" />
+                        <div>
+                          <p className="text-muted-foreground">Paid</p>
+                          <p className="font-medium">{format(new Date(invoice.paid_at), 'dd MMM yyyy, HH:mm')}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">GST (3%)</span>
-                <span>{formatCurrency(Number(invoice.gst_amount))}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                <span>Grand Total</span>
-                <span className="text-primary">{formatCurrency(Number(invoice.grand_total))}</span>
-              </div>
-            </div>
-
-            {/* Notes */}
-            {invoice.notes && (
-              <div className="text-sm">
-                <p className="text-muted-foreground">Notes:</p>
-                <p className="italic">{invoice.notes}</p>
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex flex-wrap justify-end gap-3">
-              <Button variant="outline" onClick={() => setShowPreview(true)}>
-                <Eye className="w-4 h-4 mr-2" />
-                Preview Invoice
-              </Button>
-              <Button variant="outline" onClick={handlePrint}>
-                <Printer className="w-4 h-4 mr-2" />
-                Print
-              </Button>
-              <Button className="btn-gold" onClick={handleDownload}>
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </Button>
-            </div>
+            {!isEditing ? (
+              <>
+                {/* Invoice Header (read-only) */}
+                <div className="bg-muted/30 rounded-lg p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Invoice Number</p>
+                      <p className="font-medium">{invoice.invoice_number}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Date</p>
+                      <p className="font-medium">{new Date(invoice.invoice_date).toLocaleDateString('en-IN')}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Client</p>
+                      <p className="font-medium">{invoice.clients?.name || 'Walk-in Customer'}</p>
+                      {invoice.clients?.phone && (
+                        <p className="text-xs text-muted-foreground">{invoice.clients.phone}</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Payment Mode</p>
+                      <p className="font-medium capitalize">{invoice.payment_mode || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Items Table (read-only) */}
+                <div className="border rounded-lg overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="px-3 py-3 text-left font-medium">SKU</th>
+                        <th className="px-3 py-3 text-left font-medium">Description</th>
+                        <th className="px-3 py-3 text-right font-medium">Wt(G)</th>
+                        <th className="px-3 py-3 text-center font-medium">Qty</th>
+                        <th className="px-3 py-3 text-right font-medium">Rate/g</th>
+                        {isAdmin && (
+                          <>
+                            <th className="px-3 py-3 text-right font-medium">MC</th>
+                            <th className="px-3 py-3 text-right font-medium">MC/g</th>
+                            <th className="px-3 py-3 text-right font-medium">Discount</th>
+                          </>
+                        )}
+                        <th className="px-3 py-3 text-right font-medium">MRP</th>
+                        <th className="px-3 py-3 text-right font-medium">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item) => {
+                        const isFlat = Number(item.rate_per_gram) === 0 && Number(item.making_charges) === 0;
+                        return (
+                          <tr key={item.id} className="border-t">
+                            <td className="px-3 py-3 font-mono text-xs">{item.products?.sku || 'N/A'}</td>
+                            <td className="px-3 py-3">
+                              <div>
+                                <p className="font-medium">{item.product_name}</p>
+                                {item.category && <p className="text-xs text-muted-foreground">{item.category}</p>}
+                                {item.description && <p className="text-xs text-muted-foreground italic">{item.description}</p>}
+                              </div>
+                            </td>
+                            <td className="px-3 py-3 text-right">{isFlat ? '-' : Number(item.weight_grams).toFixed(2)}</td>
+                            <td className="px-3 py-3 text-center">{item.quantity}</td>
+                            <td className="px-3 py-3 text-right">{isFlat ? '-' : formatCurrency(Number(item.rate_per_gram))}</td>
+                            {isAdmin && (
+                              <>
+                                <td className="px-3 py-3 text-right">{isFlat ? '-' : formatCurrency(Number(item.making_charges))}</td>
+                                <td className="px-3 py-3 text-right text-xs text-muted-foreground">
+                                  {isFlat ? '-' : (Number(item.weight_grams) > 0 ? formatCurrency(Number(item.making_charges) / Number(item.weight_grams)) + '/g' : '-')}
+                                </td>
+                                <td className="px-3 py-3 text-right text-destructive">
+                                  {Number(item.discount) > 0 ? `-${formatCurrency(Number(item.discount))}` : '-'}
+                                </td>
+                              </>
+                            )}
+                            <td className="px-3 py-3 text-right text-muted-foreground">{Number(item.mrp) > 0 ? formatCurrency(Number(item.mrp)) : '-'}</td>
+                            <td className="px-3 py-3 text-right font-medium">{formatCurrency(Number(item.subtotal))}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Totals */}
+                <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>{formatCurrency(Number(invoice.subtotal))}</span>
+                  </div>
+                  {isAdmin && Number(invoice.discount_amount) > 0 && (
+                    <div className="flex justify-between text-destructive">
+                      <span>Total Discount</span>
+                      <span>-{formatCurrency(Number(invoice.discount_amount))}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">GST (3%)</span>
+                    <span>{formatCurrency(Number(invoice.gst_amount))}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                    <span>Grand Total</span>
+                    <span className="text-primary">{formatCurrency(Number(invoice.grand_total))}</span>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {invoice.notes && (
+                  <div className="text-sm">
+                    <p className="text-muted-foreground">Notes:</p>
+                    <p className="italic">{invoice.notes}</p>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex flex-wrap justify-end gap-3">
+                  <Button variant="outline" onClick={() => setShowPreview(true)}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview Invoice
+                  </Button>
+                  <Button variant="outline" onClick={handlePrint}>
+                    <Printer className="w-4 h-4 mr-2" />
+                    Print
+                  </Button>
+                  <Button className="btn-gold" onClick={handleDownload}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download PDF
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* EDIT MODE */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="space-y-2">
+                    <Label>Client Name</Label>
+                    <Input value={editClientName} onChange={(e) => setEditClientName(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone Number</Label>
+                    <Input value={editClientPhone} onChange={(e) => setEditClientPhone(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Invoice Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn('w-full justify-start text-left font-normal', !editInvoiceDate && 'text-muted-foreground')}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {editInvoiceDate ? format(editInvoiceDate, 'dd MMM yyyy') : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={editInvoiceDate}
+                          onSelect={(d) => d && setEditInvoiceDate(d)}
+                          initialFocus
+                          className={cn('p-3 pointer-events-auto')}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Payment Mode</Label>
+                    <Select value={editPaymentMode} onValueChange={setEditPaymentMode}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="upi">UPI</SelectItem>
+                        <SelectItem value="card">Card</SelectItem>
+                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="pay_later">Pay Later</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Invoice Number</Label>
+                    <Input value={invoice.invoice_number} disabled />
+                  </div>
+                </div>
+
+                <MetalRateToggle
+                  value={editMetalRate}
+                  onChange={setEditMetalRate}
+                  goldRate={goldRate}
+                  silverRate={silverRate}
+                />
+
+                <InvoiceItemsTable
+                  items={editItems}
+                  products={products}
+                  defaultRate={editDefaultRate}
+                  onItemsChange={setEditItems}
+                />
+
+                {editItems.length > 0 && (
+                  <InvoiceTotalsSection totals={editTotals} isAdmin={true} />
+                )}
+
+                <div className="space-y-2">
+                  <Label>Notes (Optional)</Label>
+                  <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={2} />
+                </div>
+
+                <div className="flex flex-wrap justify-end gap-3">
+                  <Button variant="outline" onClick={cancelEdit} disabled={isSaving}>
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button className="btn-gold" onClick={handleSaveEdit} disabled={isSaving || editItems.length === 0}>
+                    <Save className="w-4 h-4 mr-2" />
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
