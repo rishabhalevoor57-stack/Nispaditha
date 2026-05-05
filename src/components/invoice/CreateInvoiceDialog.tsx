@@ -248,7 +248,7 @@ export function CreateInvoiceDialog({
       if (businessSettings) {
         downloadInvoicePdf({
           invoiceNumber: invoiceNum,
-          invoiceDate: new Date().toISOString(),
+          invoiceDate: invoiceDate.toISOString(),
           clientName: clientName || 'Walk-in Customer',
           clientPhone,
           paymentMode,
@@ -258,6 +258,7 @@ export function CreateInvoiceDialog({
           notes,
         }, true); // Always admin view since all users are admin
       }
+
 
       logActivity({
         module: 'invoice',
