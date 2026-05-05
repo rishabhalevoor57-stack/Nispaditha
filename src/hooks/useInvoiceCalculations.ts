@@ -164,11 +164,49 @@ export function useInvoiceCalculations(items: InvoiceItem[]) {
     };
   }, []);
 
+  const updateItemWeight = useCallback((item: InvoiceItem, weight: number): InvoiceItem => {
+    if (item.pricing_mode === 'flat_price') return item;
+    const w = Math.max(0, weight);
+    const basePrice = w * item.rate_per_gram * item.quantity;
+    const makingCharges = item.making_charges_per_gram * w * item.quantity;
+    const discount = calculateDiscount(makingCharges, item.discount_type, item.discount_value);
+    const discountedMaking = Math.max(0, makingCharges - discount);
+    const lineTotal = basePrice + discountedMaking;
+    return {
+      ...item,
+      weight_grams: w,
+      base_price: basePrice,
+      making_charges: makingCharges,
+      discount,
+      discounted_making: discountedMaking,
+      line_total: lineTotal,
+    };
+  }, []);
+
+  const updateItemMakingCharges = useCallback((item: InvoiceItem, mcPerGram: number): InvoiceItem => {
+    if (item.pricing_mode === 'flat_price') return item;
+    const mcg = Math.max(0, mcPerGram);
+    const makingCharges = mcg * item.weight_grams * item.quantity;
+    const discount = calculateDiscount(makingCharges, item.discount_type, item.discount_value);
+    const discountedMaking = Math.max(0, makingCharges - discount);
+    const lineTotal = item.base_price + discountedMaking;
+    return {
+      ...item,
+      making_charges_per_gram: mcg,
+      making_charges: makingCharges,
+      discount,
+      discounted_making: discountedMaking,
+      line_total: lineTotal,
+    };
+  }, []);
+
   return {
     totals,
     createInvoiceItem,
     updateItemDiscount,
     updateItemQuantity,
     updateItemRate,
+    updateItemWeight,
+    updateItemMakingCharges,
   };
 }
