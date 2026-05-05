@@ -197,6 +197,7 @@ export function CreateInvoiceDialog({
         .insert([{
           invoice_number: invoiceNum,
           client_id: finalClientId,
+          invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
           subtotal: totals.subtotal,
           discount_amount: totals.discountAmount,
           gst_amount: totals.gstAmount,
@@ -209,6 +210,7 @@ export function CreateInvoiceDialog({
         }])
         .select()
         .single();
+
 
       if (invoiceError) throw invoiceError;
 
