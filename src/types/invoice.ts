@@ -78,6 +78,8 @@ export interface InvoiceItem {
   pricing_mode: PricingMode;
   selling_price?: number; // used for flat_price mode
   mrp: number; // display-only, from product
+  description?: string; // optional per-item description / instructions
+
 }
 
 export interface InvoiceTotals {
