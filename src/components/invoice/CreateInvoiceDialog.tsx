@@ -19,14 +19,20 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, Download, Printer, Eye } from 'lucide-react';
+import { Calculator, Download, Printer, Eye, CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { InvoiceItemsTable } from './InvoiceItemsTable';
 import { InvoiceTotalsSection } from './InvoiceTotalsSection';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
+import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
+
 
 interface CreateInvoiceDialogProps {
   open: boolean;
