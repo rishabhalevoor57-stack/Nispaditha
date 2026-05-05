@@ -193,7 +193,7 @@ export function InvoiceItemsTable({
                 const isFlat = item.pricing_mode === 'flat_price';
                 return (
                   <Fragment key={index}>
-                    <tr key={index} className="border-t group">
+                    <tr className="border-t group">
                       <td className="px-3 py-3 font-mono text-xs align-middle">{item.sku}</td>
                       <td className="px-3 py-3 align-middle">
                         <div>
