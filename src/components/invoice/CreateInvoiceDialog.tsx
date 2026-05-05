@@ -288,7 +288,7 @@ export function CreateInvoiceDialog({
 
     printInvoice({
       invoiceNumber: 'PREVIEW',
-      invoiceDate: new Date().toISOString(),
+      invoiceDate: invoiceDate.toISOString(),
       clientName: clientName || 'Walk-in Customer',
       clientPhone,
       paymentMode,
@@ -298,6 +298,7 @@ export function CreateInvoiceDialog({
       notes,
     }, true); // Always admin view
   };
+
 
   return (
     <>
