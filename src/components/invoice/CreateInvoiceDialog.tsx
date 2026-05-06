@@ -157,6 +157,10 @@ export function CreateInvoiceDialog({
     setNotes('');
     setInvoiceDate(new Date());
     setMetalRate('silver');
+    setGstPct(3);
+    setRoundOff(0);
+    setPaymentStatus('PAID');
+    setAmountPaid(0);
   };
 
 
