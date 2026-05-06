@@ -457,9 +457,128 @@ export function CreateInvoiceDialog({
             onItemsChange={setInvoiceItems}
           />
 
-          {/* Totals */}
+          {/* GST + Round Off + Live Totals */}
           {invoiceItems.length > 0 && (
-            <InvoiceTotalsSection totals={totals} isAdmin={true} />
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="gst-pct">GST %</Label>
+                  <Input
+                    id="gst-pct"
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={gstPct}
+                    onChange={(e) => setGstPct(Math.max(0, parseFloat(e.target.value) || 0))}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Split equally as CGST @ {(gstPct / 2).toFixed(2)}% + SGST @ {(gstPct / 2).toFixed(2)}%
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="round-off">Round Off</Label>
+                  <Input
+                    id="round-off"
+                    type="number"
+                    step="0.01"
+                    value={roundOff}
+                    onChange={(e) => setRoundOff(parseFloat(e.target.value) || 0)}
+                    placeholder="e.g. 0.50 or -0.30"
+                  />
+                </div>
+              </div>
+
+              {/* Live Totals Summary */}
+              <div className="text-sm space-y-1 pt-2 border-t">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="tabular-nums">₹ {totals.subtotal.toFixed(2)}</span>
+                </div>
+                {totals.discountAmount > 0 && (
+                  <div className="flex justify-between text-destructive">
+                    <span>Total Discount</span>
+                    <span className="tabular-nums">- ₹ {totals.discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">CGST @ {(gstPct / 2).toFixed(2)}%</span>
+                  <span className="tabular-nums">₹ {cgst.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">SGST @ {(gstPct / 2).toFixed(2)}%</span>
+                  <span className="tabular-nums">₹ {sgst.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground italic">
+                  <span>Round Off</span>
+                  <span className="tabular-nums">
+                    {roundOff >= 0 ? '+' : '-'} ₹ {Math.abs(roundOff).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-base font-bold pt-2 border-t">
+                  <span>Grand Total</span>
+                  <span className="text-primary tabular-nums">₹ {grandTotalWithRound.toFixed(2)}</span>
+                </div>
+                {paymentStatus !== 'PAID' && (
+                  <>
+                    <div className="flex justify-between pt-1">
+                      <span className="text-muted-foreground">Advance Paid</span>
+                      <span className="tabular-nums text-green-600 font-semibold">
+                        ₹ {effectiveAdvance.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                      <span>Balance Due</span>
+                      <span className="tabular-nums text-primary">
+                        ₹ {balanceDue.toFixed(2)}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Payment Received Section */}
+              <div className="pt-3 border-t space-y-3">
+                <Label className="text-sm font-semibold">Payment Received</Label>
+                <RadioGroup
+                  value={paymentStatus}
+                  onValueChange={(v) => {
+                    const s = v as 'PAID' | 'PARTIAL' | 'PENDING';
+                    setPaymentStatus(s);
+                    if (s === 'PAID') setAmountPaid(grandTotalWithRound);
+                    else if (s === 'PENDING') setAmountPaid(0);
+                  }}
+                  className="grid grid-cols-1 sm:grid-cols-3 gap-2"
+                >
+                  <label className="flex items-center gap-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
+                    <RadioGroupItem value="PAID" id="pay-paid" />
+                    <span className="text-sm">Paid in Full</span>
+                  </label>
+                  <label className="flex items-center gap-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
+                    <RadioGroupItem value="PARTIAL" id="pay-partial" />
+                    <span className="text-sm">Advance / Partial</span>
+                  </label>
+                  <label className="flex items-center gap-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
+                    <RadioGroupItem value="PENDING" id="pay-pending" />
+                    <span className="text-sm">Payment Pending</span>
+                  </label>
+                </RadioGroup>
+
+                {paymentStatus === 'PARTIAL' && (
+                  <div className="space-y-2 max-w-xs">
+                    <Label htmlFor="amount-paid">Amount Received (₹)</Label>
+                    <Input
+                      id="amount-paid"
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      max={grandTotalWithRound}
+                      value={amountPaid}
+                      onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Notes */}
