@@ -219,8 +219,10 @@ export function CreateInvoiceDialog({
           subtotal: totals.subtotal,
           discount_amount: totals.discountAmount,
           gst_amount: totals.gstAmount,
-          grand_total: totals.grandTotal,
-          payment_status: paymentMode === 'pay_later' ? 'pending' : 'paid',
+          grand_total: grandTotalWithRound,
+          payment_status:
+            paymentStatus === 'PAID' ? 'paid' :
+            paymentStatus === 'PARTIAL' ? 'partial' : 'pending',
           payment_mode: paymentMode,
           notes: notes || null,
           created_by: user?.id,
