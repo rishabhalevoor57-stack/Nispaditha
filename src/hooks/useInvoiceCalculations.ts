@@ -10,15 +10,15 @@ function calculateDiscount(makingCharges: number, discountType: DiscountType, di
   return Math.min(makingCharges, discountValue);
 }
 
-export function useInvoiceCalculations(items: InvoiceItem[]) {
+export function useInvoiceCalculations(items: InvoiceItem[], gstPct: number = GST_PERCENTAGE) {
   const totals = useMemo<InvoiceTotals>(() => {
     const subtotal = items.reduce((sum, item) => sum + item.line_total, 0);
     const discountAmount = items.reduce((sum, item) => sum + item.discount, 0);
-    const gstAmount = subtotal * (GST_PERCENTAGE / 100);
+    const gstAmount = subtotal * (gstPct / 100);
     const grandTotal = subtotal + gstAmount;
 
     return { subtotal, discountAmount, gstAmount, grandTotal };
-  }, [items]);
+  }, [items, gstPct]);
 
   const createInvoiceItem = useCallback((product: Product, ratePerGram: number): InvoiceItem => {
     const pricingMode = product.pricing_mode || 'weight_based';
