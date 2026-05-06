@@ -61,11 +61,24 @@ export function CreateInvoiceDialog({
   const [showPreview, setShowPreview] = useState(false);
   const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
   const [metalRate, setMetalRate] = useState<MetalRateOption>('silver');
+  const [gstPct, setGstPct] = useState<number>(3);
+  const [roundOff, setRoundOff] = useState<number>(0);
+  const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'PARTIAL' | 'PENDING'>('PAID');
+  const [amountPaid, setAmountPaid] = useState<number>(0);
 
   const { toast } = useToast();
   const { user } = useAuth();
-  const { totals } = useInvoiceCalculations(invoiceItems);
+  const { totals } = useInvoiceCalculations(invoiceItems, gstPct);
   const { logActivity } = useActivityLogger();
+
+  const grandTotalWithRound = (totals.grandTotal || 0) + (Number(roundOff) || 0);
+  const effectiveAdvance =
+    paymentStatus === 'PAID' ? grandTotalWithRound :
+    paymentStatus === 'PENDING' ? 0 :
+    Math.max(0, Number(amountPaid) || 0);
+  const balanceDue = Math.max(0, grandTotalWithRound - effectiveAdvance);
+  const cgst = (totals.gstAmount || 0) / 2;
+  const sgst = (totals.gstAmount || 0) / 2;
 
   // Resolve the active rate based on metal toggle
   const goldRate = businessSettings?.gold_rate_per_gram || 0;
