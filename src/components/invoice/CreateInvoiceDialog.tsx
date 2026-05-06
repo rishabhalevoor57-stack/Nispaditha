@@ -641,6 +641,9 @@ export function CreateInvoiceDialog({
         businessSettings={businessSettings}
         notes={notes}
         showMakingCharges={true}
+        gstPercentage={gstPct}
+        roundOff={roundOff}
+        advancePaid={effectiveAdvance}
       />
     )}
   </>
