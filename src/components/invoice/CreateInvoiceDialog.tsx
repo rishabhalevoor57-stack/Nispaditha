@@ -276,7 +276,10 @@ export function CreateInvoiceDialog({
           totals,
           businessSettings,
           notes,
-        }, true); // Always admin view since all users are admin
+          gstPercentage: gstPct,
+          roundOff,
+          advancePaid: effectiveAdvance,
+        }, true);
       }
 
 
