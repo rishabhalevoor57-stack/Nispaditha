@@ -224,6 +224,8 @@ export const useOrderNotes = () => {
         );
       }
 
+      await ensureClient(data.note.phone_number, data.note.customer_name);
+
       return noteData;
     },
     onSuccess: (_, variables) => {
