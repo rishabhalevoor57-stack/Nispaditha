@@ -400,6 +400,14 @@ export default function Clients() {
         columns={columns}
         isLoading={isLoading}
         emptyMessage="No clients found. Add your first client to get started."
+        onRowClick={(item) => { setProfileClient(item); setProfileOpen(true); }}
+      />
+
+      <ClientProfileDialog
+        client={profileClient}
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        onUpdate={fetchClients}
       />
     </AppLayout>
   );
