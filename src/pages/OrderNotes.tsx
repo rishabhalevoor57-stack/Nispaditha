@@ -227,6 +227,7 @@ const OrderNotes = () => {
                 onPrint={handlePrint}
                 onDownload={handleDownload}
                 onStatusChange={handleStatusChange}
+                onConvertToInvoice={handleConvertToInvoice}
               />
             )}
           </CardContent>
@@ -247,6 +248,20 @@ const OrderNotes = () => {
         orderNote={selectedNote}
         onPrint={handlePrint}
         onDownload={handleDownload}
+        onConvertToInvoice={handleConvertToInvoice}
+      />
+
+      {/* Convert-to-Invoice Dialog */}
+      <CreateInvoiceDialog
+        open={convertOpen}
+        onOpenChange={(o) => {
+          setConvertOpen(o);
+          if (!o) setConvertPrefill(null);
+        }}
+        onInvoiceCreated={() => {
+          toast({ title: 'GST Invoice created from Service Order' });
+        }}
+        prefill={convertPrefill}
       />
 
       {/* Delete Confirmation */}
