@@ -84,6 +84,12 @@ export const ViewOrderNoteDialog = ({
               <Download className="h-4 w-4 mr-2" />
               PDF
             </Button>
+            {onConvertToInvoice && (
+              <Button size="sm" className="btn-gold" onClick={() => onConvertToInvoice(orderNote)}>
+                <FileCheck className="h-4 w-4 mr-2" />
+                Convert to GST Invoice
+              </Button>
+            )}
           </div>
         </DialogHeader>
 
