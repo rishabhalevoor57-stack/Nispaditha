@@ -50,6 +50,8 @@ export default function Clients() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState(initialClient);
   const [searchTerm, setSearchTerm] = useState('');
+  const [profileClient, setProfileClient] = useState<Client | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   const { toast } = useToast();
   const isAdmin = useIsAdmin();
 
