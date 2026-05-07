@@ -55,6 +55,7 @@ export function CreateInvoiceDialog({
   open,
   onOpenChange,
   onInvoiceCreated,
+  prefill,
 }: CreateInvoiceDialogProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
