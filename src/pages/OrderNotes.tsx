@@ -96,6 +96,41 @@ const OrderNotes = () => {
     setFormOpen(true);
   };
 
+  const handleConvertToInvoice = async (note: OrderNote) => {
+    try {
+      const fullNote = await getOrderNoteWithItems(note.id);
+      const itemDescriptions = (fullNote.items || [])
+        .map((it, i) => `${i + 1}. ${it.item_description}${it.customization_notes ? ` — ${it.customization_notes}` : ''} (Qty: ${it.quantity})`)
+        .join('\n');
+      const composedNotes = [
+        `Converted from Service Order ${note.order_reference}.`,
+        note.special_instructions ? `Instructions: ${note.special_instructions}` : '',
+        itemDescriptions ? `Items:\n${itemDescriptions}` : '',
+      ].filter(Boolean).join('\n\n');
+
+      const paymentModeMap: Record<string, string> = {
+        Cash: 'cash',
+        UPI: 'upi',
+        Card: 'card',
+        'Bank Transfer': 'bank_transfer',
+        Other: 'cash',
+      };
+
+      setConvertPrefill({
+        clientName: note.customer_name,
+        clientPhone: note.phone_number || '',
+        notes: composedNotes,
+        advancePaid: Number(note.advance_received) || 0,
+        paymentMode: note.payment_mode ? (paymentModeMap[note.payment_mode] || 'cash') : 'cash',
+        sourceLabel: `Service Order ${note.order_reference}`,
+      });
+      setViewOpen(false);
+      setConvertOpen(true);
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Failed to load order', description: 'Could not prefill invoice data.' });
+    }
+  };
+
   // Stats
   const pendingOrders = orderNotes.filter(n => ['order_noted', 'design_approved', 'in_production'].includes(n.status)).length;
   const readyOrders = orderNotes.filter(n => n.status === 'ready').length;
