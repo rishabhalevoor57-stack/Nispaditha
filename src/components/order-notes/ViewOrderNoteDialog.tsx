@@ -28,6 +28,7 @@ interface ViewOrderNoteDialogProps {
   orderNote: OrderNote | null;
   onPrint: (orderNote: OrderNote) => void;
   onDownload: (orderNote: OrderNote) => void;
+  onConvertToInvoice?: (orderNote: OrderNote) => void;
 }
 
 export const ViewOrderNoteDialog = ({
@@ -36,6 +37,7 @@ export const ViewOrderNoteDialog = ({
   orderNote,
   onPrint,
   onDownload,
+  onConvertToInvoice,
 }: ViewOrderNoteDialogProps) => {
   const { getOrderNoteWithItems } = useOrderNotes();
   const [items, setItems] = useState<OrderNoteItem[]>([]);
