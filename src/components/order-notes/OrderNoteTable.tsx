@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Edit, Eye, Trash2, Printer, Download } from 'lucide-react';
+import { Edit, Eye, Trash2, Printer, Download, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -34,6 +34,7 @@ interface OrderNoteTableProps {
   onPrint: (orderNote: OrderNote) => void;
   onDownload: (orderNote: OrderNote) => void;
   onStatusChange: (id: string, status: OrderNoteStatus) => void;
+  onConvertToInvoice?: (orderNote: OrderNote) => void;
 }
 
 export const OrderNoteTable = ({
