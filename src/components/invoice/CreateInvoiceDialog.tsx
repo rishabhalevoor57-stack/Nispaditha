@@ -369,6 +369,12 @@ export function CreateInvoiceDialog({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          {prefill?.sourceLabel && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+              Pre-filled from <span className="font-semibold">{prefill.sourceLabel}</span>. Review and add product line items before saving.
+            </div>
+          )}
+
           {/* Business GST Display */}
           {businessSettings?.gst_number && (
             <div className="bg-muted/50 rounded-lg p-3 text-sm">
