@@ -129,6 +129,16 @@ export const OrderNoteTable = ({
                   <Button variant="ghost" size="icon" onClick={() => onDownload(note)}>
                     <Download className="h-4 w-4" />
                   </Button>
+                  {onConvertToInvoice && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Convert to GST Invoice"
+                      onClick={() => onConvertToInvoice(note)}
+                    >
+                      <FileCheck className="h-4 w-4 text-primary" />
+                    </Button>
+                  )}
                   {isAdmin && (
                     <Button variant="ghost" size="icon" onClick={() => onDelete(note)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
