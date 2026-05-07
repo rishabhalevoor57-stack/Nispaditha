@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const OrderNotes = () => {
   const { orderNotes, isLoading, updateStatus, deleteOrderNote, getOrderNoteWithItems } = useOrderNotes();
+  const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -34,6 +35,8 @@ const OrderNotes = () => {
   const [viewOpen, setViewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<OrderNote | null>(null);
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [convertPrefill, setConvertPrefill] = useState<InvoicePrefillData | null>(null);
 
   const filteredNotes = useMemo(() => {
     return orderNotes.filter((note) => {
