@@ -246,6 +246,14 @@ export default function Clients() {
       header: 'Actions',
       cell: (item: Client) => (
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => { e.stopPropagation(); setProfileClient(item); setProfileOpen(true); }}
+            title="View profile"
+          >
+            <User className="w-4 h-4" />
+          </Button>
           <Button 
             variant="ghost" 
             size="icon"
