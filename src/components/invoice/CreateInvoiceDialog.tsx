@@ -35,10 +35,20 @@ import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
 
 
+export interface InvoicePrefillData {
+  clientName?: string;
+  clientPhone?: string;
+  notes?: string;
+  advancePaid?: number;
+  paymentMode?: string;
+  sourceLabel?: string; // e.g. "Order Note ON-000123"
+}
+
 interface CreateInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onInvoiceCreated: () => void;
+  prefill?: InvoicePrefillData | null;
 }
 
 export function CreateInvoiceDialog({
