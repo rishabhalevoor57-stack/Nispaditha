@@ -110,6 +110,23 @@ export function CreateInvoiceDialog({
     }
   }, [open]);
 
+  // Apply prefill data when dialog opens (e.g. from Service Order conversion)
+  useEffect(() => {
+    if (open && prefill) {
+      if (prefill.clientName) setClientName(prefill.clientName);
+      if (prefill.clientPhone) setClientPhone(prefill.clientPhone);
+      if (prefill.notes) setNotes(prefill.notes);
+      if (prefill.paymentMode) setPaymentMode(prefill.paymentMode);
+      setSelectedClient('walk-in');
+      const adv = Number(prefill.advancePaid) || 0;
+      if (adv > 0) {
+        setPaymentStatus('PARTIAL');
+        setAmountPaid(adv);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, prefill]);
+
   const fetchProducts = async () => {
     const { data } = await supabase
       .from('products')
