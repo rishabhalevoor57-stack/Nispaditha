@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CustomOrder, CustomOrderItem, CustomOrderStatus } from '@/types/customOrder';
 import { toast } from '@/hooks/use-toast';
+import { ensureClient } from '@/utils/ensureClient';
 
 export const useCustomOrders = () => {
   const queryClient = useQueryClient();
