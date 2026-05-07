@@ -105,6 +105,8 @@ export const useCustomOrders = () => {
         await lockSkus(data.items, orderData.id);
       }
 
+      await ensureClient(data.order.phone_number, data.order.client_name);
+
       return orderData;
     },
     onSuccess: () => {
