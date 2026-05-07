@@ -45,6 +45,7 @@ export const OrderNoteTable = ({
   onPrint,
   onDownload,
   onStatusChange,
+  onConvertToInvoice,
 }: OrderNoteTableProps) => {
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
