@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OrderNote, OrderNoteItem, OrderNoteStatus } from '@/types/orderNote';
 import { toast } from '@/hooks/use-toast';
+import { ensureClient } from '@/utils/ensureClient';
 
 
 const uploadItemImage = async (file: File, orderNoteId: string): Promise<string> => {
@@ -222,6 +223,8 @@ export const useOrderNotes = () => {
           data.note.created_by || null
         );
       }
+
+      await ensureClient(data.note.phone_number, data.note.customer_name);
 
       return noteData;
     },

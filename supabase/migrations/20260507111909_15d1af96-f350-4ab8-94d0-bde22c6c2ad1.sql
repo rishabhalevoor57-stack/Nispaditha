@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS clients_phone_unique ON public.clients (phone) WHERE phone IS NOT NULL;

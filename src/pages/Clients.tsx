@@ -15,8 +15,9 @@ import {
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Edit, Trash2, Phone, Mail, Download } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Phone, Mail, Download, User } from 'lucide-react';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { ClientProfileDialog } from '@/components/clients/ClientProfileDialog';
 
 interface Client {
   id: string;
@@ -28,6 +29,8 @@ interface Client {
   total_purchases: number;
   last_invoice_date: string | null;
   comments: string | null;
+  polish_used: number;
+  polish_total_allowed: number;
   created_at: string;
 }
 
@@ -47,6 +50,8 @@ export default function Clients() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState(initialClient);
   const [searchTerm, setSearchTerm] = useState('');
+  const [profileClient, setProfileClient] = useState<Client | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   const { toast } = useToast();
   const isAdmin = useIsAdmin();
 
@@ -241,6 +246,14 @@ export default function Clients() {
       header: 'Actions',
       cell: (item: Client) => (
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => { e.stopPropagation(); setProfileClient(item); setProfileOpen(true); }}
+            title="View profile"
+          >
+            <User className="w-4 h-4" />
+          </Button>
           <Button 
             variant="ghost" 
             size="icon"
@@ -387,6 +400,14 @@ export default function Clients() {
         columns={columns}
         isLoading={isLoading}
         emptyMessage="No clients found. Add your first client to get started."
+        onRowClick={(item) => { setProfileClient(item); setProfileOpen(true); }}
+      />
+
+      <ClientProfileDialog
+        client={profileClient}
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        onUpdate={fetchClients}
       />
     </AppLayout>
   );

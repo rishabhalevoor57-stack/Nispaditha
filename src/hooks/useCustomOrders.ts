@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CustomOrder, CustomOrderItem, CustomOrderStatus } from '@/types/customOrder';
 import { toast } from '@/hooks/use-toast';
+import { ensureClient } from '@/utils/ensureClient';
 
 export const useCustomOrders = () => {
   const queryClient = useQueryClient();
@@ -103,6 +104,8 @@ export const useCustomOrders = () => {
       if (data.order.status !== 'released') {
         await lockSkus(data.items, orderData.id);
       }
+
+      await ensureClient(data.order.phone_number, data.order.client_name);
 
       return orderData;
     },
