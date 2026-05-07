@@ -15,8 +15,9 @@ import {
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Edit, Trash2, Phone, Mail, Download } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Phone, Mail, Download, User } from 'lucide-react';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { ClientProfileDialog } from '@/components/clients/ClientProfileDialog';
 
 interface Client {
   id: string;
@@ -28,6 +29,8 @@ interface Client {
   total_purchases: number;
   last_invoice_date: string | null;
   comments: string | null;
+  polish_used: number;
+  polish_total_allowed: number;
   created_at: string;
 }
 
