@@ -18,13 +18,16 @@ import { OrderNoteFilters } from '@/components/order-notes/OrderNoteFilters';
 import { OrderNoteTable } from '@/components/order-notes/OrderNoteTable';
 import { OrderNoteFormDialog } from '@/components/order-notes/OrderNoteFormDialog';
 import { ViewOrderNoteDialog } from '@/components/order-notes/ViewOrderNoteDialog';
+import { CreateInvoiceDialog, type InvoicePrefillData } from '@/components/invoice/CreateInvoiceDialog';
 import { useOrderNotes } from '@/hooks/useOrderNotes';
 import { OrderNote, OrderNoteStatus } from '@/types/orderNote';
 import { printOrderNote, downloadOrderNotePdf } from '@/utils/orderNotePdf';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 const OrderNotes = () => {
   const { orderNotes, isLoading, updateStatus, deleteOrderNote, getOrderNoteWithItems } = useOrderNotes();
+  const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -32,6 +35,8 @@ const OrderNotes = () => {
   const [viewOpen, setViewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<OrderNote | null>(null);
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [convertPrefill, setConvertPrefill] = useState<InvoicePrefillData | null>(null);
 
   const filteredNotes = useMemo(() => {
     return orderNotes.filter((note) => {
@@ -89,6 +94,41 @@ const OrderNotes = () => {
   const handleNewOrder = () => {
     setSelectedNote(null);
     setFormOpen(true);
+  };
+
+  const handleConvertToInvoice = async (note: OrderNote) => {
+    try {
+      const fullNote = await getOrderNoteWithItems(note.id);
+      const itemDescriptions = (fullNote.items || [])
+        .map((it, i) => `${i + 1}. ${it.item_description}${it.customization_notes ? ` — ${it.customization_notes}` : ''} (Qty: ${it.quantity})`)
+        .join('\n');
+      const composedNotes = [
+        `Converted from Service Order ${note.order_reference}.`,
+        note.special_instructions ? `Instructions: ${note.special_instructions}` : '',
+        itemDescriptions ? `Items:\n${itemDescriptions}` : '',
+      ].filter(Boolean).join('\n\n');
+
+      const paymentModeMap: Record<string, string> = {
+        Cash: 'cash',
+        UPI: 'upi',
+        Card: 'card',
+        'Bank Transfer': 'bank_transfer',
+        Other: 'cash',
+      };
+
+      setConvertPrefill({
+        clientName: note.customer_name,
+        clientPhone: note.phone_number || '',
+        notes: composedNotes,
+        advancePaid: Number(note.advance_received) || 0,
+        paymentMode: note.payment_mode ? (paymentModeMap[note.payment_mode] || 'cash') : 'cash',
+        sourceLabel: `Service Order ${note.order_reference}`,
+      });
+      setViewOpen(false);
+      setConvertOpen(true);
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Failed to load order', description: 'Could not prefill invoice data.' });
+    }
   };
 
   // Stats
@@ -187,6 +227,7 @@ const OrderNotes = () => {
                 onPrint={handlePrint}
                 onDownload={handleDownload}
                 onStatusChange={handleStatusChange}
+                onConvertToInvoice={handleConvertToInvoice}
               />
             )}
           </CardContent>
@@ -207,6 +248,20 @@ const OrderNotes = () => {
         orderNote={selectedNote}
         onPrint={handlePrint}
         onDownload={handleDownload}
+        onConvertToInvoice={handleConvertToInvoice}
+      />
+
+      {/* Convert-to-Invoice Dialog */}
+      <CreateInvoiceDialog
+        open={convertOpen}
+        onOpenChange={(o) => {
+          setConvertOpen(o);
+          if (!o) setConvertPrefill(null);
+        }}
+        onInvoiceCreated={() => {
+          toast({ title: 'GST Invoice created from Service Order' });
+        }}
+        prefill={convertPrefill}
       />
 
       {/* Delete Confirmation */}

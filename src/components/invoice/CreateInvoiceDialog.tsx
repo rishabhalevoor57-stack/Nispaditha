@@ -35,16 +35,27 @@ import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
 
 
+export interface InvoicePrefillData {
+  clientName?: string;
+  clientPhone?: string;
+  notes?: string;
+  advancePaid?: number;
+  paymentMode?: string;
+  sourceLabel?: string; // e.g. "Order Note ON-000123"
+}
+
 interface CreateInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onInvoiceCreated: () => void;
+  prefill?: InvoicePrefillData | null;
 }
 
 export function CreateInvoiceDialog({
   open,
   onOpenChange,
   onInvoiceCreated,
+  prefill,
 }: CreateInvoiceDialogProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -98,6 +109,23 @@ export function CreateInvoiceDialog({
       fetchBusinessSettings();
     }
   }, [open]);
+
+  // Apply prefill data when dialog opens (e.g. from Service Order conversion)
+  useEffect(() => {
+    if (open && prefill) {
+      if (prefill.clientName) setClientName(prefill.clientName);
+      if (prefill.clientPhone) setClientPhone(prefill.clientPhone);
+      if (prefill.notes) setNotes(prefill.notes);
+      if (prefill.paymentMode) setPaymentMode(prefill.paymentMode);
+      setSelectedClient('walk-in');
+      const adv = Number(prefill.advancePaid) || 0;
+      if (adv > 0) {
+        setPaymentStatus('PARTIAL');
+        setAmountPaid(adv);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, prefill]);
 
   const fetchProducts = async () => {
     const { data } = await supabase
@@ -341,6 +369,12 @@ export function CreateInvoiceDialog({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          {prefill?.sourceLabel && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+              Pre-filled from <span className="font-semibold">{prefill.sourceLabel}</span>. Review and add product line items before saving.
+            </div>
+          )}
+
           {/* Business GST Display */}
           {businessSettings?.gst_number && (
             <div className="bg-muted/50 rounded-lg p-3 text-sm">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Printer, Download } from 'lucide-react';
+import { Printer, Download, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -28,6 +28,7 @@ interface ViewOrderNoteDialogProps {
   orderNote: OrderNote | null;
   onPrint: (orderNote: OrderNote) => void;
   onDownload: (orderNote: OrderNote) => void;
+  onConvertToInvoice?: (orderNote: OrderNote) => void;
 }
 
 export const ViewOrderNoteDialog = ({
@@ -36,6 +37,7 @@ export const ViewOrderNoteDialog = ({
   orderNote,
   onPrint,
   onDownload,
+  onConvertToInvoice,
 }: ViewOrderNoteDialogProps) => {
   const { getOrderNoteWithItems } = useOrderNotes();
   const [items, setItems] = useState<OrderNoteItem[]>([]);
@@ -82,6 +84,12 @@ export const ViewOrderNoteDialog = ({
               <Download className="h-4 w-4 mr-2" />
               PDF
             </Button>
+            {onConvertToInvoice && (
+              <Button size="sm" className="btn-gold" onClick={() => onConvertToInvoice(orderNote)}>
+                <FileCheck className="h-4 w-4 mr-2" />
+                Convert to GST Invoice
+              </Button>
+            )}
           </div>
         </DialogHeader>
 

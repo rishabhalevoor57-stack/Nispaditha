@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Edit, Eye, Trash2, Printer, Download } from 'lucide-react';
+import { Edit, Eye, Trash2, Printer, Download, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -34,6 +34,7 @@ interface OrderNoteTableProps {
   onPrint: (orderNote: OrderNote) => void;
   onDownload: (orderNote: OrderNote) => void;
   onStatusChange: (id: string, status: OrderNoteStatus) => void;
+  onConvertToInvoice?: (orderNote: OrderNote) => void;
 }
 
 export const OrderNoteTable = ({
@@ -44,6 +45,7 @@ export const OrderNoteTable = ({
   onPrint,
   onDownload,
   onStatusChange,
+  onConvertToInvoice,
 }: OrderNoteTableProps) => {
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
@@ -127,6 +129,16 @@ export const OrderNoteTable = ({
                   <Button variant="ghost" size="icon" onClick={() => onDownload(note)}>
                     <Download className="h-4 w-4" />
                   </Button>
+                  {onConvertToInvoice && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Convert to GST Invoice"
+                      onClick={() => onConvertToInvoice(note)}
+                    >
+                      <FileCheck className="h-4 w-4 text-primary" />
+                    </Button>
+                  )}
                   {isAdmin && (
                     <Button variant="ghost" size="icon" onClick={() => onDelete(note)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
