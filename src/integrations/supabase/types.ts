@@ -601,6 +601,42 @@ export type Database = {
           },
         ]
       }
+      invoice_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_id: string
+          notes: string | null
+          payment_date: string
+          payment_mode: string
+          receipt_number: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id: string
+          notes?: string | null
+          payment_date?: string
+          payment_mode?: string
+          receipt_number: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_mode?: string
+          receipt_number?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           advance_paid: number
@@ -1492,6 +1528,7 @@ export type Database = {
       generate_custom_order_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_order_reference: { Args: never; Returns: string }
+      generate_receipt_number: { Args: never; Returns: string }
       generate_return_exchange_reference: {
         Args: { p_type: string }
         Returns: string
