@@ -26,6 +26,7 @@ import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { InvoiceStatusBadge, InvoiceStatusActions } from './InvoiceStatusActions';
 import { InvoiceItemsTable } from './InvoiceItemsTable';
+import { InvoicePaymentHistory } from './InvoicePaymentHistory';
 import { InvoiceTotalsSection } from './InvoiceTotalsSection';
 import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
@@ -573,6 +574,15 @@ export function ViewInvoiceDialog({
                     <span className="text-primary">{formatCurrency(Number(invoice.grand_total))}</span>
                   </div>
                 </div>
+
+                <InvoicePaymentHistory
+                  invoiceId={invoice.id}
+                  invoiceNumber={invoice.invoice_number}
+                  grandTotal={Number(invoice.grand_total) || 0}
+                  customerName={invoice.clients?.name || 'Walk-in Customer'}
+                  customerPhone={invoice.clients?.phone || ''}
+                  businessSettings={businessSettings}
+                />
 
                 {/* Notes */}
                 {invoice.notes && (
