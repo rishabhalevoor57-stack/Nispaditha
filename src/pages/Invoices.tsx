@@ -70,12 +70,17 @@ export default function Invoices() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this invoice?')) return;
+    if (!confirm('Are you sure you want to delete this invoice? Stock for all items will be restored.')) return;
 
     try {
+      // Delete items first so the AFTER DELETE trigger restores stock per line item
+      const { error: itemsErr } = await supabase.from('invoice_items').delete().eq('invoice_id', id);
+      if (itemsErr) throw itemsErr;
+      // Remove related payment records
+      await supabase.from('invoice_payments').delete().eq('invoice_id', id);
       const { error } = await supabase.from('invoices').delete().eq('id', id);
       if (error) throw error;
-      toast({ title: 'Invoice deleted' });
+      toast({ title: 'Invoice deleted, stock restored' });
       fetchInvoices();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'An error occurred';
@@ -96,21 +101,7 @@ export default function Invoices() {
 
     if (!itemsData) return;
 
-    const invoiceItems: InvoiceItem[] = itemsData.map((item: {
-      products: { sku: string } | null;
-      product_name: string;
-      category: string | null;
-      weight_grams: number;
-      quantity: number;
-      rate_per_gram: number;
-      gold_value: number;
-      making_charges: number;
-      discount: number;
-      discounted_making: number;
-      subtotal: number;
-      gst_percentage: number;
-      mrp: number;
-    }) => ({
+    const invoiceItems: InvoiceItem[] = itemsData.map((item: any) => ({
       product_id: '',
       sku: item.products?.sku || 'N/A',
       product_name: item.product_name,
@@ -148,6 +139,8 @@ export default function Invoices() {
       totals,
       businessSettings,
       notes: invoice.notes || undefined,
+      advancePaid: Number((invoice as any).advance_paid) || 0,
+      paymentReceivedDate: (invoice as any).paid_at || null,
     }, true);
   };
 
@@ -219,6 +212,9 @@ export default function Invoices() {
       cell: (item: Invoice) => (
         <InvoiceStatusActions
           invoiceId={item.id}
+          invoiceNumber={item.invoice_number}
+          grandTotal={Number(item.grand_total) || 0}
+          advancePaid={Number((item as any).advance_paid) || 0}
           currentStatus={item.status}
           onStatusChange={fetchInvoices}
         />
