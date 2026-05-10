@@ -21,11 +21,15 @@ export function ProductSearchInput({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredProducts = searchTerm.length >= 1
-    ? products.filter(
-        (p) =>
-          p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.name.toLowerCase().includes(searchTerm.toLowerCase())
-      ).slice(0, 10)
+    ? products.filter((p) => {
+        const q = searchTerm.toLowerCase();
+        return (
+          p.sku?.toLowerCase().includes(q) ||
+          p.name?.toLowerCase().includes(q) ||
+          (p as any).description?.toLowerCase?.().includes(q) ||
+          p.categories?.name?.toLowerCase?.().includes(q)
+        );
+      }).slice(0, 200)
     : [];
 
   useEffect(() => {

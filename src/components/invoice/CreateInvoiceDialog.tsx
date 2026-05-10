@@ -128,15 +128,25 @@ export function CreateInvoiceDialog({
   }, [open, prefill]);
 
   const fetchProducts = async () => {
-    const { data } = await supabase
-      .from('products')
-      .select('*, categories(name)')
-      .gt('quantity', 0)
-      .is('deleted_at', null)
-      .is('locked_by_custom_order_id' as any, null)
-      .order('name');
-    // Map pricing_mode to the Product type
-    const mapped = (data || []).map(p => ({
+    // Paginated fetch — show ALL products in invoice search regardless of stock level
+    const PAGE = 1000;
+    let from = 0;
+    const all: any[] = [];
+    while (from < 50000) {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, categories(name)')
+        .is('deleted_at', null)
+        .is('locked_by_custom_order_id' as any, null)
+        .order('name')
+        .range(from, from + PAGE - 1);
+      if (error) break;
+      if (!data || data.length === 0) break;
+      all.push(...data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    const mapped = all.map(p => ({
       ...p,
       pricing_mode: (p.pricing_mode || 'weight_based') as 'weight_based' | 'flat_price',
       mrp: Number(p.mrp) || 0,
@@ -248,6 +258,7 @@ export function CreateInvoiceDialog({
           discount_amount: totals.discountAmount,
           gst_amount: totals.gstAmount,
           grand_total: grandTotalWithRound,
+          advance_paid: effectiveAdvance,
           payment_status:
             paymentStatus === 'PAID' ? 'paid' :
             paymentStatus === 'PARTIAL' ? 'partial' : 'pending',
@@ -261,6 +272,20 @@ export function CreateInvoiceDialog({
 
 
       if (invoiceError) throw invoiceError;
+
+      // Record the initial payment in invoice_payments (for receipt history)
+      if (effectiveAdvance > 0) {
+        const { data: receiptNum } = await supabase.rpc('generate_receipt_number');
+        await supabase.from('invoice_payments').insert([{
+          invoice_id: invoice.id,
+          receipt_number: receiptNum,
+          amount: effectiveAdvance,
+          payment_mode: paymentMode,
+          payment_date: format(invoiceDate, 'yyyy-MM-dd'),
+          notes: paymentStatus === 'PAID' ? 'Payment received in full at invoice creation' : 'Advance received at invoice creation',
+          created_by: user?.id,
+        }]);
+      }
 
       // Create invoice items
       const itemsToInsert = invoiceItems.map(item => ({

@@ -26,6 +26,7 @@ import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { InvoiceStatusBadge, InvoiceStatusActions } from './InvoiceStatusActions';
 import { InvoiceItemsTable } from './InvoiceItemsTable';
+import { InvoicePaymentHistory } from './InvoicePaymentHistory';
 import { InvoiceTotalsSection } from './InvoiceTotalsSection';
 import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
@@ -49,6 +50,7 @@ interface InvoiceDetails {
   discount_amount: number;
   gst_amount: number;
   grand_total: number;
+  advance_paid: number;
   payment_mode: string | null;
   payment_status: string;
   notes: string | null;
@@ -362,6 +364,8 @@ export function ViewInvoiceDialog({
       totals: getTotals(),
       businessSettings,
       notes: invoice.notes || undefined,
+      advancePaid: Number(invoice.advance_paid) || 0,
+      paymentReceivedDate: invoice.paid_at || null,
     }, isAdmin);
   };
 
@@ -377,6 +381,8 @@ export function ViewInvoiceDialog({
       totals: getTotals(),
       businessSettings,
       notes: invoice.notes || undefined,
+      advancePaid: Number(invoice.advance_paid) || 0,
+      paymentReceivedDate: invoice.paid_at || null,
     }, isAdmin);
   };
 
@@ -418,6 +424,9 @@ export function ViewInvoiceDialog({
                     <InvoiceStatusBadge status={invoice.status} />
                     <InvoiceStatusActions
                       invoiceId={invoice.id}
+                      invoiceNumber={invoice.invoice_number}
+                      grandTotal={Number(invoice.grand_total) || 0}
+                      advancePaid={Number(invoice.advance_paid) || 0}
                       currentStatus={invoice.status}
                       onStatusChange={handleStatusChange}
                     />
@@ -565,6 +574,15 @@ export function ViewInvoiceDialog({
                     <span className="text-primary">{formatCurrency(Number(invoice.grand_total))}</span>
                   </div>
                 </div>
+
+                <InvoicePaymentHistory
+                  invoiceId={invoice.id}
+                  invoiceNumber={invoice.invoice_number}
+                  grandTotal={Number(invoice.grand_total) || 0}
+                  customerName={invoice.clients?.name || 'Walk-in Customer'}
+                  customerPhone={invoice.clients?.phone || ''}
+                  businessSettings={businessSettings}
+                />
 
                 {/* Notes */}
                 {invoice.notes && (

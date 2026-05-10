@@ -1,58 +1,41 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Send, CheckCircle, Clock, CircleDot } from 'lucide-react';
+import { Send, CheckCircle, CircleDot } from 'lucide-react';
+import { RecordPaymentDialog } from './RecordPaymentDialog';
 
 type InvoiceStatus = 'draft' | 'sent' | 'paid';
 
 interface InvoiceStatusActionsProps {
   invoiceId: string;
+  invoiceNumber?: string;
+  grandTotal?: number;
+  advancePaid?: number;
   currentStatus: InvoiceStatus;
   onStatusChange: () => void;
 }
 
 export function InvoiceStatusActions({
   invoiceId,
+  invoiceNumber = '',
+  grandTotal = 0,
+  advancePaid = 0,
   currentStatus,
   onStatusChange,
 }: InvoiceStatusActionsProps) {
   const { toast } = useToast();
+  const [showPayment, setShowPayment] = useState(false);
 
   const handleMarkAsSent = async () => {
     try {
       const { error } = await supabase
         .from('invoices')
-        .update({
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-        })
+        .update({ status: 'sent', sent_at: new Date().toISOString() })
         .eq('id', invoiceId);
-
       if (error) throw error;
-
       toast({ title: 'Invoice marked as sent' });
-      onStatusChange();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update status';
-      toast({ variant: 'destructive', title: 'Error', description: message });
-    }
-  };
-
-  const handleMarkAsPaid = async () => {
-    try {
-      const { error } = await supabase
-        .from('invoices')
-        .update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          payment_status: 'paid',
-        })
-        .eq('id', invoiceId);
-
-      if (error) throw error;
-
-      toast({ title: 'Invoice marked as paid' });
       onStatusChange();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to update status';
@@ -77,13 +60,23 @@ export function InvoiceStatusActions({
         <Button
           size="sm"
           variant="outline"
-          onClick={handleMarkAsPaid}
+          onClick={() => setShowPayment(true)}
           className="text-green-600 hover:text-green-700 hover:bg-green-50"
         >
           <CheckCircle className="w-4 h-4 mr-1" />
           Mark as Paid
         </Button>
       )}
+
+      <RecordPaymentDialog
+        open={showPayment}
+        onOpenChange={setShowPayment}
+        invoiceId={invoiceId}
+        invoiceNumber={invoiceNumber}
+        grandTotal={grandTotal}
+        alreadyPaid={advancePaid}
+        onRecorded={onStatusChange}
+      />
     </div>
   );
 }

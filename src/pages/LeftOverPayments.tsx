@@ -1,102 +1,124 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Search, IndianRupee } from 'lucide-react';
+import { Search, Eye, IndianRupee } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
 import { supabase } from '@/integrations/supabase/client';
-import { ORDER_NOTE_STATUS_LABELS, ORDER_NOTE_STATUS_COLORS, OrderNoteStatus } from '@/types/orderNote';
+import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
+import { ViewInvoiceDialog } from '@/components/invoice/ViewInvoiceDialog';
 
-interface PendingPayment {
+interface PendingInvoiceRow {
   id: string;
-  order_reference: string;
-  customer_name: string;
-  phone_number: string | null;
-  quoted_estimate: number;
-  advance_received: number;
-  balance: number;
-  order_date: string;
-  expected_delivery_date: string | null;
-  status: OrderNoteStatus;
+  invoice_number: string;
+  invoice_date: string;
+  grand_total: number;
+  advance_paid: number;
+  payment_status: string;
+  clients: { name: string | null; phone: string | null } | null;
 }
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount);
+const formatCurrency = (n: number) =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n || 0);
 
 export default function LeftOverPayments() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [paymentTarget, setPaymentTarget] = useState<PendingInvoiceRow | null>(null);
+  const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
 
-  const { data: records = [], isLoading } = useQuery({
-    queryKey: ['pending-payments'],
+  const { data: rows = [], isLoading, refetch } = useQuery({
+    queryKey: ['pending-payments-invoices'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('order_notes')
-        .select('id, order_reference, customer_name, phone_number, quoted_estimate, advance_received, balance, order_date, expected_delivery_date, status')
-        .gt('balance', 0)
-        .order('order_date', { ascending: true });
-
+        .from('invoices')
+        .select('id, invoice_number, invoice_date, grand_total, advance_paid, payment_status, clients(name, phone)')
+        .in('payment_status', ['partial', 'pending'])
+        .order('invoice_date', { ascending: true });
       if (error) throw error;
-      return (data || []) as PendingPayment[];
+      return (data || []) as unknown as PendingInvoiceRow[];
     },
   });
 
   const filtered = useMemo(() => {
-    if (!searchTerm) return records;
+    if (!searchTerm) return rows;
     const q = searchTerm.toLowerCase();
-    return records.filter(r =>
-      r.customer_name.toLowerCase().includes(q) ||
-      r.order_reference.toLowerCase().includes(q) ||
-      r.phone_number?.toLowerCase().includes(q)
+    return rows.filter(r =>
+      r.invoice_number.toLowerCase().includes(q) ||
+      r.clients?.name?.toLowerCase().includes(q) ||
+      r.clients?.phone?.toLowerCase().includes(q)
     );
-  }, [records, searchTerm]);
+  }, [rows, searchTerm]);
 
-  const totalPending = filtered.reduce((sum, r) => sum + (r.balance || 0), 0);
-  const totalEstimate = filtered.reduce((sum, r) => sum + (r.quoted_estimate || 0), 0);
-  const totalReceived = filtered.reduce((sum, r) => sum + (r.advance_received || 0), 0);
+  const totalEstimate = filtered.reduce((s, r) => s + Number(r.grand_total || 0), 0);
+  const totalReceived = filtered.reduce((s, r) => s + Number(r.advance_paid || 0), 0);
+  const totalPending = filtered.reduce((s, r) => s + Math.max(0, Number(r.grand_total || 0) - Number(r.advance_paid || 0)), 0);
 
   const columns = [
-    { key: 'order_reference', header: 'Ref #' },
-    { key: 'customer_name', header: 'Customer' },
+    { key: 'invoice_number', header: 'Ref #' },
     {
-      key: 'phone_number',
-      header: 'Phone',
-      cell: (item: PendingPayment) => item.phone_number || '-',
+      key: 'customer',
+      header: 'Customer',
+      cell: (r: PendingInvoiceRow) => r.clients?.name || 'Walk-in',
     },
     {
-      key: 'order_date',
+      key: 'phone',
+      header: 'Phone',
+      cell: (r: PendingInvoiceRow) => r.clients?.phone || '-',
+    },
+    {
+      key: 'invoice_date',
       header: 'Order Date',
-      cell: (item: PendingPayment) => format(new Date(item.order_date), 'dd MMM yyyy'),
+      cell: (r: PendingInvoiceRow) => format(new Date(r.invoice_date), 'dd MMM yyyy'),
     },
     {
       key: 'status',
       header: 'Status',
-      cell: (item: PendingPayment) => (
-        <Badge className={ORDER_NOTE_STATUS_COLORS[item.status]}>
-          {ORDER_NOTE_STATUS_LABELS[item.status] || item.status}
-        </Badge>
+      cell: (r: PendingInvoiceRow) => (
+        r.payment_status === 'partial' ? (
+          <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20 border">PARTIAL</Badge>
+        ) : (
+          <Badge className="bg-red-500/10 text-red-600 border-red-500/20 border">PENDING</Badge>
+        )
       ),
     },
     {
-      key: 'quoted_estimate',
+      key: 'grand_total',
       header: 'Total Amount',
-      cell: (item: PendingPayment) => formatCurrency(item.quoted_estimate || 0),
+      cell: (r: PendingInvoiceRow) => formatCurrency(Number(r.grand_total)),
     },
     {
-      key: 'advance_received',
+      key: 'advance_paid',
       header: 'Paid',
-      cell: (item: PendingPayment) => (
-        <span className="text-primary font-medium">{formatCurrency(item.advance_received || 0)}</span>
+      cell: (r: PendingInvoiceRow) => (
+        <span className="text-primary font-medium">{formatCurrency(Number(r.advance_paid))}</span>
       ),
     },
     {
       key: 'balance',
       header: 'Balance Due',
-      cell: (item: PendingPayment) => (
-        <span className="text-amber-600 font-semibold">{formatCurrency(item.balance || 0)}</span>
+      cell: (r: PendingInvoiceRow) => (
+        <span className="text-amber-600 font-semibold">
+          {formatCurrency(Math.max(0, Number(r.grand_total) - Number(r.advance_paid)))}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      cell: (r: PendingInvoiceRow) => (
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="outline" onClick={() => setPaymentTarget(r)}>
+            <IndianRupee className="w-4 h-4 mr-1" /> Record Payment
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setViewInvoiceId(r.id)} title="View Invoice">
+            <Eye className="w-4 h-4" />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -106,50 +128,32 @@ export default function LeftOverPayments() {
       <div className="space-y-6">
         <PageHeader
           title="Pending Payments"
-          description="Track pending balances from order notes — oldest first"
+          description="All invoices with partial or pending balances — record payments here"
         />
 
-        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Orders with Balance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{filtered.length}</div>
-            </CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Orders with Balance</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold">{filtered.length}</div></CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Estimate</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalEstimate)}</div>
-            </CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Estimate</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold">{formatCurrency(totalEstimate)}</div></CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Received</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{formatCurrency(totalReceived)}</div>
-            </CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Received</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold text-primary">{formatCurrency(totalReceived)}</div></CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Pending</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-600">{formatCurrency(totalPending)}</div>
-            </CardContent>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Pending</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold text-amber-600">{formatCurrency(totalPending)}</div></CardContent>
           </Card>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by customer name, reference, or phone..."
+            placeholder="Search by customer name, phone, or invoice ref..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 max-w-md"
@@ -160,9 +164,28 @@ export default function LeftOverPayments() {
           data={filtered}
           columns={columns}
           isLoading={isLoading}
-          emptyMessage="No pending payments found. All balances are cleared! 🎉"
+          emptyMessage="No pending payments. All balances are cleared! 🎉"
         />
       </div>
+
+      {paymentTarget && (
+        <RecordPaymentDialog
+          open={!!paymentTarget}
+          onOpenChange={(open) => !open && setPaymentTarget(null)}
+          invoiceId={paymentTarget.id}
+          invoiceNumber={paymentTarget.invoice_number}
+          grandTotal={Number(paymentTarget.grand_total) || 0}
+          alreadyPaid={Number(paymentTarget.advance_paid) || 0}
+          onRecorded={() => { setPaymentTarget(null); refetch(); }}
+        />
+      )}
+
+      <ViewInvoiceDialog
+        invoiceId={viewInvoiceId}
+        open={!!viewInvoiceId}
+        onOpenChange={(open) => !open && setViewInvoiceId(null)}
+        onStatusChange={refetch}
+      />
     </AppLayout>
   );
 }

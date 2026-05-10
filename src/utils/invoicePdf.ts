@@ -16,6 +16,7 @@ interface InvoicePdfData {
   gstPercentage?: number;
   roundOff?: number;
   advancePaid?: number;
+  paymentReceivedDate?: string | null; // ISO/yyyy-mm-dd of latest payment
 }
 
 const PURPLE: [number, number, number] = [74, 32, 96];
@@ -384,6 +385,18 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.setFontSize(13);
     doc.text('PAID IN FULL', rightX + 16, rightInnerY + stampH / 2 + 1.6);
     rightInnerY += stampH + 3;
+
+    // Payment received date stamp
+    if (data.paymentReceivedDate) {
+      const recvStr = new Date(data.paymentReceivedDate).toLocaleDateString('en-IN', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+      });
+      doc.setTextColor(60, 60, 60);
+      doc.setFont(FONT, 'normal');
+      doc.setFontSize(9);
+      doc.text(`Payment Received On: ${recvStr}`, rightX, rightInnerY + 4);
+      rightInnerY += 7;
+    }
     doc.setLineWidth(0.1);
   } else {
     // Advance Paid box
