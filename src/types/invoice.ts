@@ -4,6 +4,7 @@ export interface Product {
   id: string;
   sku: string;
   name: string;
+  description?: string | null;
   weight_grams: number;
   quantity: number;
   selling_price: number;
@@ -54,6 +55,7 @@ export interface Invoice {
   status: InvoiceStatus;
   sent_at: string | null;
   paid_at: string | null;
+  advance_paid?: number;
 }
 
 export type DiscountType = 'fixed' | 'percentage';
