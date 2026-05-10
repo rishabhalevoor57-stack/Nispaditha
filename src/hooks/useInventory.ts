@@ -34,7 +34,7 @@ export function useInventory() {
     typeOfWork: 'all',
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 50;
   const { toast } = useToast();
   const { logActivity } = useActivityLogger();
 
@@ -46,22 +46,32 @@ export function useInventory() {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, categories(name), suppliers(name)')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
+      // Paginated fetch to bypass Supabase 1000-row limit
+      const PAGE = 1000;
+      let from = 0;
+      const all: any[] = [];
+      // Safety cap at 50k rows
+      while (from < 50000) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*, categories(name), suppliers(name)')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
 
-      if (error) throw error;
-      
-      // Cast the data to our Product type with proper type handling
-      const typedProducts = (data || []).map(item => ({
+      const typedProducts = all.map((item) => ({
         ...item,
         type_of_work: (item.type_of_work || 'Others') as TypeOfWork,
         status: (item.status || 'in_stock') as ProductStatus,
         pricing_mode: (item.pricing_mode || 'weight_based') as import('@/types/inventory').PricingMode,
       })) as Product[];
-      
+
       setProducts(typedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
