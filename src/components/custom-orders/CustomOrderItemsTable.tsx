@@ -504,6 +504,17 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                       </Button>
                     </TableCell>
                   </TableRow>
+                  <TableRow key={`${index}-desc`} className="border-t-0">
+                    <TableCell colSpan={11} className="py-2 pl-4">
+                      <Input
+                        placeholder="Description (optional) — notes, customisation, instructions..."
+                        value={item.customization_notes || ''}
+                        onChange={(e) => updateItem(index, 'customization_notes', e.target.value)}
+                        className="h-8 text-xs bg-muted/30"
+                      />
+                    </TableCell>
+                  </TableRow>
+                  </>
                 );
               })
             )}
