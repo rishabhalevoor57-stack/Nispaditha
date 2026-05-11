@@ -288,7 +288,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                 const filtered = getFilteredProducts(searchTerm);
 
                 return (
-                  <TableRow key={index} className="align-top">
+                  <><TableRow key={index} className="align-top">
                     {/* SKU / Product */}
                     <TableCell className="py-3">
                       <div className="relative">
