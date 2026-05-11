@@ -260,17 +260,17 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
         <Table className="min-w-[1180px]">
           <TableHeader>
             <TableRow className="bg-muted/30">
-              <TableHead className="min-w-[180px]">SKU / Product</TableHead>
-              <TableHead className="w-[100px]">Mode</TableHead>
-              <TableHead className="w-[80px] text-center">Qty</TableHead>
-              <TableHead className="w-[90px]">Weight(g)</TableHead>
-              <TableHead className="w-[100px]">Rate</TableHead>
-              <TableHead className="w-[90px]">MC/g</TableHead>
-              <TableHead className="w-[80px]">MC Disc%</TableHead>
-              <TableHead className="w-[100px]">Flat ₹</TableHead>
-              <TableHead className="w-[120px]">Discount</TableHead>
-              <TableHead className="w-[110px] text-right">Total</TableHead>
-              <TableHead className="w-[40px]"></TableHead>
+              <TableHead className="min-w-[200px]">SKU / Product</TableHead>
+              <TableHead className="min-w-[110px]">Mode</TableHead>
+              <TableHead className="min-w-[90px] text-center">Qty</TableHead>
+              <TableHead className="min-w-[100px]">Weight(g)</TableHead>
+              <TableHead className="min-w-[110px]">Rate</TableHead>
+              <TableHead className="min-w-[100px]">MC/g</TableHead>
+              <TableHead className="min-w-[90px]">MC Disc%</TableHead>
+              <TableHead className="min-w-[110px]">Flat ₹</TableHead>
+              <TableHead className="min-w-[140px]">Discount</TableHead>
+              <TableHead className="min-w-[120px] text-right">Total</TableHead>
+              <TableHead className="w-[44px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
