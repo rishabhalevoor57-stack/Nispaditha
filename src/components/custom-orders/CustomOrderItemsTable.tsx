@@ -257,7 +257,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
   return (
     <div className="space-y-4">
       <div className="rounded-md border overflow-x-auto">
-        <Table>
+        <Table className="min-w-[1180px]">
           <TableHeader>
             <TableRow className="bg-muted/30">
               <TableHead className="min-w-[180px]">SKU / Product</TableHead>
