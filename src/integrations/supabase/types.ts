@@ -724,6 +724,51 @@ export type Database = {
           },
         ]
       }
+      manual_sold_items: {
+        Row: {
+          client_name: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          product_id: string | null
+          product_name: string
+          quantity: number
+          sku: string | null
+          sold_date: string
+          total: number
+          weight_grams: number
+        }
+        Insert: {
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          sku?: string | null
+          sold_date?: string
+          total?: number
+          weight_grams?: number
+        }
+        Update: {
+          client_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          sku?: string | null
+          sold_date?: string
+          total?: number
+          weight_grams?: number
+        }
+        Relationships: []
+      }
       order_note_items: {
         Row: {
           created_at: string

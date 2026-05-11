@@ -257,20 +257,20 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
   return (
     <div className="space-y-4">
       <div className="rounded-md border overflow-x-auto">
-        <Table>
+        <Table className="min-w-[1180px]">
           <TableHeader>
             <TableRow className="bg-muted/30">
-              <TableHead className="min-w-[180px]">SKU / Product</TableHead>
-              <TableHead className="w-[100px]">Mode</TableHead>
-              <TableHead className="w-[80px] text-center">Qty</TableHead>
-              <TableHead className="w-[90px]">Weight(g)</TableHead>
-              <TableHead className="w-[100px]">Rate</TableHead>
-              <TableHead className="w-[90px]">MC/g</TableHead>
-              <TableHead className="w-[80px]">MC Disc%</TableHead>
-              <TableHead className="w-[100px]">Flat ₹</TableHead>
-              <TableHead className="w-[120px]">Discount</TableHead>
-              <TableHead className="w-[110px] text-right">Total</TableHead>
-              <TableHead className="w-[40px]"></TableHead>
+              <TableHead className="min-w-[200px]">SKU / Product</TableHead>
+              <TableHead className="min-w-[110px]">Mode</TableHead>
+              <TableHead className="min-w-[90px] text-center">Qty</TableHead>
+              <TableHead className="min-w-[100px]">Weight(g)</TableHead>
+              <TableHead className="min-w-[110px]">Rate</TableHead>
+              <TableHead className="min-w-[100px]">MC/g</TableHead>
+              <TableHead className="min-w-[90px]">MC Disc%</TableHead>
+              <TableHead className="min-w-[110px]">Flat ₹</TableHead>
+              <TableHead className="min-w-[140px]">Discount</TableHead>
+              <TableHead className="min-w-[120px] text-right">Total</TableHead>
+              <TableHead className="w-[44px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -288,7 +288,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                 const filtered = getFilteredProducts(searchTerm);
 
                 return (
-                  <TableRow key={index} className="align-top">
+                  <><TableRow key={index} className="align-top">
                     {/* SKU / Product */}
                     <TableCell className="py-3">
                       <div className="relative">
@@ -504,6 +504,17 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                       </Button>
                     </TableCell>
                   </TableRow>
+                  <TableRow key={`${index}-desc`} className="border-t-0">
+                    <TableCell colSpan={11} className="py-2 pl-4">
+                      <Input
+                        placeholder="Description (optional) — notes, customisation, instructions..."
+                        value={item.customization_notes || ''}
+                        onChange={(e) => updateItem(index, 'customization_notes', e.target.value)}
+                        className="h-8 text-xs bg-muted/30"
+                      />
+                    </TableCell>
+                  </TableRow>
+                  </>
                 );
               })
             )}
