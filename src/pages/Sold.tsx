@@ -311,7 +311,7 @@ export default function Sold() {
       <PageHeader
         title="Sold"
         description="Live ledger of every sold item across invoices, custom orders, and manual entries"
-        action={
+        actions={
           <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
               <Button>
