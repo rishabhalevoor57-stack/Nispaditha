@@ -12,11 +12,13 @@ const RESTORE_ORDER = [
   'types_of_work',
   'stores',
   'clients',
+  'client_schemes',
   'suppliers',
   'products',
   'product_store_quantities',
   'invoices',
   'invoice_items',
+  'invoice_payments',
   'order_notes',
   'order_note_items',
   'order_note_payments',
@@ -30,6 +32,7 @@ const RESTORE_ORDER = [
   'rate_history',
   'stock_history',
   'stock_transfers',
+  'manual_sold_items',
   'activity_logs',
 ];
 

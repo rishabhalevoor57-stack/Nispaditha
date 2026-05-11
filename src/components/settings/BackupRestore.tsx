@@ -169,6 +169,26 @@ export const BackupRestore = () => {
     }
   };
 
+  const downloadBackup = async (backup: Backup) => {
+    if (!backup.file_path) return;
+    try {
+      const { data, error } = await supabase.storage.from('backups').download(backup.file_path);
+      if (error) throw error;
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = backup.file_path.split('/').pop() || 'backup.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: 'Download started' });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      toast({ variant: 'destructive', title: 'Download Failed', description: message });
+    }
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -265,6 +285,12 @@ export const BackupRestore = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {backup.status === 'completed' && backup.file_path && (
+                      <Button size="sm" variant="outline" className="gap-1" onClick={() => downloadBackup(backup)}>
+                        <Download className="w-3.5 h-3.5" />
+                        Download
+                      </Button>
+                    )}
                     {backup.status === 'completed' && backup.file_path && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
