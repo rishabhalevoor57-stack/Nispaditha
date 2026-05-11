@@ -9,9 +9,11 @@ const TABLES_TO_BACKUP = [
   'business_settings',
   'categories',
   'clients',
+  'client_schemes',
   'products',
   'invoices',
   'invoice_items',
+  'invoice_payments',
   'order_notes',
   'order_note_items',
   'order_note_payments',
@@ -29,6 +31,7 @@ const TABLES_TO_BACKUP = [
   'product_store_quantities',
   'stock_transfers',
   'types_of_work',
+  'manual_sold_items',
   'profiles',
   'user_roles',
   'activity_logs',
@@ -57,6 +60,7 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
     
     let isScheduled = false;
+    let userId: string | null = null;
     
     if (token === anonKey) {
       // Scheduled call via cron - allow it
@@ -86,6 +90,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      userId = user.id;
     }
 
     const body = await req.json().catch(() => ({}));
@@ -99,7 +104,7 @@ Deno.serve(async (req) => {
         backup_type: backupType,
         status: 'pending',
         notes,
-        created_by: user.id,
+        created_by: userId,
       })
       .select()
       .single();
