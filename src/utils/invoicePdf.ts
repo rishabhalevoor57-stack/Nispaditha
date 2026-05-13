@@ -123,7 +123,9 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const addr =
     data.businessSettings.address ||
     '60 Feet Rd, AECS Layout - C Block, Kundalahalli, Brookefield, Bengaluru, Karnataka 560037';
-  const wrapped = doc.splitTextToSize(addr, pageWidth * 0.4);
+  const logoSlotW = 30; // reserved center slot for logo
+  const addrMaxW = pageWidth / 2 - margin - logoSlotW / 2 - 3;
+  const wrapped = doc.splitTextToSize(addr, addrMaxW);
   doc.text(wrapped, margin, 12);
 
   // CENTER logo (white-tinted)
