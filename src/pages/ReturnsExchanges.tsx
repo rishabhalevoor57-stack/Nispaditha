@@ -15,10 +15,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, Eye, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Trash2, Coins } from 'lucide-react';
 import { format } from 'date-fns';
 import { useReturnsExchanges } from '@/hooks/useReturnsExchanges';
 import { ReturnExchangeDialog } from '@/components/returns/ReturnExchangeDialog';
+import { BuybackDialog } from '@/components/returns/BuybackDialog';
 import { ViewReturnExchangeDialog } from '@/components/returns/ViewReturnExchangeDialog';
 import type { ReturnExchange } from '@/types/returnExchange';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
@@ -41,6 +42,7 @@ export default function ReturnsExchanges() {
 
   const isAdmin = useIsAdmin();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isBuybackOpen, setIsBuybackOpen] = useState(false);
   const [viewRecordId, setViewRecordId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ReturnExchange | null>(null);
 
@@ -133,10 +135,16 @@ export default function ReturnsExchanges() {
         title="Returns & Exchanges"
         description="Process returns and exchanges against existing invoices"
         actions={
-          <Button className="btn-gold" onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Return / Exchange
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsBuybackOpen(true)}>
+              <Coins className="w-4 h-4 mr-2" />
+              New Buyback
+            </Button>
+            <Button className="btn-gold" onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Return / Exchange
+            </Button>
+          </div>
         }
       />
 
