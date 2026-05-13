@@ -264,7 +264,7 @@ export function ViewInvoiceDialog({
         if (editClientName) updates.name = editClientName;
         if (editClientPhone) updates.phone = editClientPhone;
         if (Object.keys(updates).length > 0) {
-          await supabase.from('clients').update(updates).eq('id', invoice.client_id);
+          await supabase.from('clients').update(updates as never).eq('id', invoice.client_id);
         }
       }
 
