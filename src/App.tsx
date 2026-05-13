@@ -22,6 +22,7 @@ import Settings from "./pages/Settings";
 import RecycleBin from "./pages/RecycleBin";
 import LeftOverPayments from "./pages/LeftOverPayments";
 import Sold from "./pages/Sold";
+import Repair from "./pages/Repair";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
