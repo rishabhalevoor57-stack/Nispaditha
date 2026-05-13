@@ -42,6 +42,7 @@ export default function ReturnsExchanges() {
 
   const isAdmin = useIsAdmin();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isBuybackOpen, setIsBuybackOpen] = useState(false);
   const [viewRecordId, setViewRecordId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ReturnExchange | null>(null);
 
