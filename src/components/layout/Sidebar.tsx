@@ -34,6 +34,7 @@ const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[
   { icon: FileText, label: 'Invoices', path: '/invoices' },
   { icon: ArrowLeftRight, label: 'Returns', path: '/returns' },
   { icon: ShoppingBag, label: 'Sold', path: '/sold' },
+  { icon: Wrench, label: 'Repair', path: '/repair' },
   { icon: IndianRupee, label: 'Pending Payments', path: '/pending-payments' },
   { icon: ClipboardList, label: 'Service Form', path: '/order-notes' },
   { icon: Hammer, label: 'Custom Orders', path: '/custom-orders' },
