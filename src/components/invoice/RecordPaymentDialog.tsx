@@ -96,7 +96,7 @@ export function RecordPaymentDialog({
         updates.payment_mode = mode;
       }
 
-      const { error: invErr } = await supabase.from('invoices').update(updates).eq('id', invoiceId);
+      const { error: invErr } = await supabase.from('invoices').update(updates as never).eq('id', invoiceId);
       if (invErr) throw invErr;
 
       toast({
