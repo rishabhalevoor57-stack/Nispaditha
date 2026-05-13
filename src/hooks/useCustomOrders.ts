@@ -81,7 +81,7 @@ export const useCustomOrders = () => {
     }) => {
       const { data: orderData, error: orderError } = await supabase
         .from('custom_orders')
-        .insert(data.order)
+        .insert(data.order as never)
         .select()
         .single();
 
