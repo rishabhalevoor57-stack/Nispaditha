@@ -141,12 +141,12 @@ const OrderNotes = () => {
     <AppLayout>
       <div className="space-y-6">
         <PageHeader 
-          title="Order Notes" 
+          title="Service Form" 
           description="Internal order tracking - does not affect inventory or accounting"
           actions={
             <Button onClick={handleNewOrder}>
               <Plus className="h-4 w-4 mr-2" />
-              New Order Note
+              New Service Form
             </Button>
           }
         />
