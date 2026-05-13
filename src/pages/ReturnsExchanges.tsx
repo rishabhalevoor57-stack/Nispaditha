@@ -19,6 +19,7 @@ import { Plus, Search, Eye, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useReturnsExchanges } from '@/hooks/useReturnsExchanges';
 import { ReturnExchangeDialog } from '@/components/returns/ReturnExchangeDialog';
+import { BuybackDialog } from '@/components/returns/BuybackDialog';
 import { ViewReturnExchangeDialog } from '@/components/returns/ViewReturnExchangeDialog';
 import type { ReturnExchange } from '@/types/returnExchange';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
