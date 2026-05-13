@@ -12,8 +12,12 @@ Deno.serve(async (req) => {
   const primaryKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const admin = createClient(primaryUrl, primaryKey);
 
-  const secondaryUrl = Deno.env.get('SECONDARY_SUPABASE_URL');
+  let secondaryUrl = Deno.env.get('SECONDARY_SUPABASE_URL');
   const secondaryKey = Deno.env.get('SECONDARY_SUPABASE_SERVICE_ROLE_KEY');
+  if (secondaryUrl && !/^https?:\/\//i.test(secondaryUrl)) {
+    secondaryUrl = `https://${secondaryUrl.replace(/^\/+/, '')}`;
+  }
+  secondaryUrl = secondaryUrl?.replace(/\/+$/, '');
 
   let status = 'ok';
   let reachable = false;
