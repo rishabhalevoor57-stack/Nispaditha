@@ -152,8 +152,12 @@ Deno.serve(async (req) => {
     if (uploadErr) throw uploadErr;
 
     // Mirror to secondary Supabase project (best-effort)
-    const secondaryUrl = Deno.env.get('SECONDARY_SUPABASE_URL');
+    let secondaryUrl = Deno.env.get('SECONDARY_SUPABASE_URL');
     const secondaryKey = Deno.env.get('SECONDARY_SUPABASE_SERVICE_ROLE_KEY');
+    if (secondaryUrl && !/^https?:\/\//i.test(secondaryUrl)) {
+      secondaryUrl = `https://${secondaryUrl.replace(/^\/+/, '')}`;
+    }
+    secondaryUrl = secondaryUrl?.replace(/\/+$/, '');
     let mirrored = false;
     if (secondaryUrl && secondaryKey) {
       try {
