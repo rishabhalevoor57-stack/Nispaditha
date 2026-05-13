@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
     // Check if this is a service role call (scheduled) or user call
     const token = authHeader.replace('Bearer ', '');
-    const anonKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? '';
     
     let isScheduled = false;
     let userId: string | null = null;
