@@ -151,33 +151,6 @@ Deno.serve(async (req) => {
 
     if (uploadErr) throw uploadErr;
 
-    // Mirror to secondary Supabase project (best-effort)
-    let secondaryUrl = Deno.env.get('SECONDARY_SUPABASE_URL');
-    const secondaryKey = Deno.env.get('SECONDARY_SUPABASE_SERVICE_ROLE_KEY');
-    if (secondaryUrl && !/^https?:\/\//i.test(secondaryUrl)) {
-      secondaryUrl = `https://${secondaryUrl.replace(/^\/+/, '')}`;
-    }
-    secondaryUrl = secondaryUrl?.replace(/\/+$/, '');
-    let mirrored = false;
-    if (secondaryUrl && secondaryKey) {
-      try {
-        const secondaryClient = createClient(secondaryUrl, secondaryKey);
-        const { error: mirrorErr } = await secondaryClient.storage
-          .from('backups')
-          .upload(filePath, new Blob([backupJson], { type: 'application/json' }), {
-            contentType: 'application/json',
-            upsert: true,
-          });
-        if (mirrorErr) {
-          console.error('Secondary mirror failed:', mirrorErr.message);
-        } else {
-          mirrored = true;
-        }
-      } catch (e) {
-        console.error('Secondary mirror error:', e instanceof Error ? e.message : String(e));
-      }
-    }
-
     // Update backup record
     const fileSize = new Blob([backupJson]).size;
     await adminClient
