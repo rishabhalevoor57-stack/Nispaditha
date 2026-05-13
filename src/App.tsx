@@ -99,6 +99,14 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/repair"
+        element={
+          <ProtectedRoute>
+            <Repair />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/order-notes"
         element={
           <ProtectedRoute>
