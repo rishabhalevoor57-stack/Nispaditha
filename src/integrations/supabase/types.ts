@@ -53,6 +53,39 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_mirror_status: {
+        Row: {
+          checked_at: string
+          error_message: string | null
+          file_count: number | null
+          id: string
+          last_backup_file: string | null
+          reachable: boolean
+          source: string
+          status: string
+        }
+        Insert: {
+          checked_at?: string
+          error_message?: string | null
+          file_count?: number | null
+          id?: string
+          last_backup_file?: string | null
+          reachable?: boolean
+          source?: string
+          status: string
+        }
+        Update: {
+          checked_at?: string
+          error_message?: string | null
+          file_count?: number | null
+          id?: string
+          last_backup_file?: string | null
+          reachable?: boolean
+          source?: string
+          status?: string
+        }
+        Relationships: []
+      }
       backups: {
         Row: {
           backup_type: string
