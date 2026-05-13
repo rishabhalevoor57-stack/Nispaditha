@@ -20,7 +20,8 @@ import {
   BarChart3,
   Trash2,
   IndianRupee,
-  ShoppingBag
+  ShoppingBag,
+  Wrench
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
