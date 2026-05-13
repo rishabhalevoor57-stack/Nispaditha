@@ -201,7 +201,7 @@ const OrderNotes = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Order Notes
+                Service Forms
               </CardTitle>
               <OrderNoteFilters
                 searchQuery={searchQuery}
