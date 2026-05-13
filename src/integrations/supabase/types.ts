@@ -640,6 +640,9 @@ export type Database = {
       invoices: {
         Row: {
           advance_paid: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           client_id: string | null
           created_at: string
           created_by: string | null
@@ -657,12 +660,16 @@ export type Database = {
           round_off: number
           sent_at: string | null
           status: string
+          store_credits_used: number
           store_id: string | null
           subtotal: number
           updated_at: string
         }
         Insert: {
           advance_paid?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -680,12 +687,16 @@ export type Database = {
           round_off?: number
           sent_at?: string | null
           status?: string
+          store_credits_used?: number
           store_id?: string | null
           subtotal?: number
           updated_at?: string
         }
         Update: {
           advance_paid?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -703,6 +714,7 @@ export type Database = {
           round_off?: number
           sent_at?: string | null
           status?: string
+          store_credits_used?: number
           store_id?: string | null
           subtotal?: number
           updated_at?: string
@@ -1140,6 +1152,72 @@ export type Database = {
         }
         Relationships: []
       }
+      repair_items: {
+        Row: {
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          date_resolved: string | null
+          date_sent: string
+          id: string
+          notes: string | null
+          original_invoice_id: string | null
+          original_invoice_number: string | null
+          product_id: string | null
+          product_name: string
+          quantity: number
+          sku: string | null
+          source: string
+          source_reference_id: string | null
+          status: string
+          updated_at: string
+          weight_grams: number
+        }
+        Insert: {
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_resolved?: string | null
+          date_sent?: string
+          id?: string
+          notes?: string | null
+          original_invoice_id?: string | null
+          original_invoice_number?: string | null
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          sku?: string | null
+          source: string
+          source_reference_id?: string | null
+          status?: string
+          updated_at?: string
+          weight_grams?: number
+        }
+        Update: {
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_resolved?: string | null
+          date_sent?: string
+          id?: string
+          notes?: string | null
+          original_invoice_id?: string | null
+          original_invoice_number?: string | null
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          sku?: string | null
+          source?: string
+          source_reference_id?: string | null
+          status?: string
+          updated_at?: string
+          weight_grams?: number
+        }
+        Relationships: []
+      }
       return_exchange_items: {
         Row: {
           category: string | null
@@ -1218,11 +1296,14 @@ export type Database = {
       return_exchanges: {
         Row: {
           additional_charge: number
+          client_id: string | null
           client_name: string | null
           client_phone: string | null
           created_at: string
           created_by: string | null
+          disposition: string
           id: string
+          live_rate_used: number | null
           notes: string | null
           original_invoice_id: string
           original_invoice_number: string
@@ -1230,17 +1311,24 @@ export type Database = {
           reason: string | null
           reference_number: string
           refund_amount: number
+          refund_method: string
+          round_off: number
           store_id: string | null
+          subtype: string | null
+          total_weight: number
           type: string
           updated_at: string
         }
         Insert: {
           additional_charge?: number
+          client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
           created_at?: string
           created_by?: string | null
+          disposition?: string
           id?: string
+          live_rate_used?: number | null
           notes?: string | null
           original_invoice_id: string
           original_invoice_number: string
@@ -1248,17 +1336,24 @@ export type Database = {
           reason?: string | null
           reference_number: string
           refund_amount?: number
+          refund_method?: string
+          round_off?: number
           store_id?: string | null
+          subtype?: string | null
+          total_weight?: number
           type: string
           updated_at?: string
         }
         Update: {
           additional_charge?: number
+          client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
           created_at?: string
           created_by?: string | null
+          disposition?: string
           id?: string
+          live_rate_used?: number | null
           notes?: string | null
           original_invoice_id?: string
           original_invoice_number?: string
@@ -1266,7 +1361,11 @@ export type Database = {
           reason?: string | null
           reference_number?: string
           refund_amount?: number
+          refund_method?: string
+          round_off?: number
           store_id?: string | null
+          subtype?: string | null
+          total_weight?: number
           type?: string
           updated_at?: string
         }
@@ -1382,6 +1481,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_wallets: {
+        Row: {
+          balance: number
+          client_id: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          client_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          client_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       stores: {
         Row: {
@@ -1565,11 +1688,65 @@ export type Database = {
           },
         ]
       }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          reference_id: string | null
+          reference_label: string | null
+          source: string
+          type: string
+        }
+        Insert: {
+          amount?: number
+          balance_after?: number | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          reference_label?: string | null
+          source: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          reference_label?: string | null
+          source?: string
+          type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      adjust_wallet_balance: {
+        Args: {
+          p_client_id: string
+          p_delta: number
+          p_notes: string
+          p_reference_id: string
+          p_reference_label: string
+          p_source: string
+          p_type: string
+        }
+        Returns: number
+      }
       generate_custom_order_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_order_reference: { Args: never; Returns: string }

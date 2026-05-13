@@ -141,12 +141,12 @@ const OrderNotes = () => {
     <AppLayout>
       <div className="space-y-6">
         <PageHeader 
-          title="Order Notes" 
+          title="Service Form" 
           description="Internal order tracking - does not affect inventory or accounting"
           actions={
             <Button onClick={handleNewOrder}>
               <Plus className="h-4 w-4 mr-2" />
-              New Order Note
+              New Service Form
             </Button>
           }
         />
@@ -201,7 +201,7 @@ const OrderNotes = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Order Notes
+                Service Forms
               </CardTitle>
               <OrderNoteFilters
                 searchQuery={searchQuery}

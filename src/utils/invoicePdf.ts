@@ -123,7 +123,9 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const addr =
     data.businessSettings.address ||
     '60 Feet Rd, AECS Layout - C Block, Kundalahalli, Brookefield, Bengaluru, Karnataka 560037';
-  const wrapped = doc.splitTextToSize(addr, pageWidth * 0.4);
+  const logoSlotW = 30; // reserved center slot for logo
+  const addrMaxW = pageWidth / 2 - margin - logoSlotW / 2 - 3;
+  const wrapped = doc.splitTextToSize(addr, addrMaxW);
   doc.text(wrapped, margin, 12);
 
   // CENTER logo (white-tinted)
@@ -368,22 +370,21 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const boxH = 9;
 
   if (isPaidFull && !isOverpaid) {
-    // Full-width green PAID stamp inside right column
-    const stampH = 14;
+    // Compact green PAID stamp (one line, sits beside Grand Total band)
+    const stampH = 8;
+    const stampW = 42;
+    const stampX = rightX + rightW - stampW;
     doc.setFillColor(...GREEN_BG);
     doc.setDrawColor(...GREEN_PAID);
-    doc.setLineWidth(0.6);
-    doc.roundedRect(rightX, rightInnerY, rightW, stampH, 2, 2, 'FD');
-    // green circle
-    doc.setFillColor(...GREEN_PAID);
-    doc.circle(rightX + 8, rightInnerY + stampH / 2, 3.5, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont(FONT, 'bold');
-    doc.setFontSize(10);
-    doc.text('\u2713', rightX + 8, rightInnerY + stampH / 2 + 1.4, { align: 'center' });
+    doc.setLineWidth(0.4);
+    doc.roundedRect(stampX, rightInnerY, stampW, stampH, 1.5, 1.5, 'FD');
+    // checkmark
     doc.setTextColor(...GREEN_PAID);
-    doc.setFontSize(13);
-    doc.text('PAID IN FULL', rightX + 16, rightInnerY + stampH / 2 + 1.6);
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(9);
+    doc.text('\u2713', stampX + 3, rightInnerY + stampH / 2 + 1.3);
+    doc.setFontSize(8.5);
+    doc.text('PAID IN FULL', stampX + 7, rightInnerY + stampH / 2 + 1.3);
     rightInnerY += stampH + 3;
 
     // Payment received date stamp
