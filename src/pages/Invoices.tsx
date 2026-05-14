@@ -141,6 +141,8 @@ export default function Invoices() {
       notes: invoice.notes || undefined,
       advancePaid: Number((invoice as any).advance_paid) || 0,
       paymentReceivedDate: (invoice as any).paid_at || null,
+      cancelled: invoice.status === 'cancelled',
+      cancellationReason: (invoice as any).cancellation_reason || null,
     }, true);
   };
 
