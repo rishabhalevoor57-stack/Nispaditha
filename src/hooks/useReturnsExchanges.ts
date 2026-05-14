@@ -7,7 +7,7 @@ import type { ReturnExchange } from '@/types/returnExchange';
 export function useReturnsExchanges() {
   const [records, setRecords] = useState<ReturnExchange[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<'all' | 'return' | 'exchange'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'return' | 'exchange' | 'buyback'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const { logActivity } = useActivityLogger();
@@ -51,6 +51,7 @@ export function useReturnsExchanges() {
     all: records.length,
     return: records.filter((r) => r.type === 'return').length,
     exchange: records.filter((r) => r.type === 'exchange').length,
+    buyback: records.filter((r) => r.type === 'buyback').length,
   };
 
   const deleteRecord = async (record: ReturnExchange) => {

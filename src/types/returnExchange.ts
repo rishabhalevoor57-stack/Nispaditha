@@ -1,4 +1,4 @@
-export type ReturnExchangeType = 'return' | 'exchange';
+export type ReturnExchangeType = 'return' | 'exchange' | 'buyback';
 export type ItemDirection = 'returned' | 'new';
 
 export interface ReturnExchange {

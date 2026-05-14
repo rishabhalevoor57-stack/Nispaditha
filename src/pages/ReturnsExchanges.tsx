@@ -46,10 +46,11 @@ export default function ReturnsExchanges() {
   const [viewRecordId, setViewRecordId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ReturnExchange | null>(null);
 
-  const filterButtons: { key: 'all' | 'return' | 'exchange'; label: string }[] = [
+  const filterButtons: { key: 'all' | 'return' | 'exchange' | 'buyback'; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'return', label: 'Returns' },
     { key: 'exchange', label: 'Exchanges' },
+    { key: 'buyback', label: 'Buybacks' },
   ];
 
   const columns = [
@@ -57,11 +58,11 @@ export default function ReturnsExchanges() {
     {
       key: 'type',
       header: 'Type',
-      cell: (item: ReturnExchange) => (
-        <Badge variant={item.type === 'return' ? 'destructive' : 'default'}>
-          {item.type === 'return' ? 'Return' : 'Exchange'}
-        </Badge>
-      ),
+      cell: (item: ReturnExchange) => {
+        const variant = item.type === 'return' ? 'destructive' : item.type === 'exchange' ? 'default' : 'secondary';
+        const label = item.type === 'return' ? 'Return' : item.type === 'exchange' ? 'Exchange' : 'Buyback';
+        return <Badge variant={variant}>{label}</Badge>;
+      },
     },
     { key: 'original_invoice_number', header: 'Original Invoice' },
     {
@@ -184,6 +185,12 @@ export default function ReturnsExchanges() {
       <ReturnExchangeDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
+        onComplete={refresh}
+      />
+
+      <BuybackDialog
+        open={isBuybackOpen}
+        onOpenChange={setIsBuybackOpen}
         onComplete={refresh}
       />
 

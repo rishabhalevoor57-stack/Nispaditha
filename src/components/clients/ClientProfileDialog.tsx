@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Phone, Plus, Sparkles } from 'lucide-react';
+import { Phone, Plus, Sparkles, Download } from 'lucide-react';
+import { StoreWalletCard } from './StoreWalletCard';
+import { downloadClientReportPdf } from '@/utils/clientReportPdf';
 
 interface ClientLite {
   id: string;
@@ -221,7 +223,12 @@ export function ClientProfileDialog({ client, open, onOpenChange, onUpdate }: Pr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Client Profile</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Client Profile</DialogTitle>
+            <Button size="sm" variant="outline" onClick={() => downloadClientReportPdf(client)}>
+              <Download className="w-4 h-4 mr-1" /> Download Report
+            </Button>
+          </div>
         </DialogHeader>
 
         {/* Profile card */}
@@ -250,9 +257,14 @@ export function ClientProfileDialog({ client, open, onOpenChange, onUpdate }: Pr
         <Tabs defaultValue="history" className="mt-4">
           <TabsList>
             <TabsTrigger value="history">Purchase History</TabsTrigger>
+            <TabsTrigger value="wallet">Store Wallet</TabsTrigger>
             <TabsTrigger value="polish">Polish Tracking</TabsTrigger>
             <TabsTrigger value="schemes">Schemes</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="wallet">
+            <StoreWalletCard clientId={client.id} clientName={client.name} />
+          </TabsContent>
 
           {/* Purchase History */}
           <TabsContent value="history">
