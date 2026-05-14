@@ -17,6 +17,8 @@ interface InvoicePdfData {
   roundOff?: number;
   advancePaid?: number;
   paymentReceivedDate?: string | null; // ISO/yyyy-mm-dd of latest payment
+  cancelled?: boolean;
+  cancellationReason?: string | null;
 }
 
 const PURPLE: [number, number, number] = [74, 32, 96];
