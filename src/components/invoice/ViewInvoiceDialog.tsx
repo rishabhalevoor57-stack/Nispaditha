@@ -391,6 +391,70 @@ export function ViewInvoiceDialog({
     onStatusChange?.();
   };
 
+  const handleCancelInvoice = async () => {
+    if (!invoice) return;
+    const reason = window.prompt('Reason for cancelling this invoice?');
+    if (!reason || !reason.trim()) {
+      toast({ variant: 'destructive', title: 'Cancellation reason required' });
+      return;
+    }
+    if (!confirm(`Cancel invoice ${invoice.invoice_number}? Stock will be restored and any wallet credits used will be refunded.`)) return;
+    try {
+      // Restore stock for each item with product_id
+      for (const it of items) {
+        if (!it.product_id) continue;
+        const { data: prod } = await supabase.from('products').select('quantity').eq('id', it.product_id).single();
+        const currentQty = Number(prod?.quantity) || 0;
+        await supabase.from('products').update({ quantity: currentQty + Number(it.quantity) }).eq('id', it.product_id);
+        await supabase.from('stock_history').insert([{
+          product_id: it.product_id,
+          quantity_change: Number(it.quantity),
+          type: 'in',
+          reason: `Invoice ${invoice.invoice_number} cancelled`,
+          reference_id: invoice.id,
+          created_by: user?.id || null,
+        }]);
+      }
+
+      // Refund any wallet credits used back to client
+      const credits = Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0;
+      if (credits > 0 && invoice.client_id) {
+        try {
+          const { adjustWallet } = await import('@/hooks/useStoreWallet');
+          await adjustWallet(invoice.client_id, credits, 'cancel_refund', invoice.id, invoice.invoice_number, 'Invoice cancelled — credits refunded');
+        } catch (e) {
+          console.error('Wallet refund on cancel failed', e);
+        }
+      }
+
+      const { error } = await supabase
+        .from('invoices')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: user?.id || null,
+          cancellation_reason: reason.trim(),
+        } as never)
+        .eq('id', invoice.id);
+      if (error) throw error;
+
+      logActivity({
+        module: 'invoice',
+        action: 'update',
+        recordId: invoice.id,
+        recordLabel: invoice.invoice_number,
+        newValue: { status: 'cancelled', reason: reason.trim() },
+      });
+
+      toast({ title: 'Invoice cancelled', description: 'Stock restored.' });
+      await fetchInvoiceDetails();
+      onStatusChange?.();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to cancel invoice';
+      toast({ variant: 'destructive', title: 'Error', description: message });
+    }
+  };
+
   if (isLoading || !invoice) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
