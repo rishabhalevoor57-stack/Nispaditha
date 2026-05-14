@@ -87,11 +87,13 @@ export function CreateInvoiceDialog({
   const { logActivity } = useActivityLogger();
 
   const grandTotalWithRound = (totals.grandTotal || 0) + (Number(roundOff) || 0);
+  const cappedCredits = Math.min(Math.max(0, Number(storeCreditsUsed) || 0), walletBalance, grandTotalWithRound);
+  const grandTotalAfterCredits = Math.max(0, grandTotalWithRound - cappedCredits);
   const effectiveAdvance =
-    paymentStatus === 'PAID' ? grandTotalWithRound :
+    paymentStatus === 'PAID' ? grandTotalAfterCredits :
     paymentStatus === 'PENDING' ? 0 :
     Math.max(0, Number(amountPaid) || 0);
-  const balanceDue = Math.max(0, grandTotalWithRound - effectiveAdvance);
+  const balanceDue = Math.max(0, grandTotalAfterCredits - effectiveAdvance);
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
 
