@@ -526,6 +526,7 @@ export function CreateInvoiceDialog({
                   <SelectItem value="upi">UPI</SelectItem>
                   <SelectItem value="card">Card</SelectItem>
                   <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="store_wallet">Store Wallet</SelectItem>
                   <SelectItem value="pay_later">Pay Later</SelectItem>
                 </SelectContent>
               </Select>
