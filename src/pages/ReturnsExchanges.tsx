@@ -188,6 +188,12 @@ export default function ReturnsExchanges() {
         onComplete={refresh}
       />
 
+      <BuybackDialog
+        open={isBuybackOpen}
+        onOpenChange={setIsBuybackOpen}
+        onComplete={refresh}
+      />
+
       <ViewReturnExchangeDialog
         recordId={viewRecordId}
         open={!!viewRecordId}
