@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Send, CheckCircle, CircleDot } from 'lucide-react';
+import { Send, CheckCircle, CircleDot, Ban } from 'lucide-react';
 import { RecordPaymentDialog } from './RecordPaymentDialog';
 
-type InvoiceStatus = 'draft' | 'sent' | 'paid';
+type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'cancelled';
 
 interface InvoiceStatusActionsProps {
   invoiceId: string;
