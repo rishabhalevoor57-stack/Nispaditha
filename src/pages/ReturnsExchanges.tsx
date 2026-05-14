@@ -46,10 +46,11 @@ export default function ReturnsExchanges() {
   const [viewRecordId, setViewRecordId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ReturnExchange | null>(null);
 
-  const filterButtons: { key: 'all' | 'return' | 'exchange'; label: string }[] = [
+  const filterButtons: { key: 'all' | 'return' | 'exchange' | 'buyback'; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'return', label: 'Returns' },
     { key: 'exchange', label: 'Exchanges' },
+    { key: 'buyback', label: 'Buybacks' },
   ];
 
   const columns = [
