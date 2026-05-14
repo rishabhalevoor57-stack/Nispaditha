@@ -98,6 +98,11 @@ export function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
       icon: CheckCircle,
       className: 'bg-green-500/10 text-green-600 border-green-500/20',
     },
+    cancelled: {
+      label: 'Cancelled',
+      icon: Ban,
+      className: 'bg-destructive/10 text-destructive border-destructive/20',
+    },
   };
 
   const { label, icon: Icon, className } = config[status] || config.draft;
