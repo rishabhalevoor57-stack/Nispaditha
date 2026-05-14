@@ -51,6 +51,7 @@ export function useReturnsExchanges() {
     all: records.length,
     return: records.filter((r) => r.type === 'return').length,
     exchange: records.filter((r) => r.type === 'exchange').length,
+    buyback: records.filter((r) => r.type === 'buyback').length,
   };
 
   const deleteRecord = async (record: ReturnExchange) => {
