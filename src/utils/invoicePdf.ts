@@ -536,6 +536,10 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     { align: 'right' }
   );
 
+  if (data.cancelled) {
+    drawCancelledWatermark(doc, data.cancellationReason);
+  }
+
   return doc;
 }
 
