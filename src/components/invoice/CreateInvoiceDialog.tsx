@@ -669,7 +669,7 @@ export function CreateInvoiceDialog({
                   onValueChange={(v) => {
                     const s = v as 'PAID' | 'PARTIAL' | 'PENDING';
                     setPaymentStatus(s);
-                    if (s === 'PAID') setAmountPaid(grandTotalWithRound);
+                    if (s === 'PAID') setAmountPaid(grandTotalAfterCredits);
                     else if (s === 'PENDING') setAmountPaid(0);
                   }}
                   className="grid grid-cols-1 sm:grid-cols-3 gap-2"
