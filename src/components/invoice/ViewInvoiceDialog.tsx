@@ -355,6 +355,7 @@ export function ViewInvoiceDialog({
 
   const handleDownload = () => {
     if (!invoice || !businessSettings) return;
+    const inv = invoice as unknown as { cancellation_reason?: string | null };
     downloadInvoicePdf({
       invoiceNumber: invoice.invoice_number,
       invoiceDate: invoice.invoice_date,
@@ -367,11 +368,14 @@ export function ViewInvoiceDialog({
       notes: invoice.notes || undefined,
       advancePaid: Number(invoice.advance_paid) || 0,
       paymentReceivedDate: invoice.paid_at || null,
+      cancelled: invoice.status === 'cancelled',
+      cancellationReason: inv.cancellation_reason || null,
     }, isAdmin);
   };
 
   const handlePrint = () => {
     if (!invoice || !businessSettings) return;
+    const inv = invoice as unknown as { cancellation_reason?: string | null };
     printInvoice({
       invoiceNumber: invoice.invoice_number,
       invoiceDate: invoice.invoice_date,
@@ -384,6 +388,8 @@ export function ViewInvoiceDialog({
       notes: invoice.notes || undefined,
       advancePaid: Number(invoice.advance_paid) || 0,
       paymentReceivedDate: invoice.paid_at || null,
+      cancelled: invoice.status === 'cancelled',
+      cancellationReason: inv.cancellation_reason || null,
     }, isAdmin);
   };
 
