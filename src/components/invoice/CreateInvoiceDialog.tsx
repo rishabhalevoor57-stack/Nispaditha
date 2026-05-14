@@ -78,6 +78,8 @@ export function CreateInvoiceDialog({
   const [roundOff, setRoundOff] = useState<number>(0);
   const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'PARTIAL' | 'PENDING'>('PAID');
   const [amountPaid, setAmountPaid] = useState<number>(0);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [storeCreditsUsed, setStoreCreditsUsed] = useState<number>(0);
 
   const { toast } = useToast();
   const { user } = useAuth();
