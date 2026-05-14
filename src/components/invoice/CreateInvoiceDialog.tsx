@@ -208,6 +208,8 @@ export function CreateInvoiceDialog({
     setRoundOff(0);
     setPaymentStatus('PAID');
     setAmountPaid(0);
+    setWalletBalance(0);
+    setStoreCreditsUsed(0);
   };
 
 
