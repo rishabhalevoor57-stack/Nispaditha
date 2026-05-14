@@ -46,9 +46,30 @@ const formatPaymentMode = (mode: string): string => {
     upi: 'UPI',
     card: 'Card',
     bank_transfer: 'Bank Transfer',
+    store_wallet: 'Store Wallet',
     pay_later: 'Pay Later',
   };
   return modes[mode] || mode.toUpperCase();
+};
+
+// Draws a diagonal CANCELLED watermark across the page
+const drawCancelledWatermark = (doc: jsPDF, reason?: string | null) => {
+  const w = doc.internal.pageSize.getWidth();
+  const h = doc.internal.pageSize.getHeight();
+  doc.saveGraphicsState();
+  // @ts-expect-error jsPDF supports GState even if types are missing
+  doc.setGState(new (doc as any).GState({ opacity: 0.18 }));
+  doc.setTextColor(220, 38, 38);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(96);
+  doc.text('CANCELLED', w / 2, h / 2, { align: 'center', angle: 30 });
+  doc.restoreGraphicsState();
+  if (reason) {
+    doc.setFontSize(9);
+    doc.setTextColor(220, 38, 38);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Cancellation reason: ${reason}`, 10, h - 6);
+  }
 };
 
 async function loadLogoDataUrl(): Promise<string | null> {
