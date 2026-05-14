@@ -421,7 +421,6 @@ export function ViewInvoiceDialog({
       const credits = Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0;
       if (credits > 0 && invoice.client_id) {
         try {
-          const { adjustWallet } = await import('@/hooks/useStoreWallet');
           await adjustWallet(invoice.client_id, credits, 'cancel_refund', invoice.id, invoice.invoice_number, 'Invoice cancelled — credits refunded');
         } catch (e) {
           console.error('Wallet refund on cancel failed', e);
