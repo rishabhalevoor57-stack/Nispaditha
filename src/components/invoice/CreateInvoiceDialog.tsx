@@ -180,15 +180,18 @@ export function CreateInvoiceDialog({
 
   const handleClientChange = (clientId: string) => {
     setSelectedClient(clientId);
+    setStoreCreditsUsed(0);
     if (clientId && clientId !== 'walk-in') {
       const client = clients.find(c => c.id === clientId);
       if (client) {
         setClientName(client.name);
         setClientPhone(client.phone || '');
       }
+      getWalletBalance(clientId).then(setWalletBalance).catch(() => setWalletBalance(0));
     } else {
       setClientName('');
       setClientPhone('');
+      setWalletBalance(0);
     }
   };
 
