@@ -32,6 +32,8 @@ import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
+import { adjustWallet, getWalletBalance } from '@/hooks/useStoreWallet';
+import { Wallet } from 'lucide-react';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
 
 
