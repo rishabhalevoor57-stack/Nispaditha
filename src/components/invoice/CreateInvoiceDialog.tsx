@@ -259,6 +259,13 @@ export function CreateInvoiceDialog({
       }
 
       // Create invoice with status = 'draft'
+      const finalGrandTotal = grandTotalAfterCredits;
+      const fullyPaidByCredits = cappedCredits >= grandTotalWithRound && cappedCredits > 0;
+      const computedPaymentStatus =
+        fullyPaidByCredits ? 'paid' :
+        paymentStatus === 'PAID' ? 'paid' :
+        paymentStatus === 'PARTIAL' ? 'partial' : 'pending';
+
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert([{
@@ -268,21 +275,36 @@ export function CreateInvoiceDialog({
           subtotal: totals.subtotal,
           discount_amount: totals.discountAmount,
           gst_amount: totals.gstAmount,
-          grand_total: grandTotalWithRound,
+          grand_total: finalGrandTotal,
           advance_paid: effectiveAdvance,
-          payment_status:
-            paymentStatus === 'PAID' ? 'paid' :
-            paymentStatus === 'PARTIAL' ? 'partial' : 'pending',
-          payment_mode: paymentMode,
+          store_credits_used: cappedCredits,
+          payment_status: computedPaymentStatus,
+          payment_mode: cappedCredits >= grandTotalWithRound && cappedCredits > 0 ? 'store_wallet' : paymentMode,
           notes: notes || null,
           created_by: user?.id,
-          status: 'draft', // New invoices always start as draft
-        }])
+          status: 'draft',
+        } as never])
         .select()
         .single();
 
 
       if (invoiceError) throw invoiceError;
+
+      // Debit store wallet for credits used
+      if (cappedCredits > 0 && finalClientId) {
+        try {
+          await adjustWallet(
+            finalClientId,
+            -cappedCredits,
+            'invoice',
+            invoice.id,
+            invoiceNum,
+            'Credits applied to invoice',
+          );
+        } catch (e) {
+          console.error('Wallet debit failed', e);
+        }
+      }
 
       // Record the initial payment in invoice_payments (for receipt history)
       if (effectiveAdvance > 0) {
