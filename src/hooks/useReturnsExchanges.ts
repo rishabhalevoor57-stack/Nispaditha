@@ -7,7 +7,7 @@ import type { ReturnExchange } from '@/types/returnExchange';
 export function useReturnsExchanges() {
   const [records, setRecords] = useState<ReturnExchange[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<'all' | 'return' | 'exchange'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'return' | 'exchange' | 'buyback'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const { logActivity } = useActivityLogger();
