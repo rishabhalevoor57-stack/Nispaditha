@@ -58,11 +58,11 @@ export default function ReturnsExchanges() {
     {
       key: 'type',
       header: 'Type',
-      cell: (item: ReturnExchange) => (
-        <Badge variant={item.type === 'return' ? 'destructive' : 'default'}>
-          {item.type === 'return' ? 'Return' : 'Exchange'}
-        </Badge>
-      ),
+      cell: (item: ReturnExchange) => {
+        const variant = item.type === 'return' ? 'destructive' : item.type === 'exchange' ? 'default' : 'secondary';
+        const label = item.type === 'return' ? 'Return' : item.type === 'exchange' ? 'Exchange' : 'Buyback';
+        return <Badge variant={variant}>{label}</Badge>;
+      },
     },
     { key: 'original_invoice_number', header: 'Original Invoice' },
     {
