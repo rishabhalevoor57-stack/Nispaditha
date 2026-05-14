@@ -696,7 +696,7 @@ export function CreateInvoiceDialog({
                       type="number"
                       step="0.01"
                       min={0}
-                      max={grandTotalWithRound}
+                      max={grandTotalAfterCredits}
                       value={amountPaid}
                       onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
                     />
