@@ -31,6 +31,7 @@ import { InvoiceTotalsSection } from './InvoiceTotalsSection';
 import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
 import { useActivityLogger } from '@/hooks/useActivityLog';
+import { adjustWallet } from '@/hooks/useStoreWallet';
 import { cn } from '@/lib/utils';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals, InvoiceStatus, Product } from '@/types/invoice';
 import { format } from 'date-fns';
