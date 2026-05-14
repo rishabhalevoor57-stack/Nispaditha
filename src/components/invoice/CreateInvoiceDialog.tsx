@@ -32,6 +32,8 @@ import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
+import { adjustWallet, getWalletBalance } from '@/hooks/useStoreWallet';
+import { Wallet } from 'lucide-react';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
 
 
@@ -76,6 +78,8 @@ export function CreateInvoiceDialog({
   const [roundOff, setRoundOff] = useState<number>(0);
   const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'PARTIAL' | 'PENDING'>('PAID');
   const [amountPaid, setAmountPaid] = useState<number>(0);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [storeCreditsUsed, setStoreCreditsUsed] = useState<number>(0);
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -83,11 +87,13 @@ export function CreateInvoiceDialog({
   const { logActivity } = useActivityLogger();
 
   const grandTotalWithRound = (totals.grandTotal || 0) + (Number(roundOff) || 0);
+  const cappedCredits = Math.min(Math.max(0, Number(storeCreditsUsed) || 0), walletBalance, grandTotalWithRound);
+  const grandTotalAfterCredits = Math.max(0, grandTotalWithRound - cappedCredits);
   const effectiveAdvance =
-    paymentStatus === 'PAID' ? grandTotalWithRound :
+    paymentStatus === 'PAID' ? grandTotalAfterCredits :
     paymentStatus === 'PENDING' ? 0 :
     Math.max(0, Number(amountPaid) || 0);
-  const balanceDue = Math.max(0, grandTotalWithRound - effectiveAdvance);
+  const balanceDue = Math.max(0, grandTotalAfterCredits - effectiveAdvance);
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
 
@@ -174,15 +180,18 @@ export function CreateInvoiceDialog({
 
   const handleClientChange = (clientId: string) => {
     setSelectedClient(clientId);
+    setStoreCreditsUsed(0);
     if (clientId && clientId !== 'walk-in') {
       const client = clients.find(c => c.id === clientId);
       if (client) {
         setClientName(client.name);
         setClientPhone(client.phone || '');
       }
+      getWalletBalance(clientId).then(setWalletBalance).catch(() => setWalletBalance(0));
     } else {
       setClientName('');
       setClientPhone('');
+      setWalletBalance(0);
     }
   };
 
@@ -199,6 +208,8 @@ export function CreateInvoiceDialog({
     setRoundOff(0);
     setPaymentStatus('PAID');
     setAmountPaid(0);
+    setWalletBalance(0);
+    setStoreCreditsUsed(0);
   };
 
 
@@ -248,6 +259,13 @@ export function CreateInvoiceDialog({
       }
 
       // Create invoice with status = 'draft'
+      const finalGrandTotal = grandTotalAfterCredits;
+      const fullyPaidByCredits = cappedCredits >= grandTotalWithRound && cappedCredits > 0;
+      const computedPaymentStatus =
+        fullyPaidByCredits ? 'paid' :
+        paymentStatus === 'PAID' ? 'paid' :
+        paymentStatus === 'PARTIAL' ? 'partial' : 'pending';
+
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert([{
@@ -257,21 +275,36 @@ export function CreateInvoiceDialog({
           subtotal: totals.subtotal,
           discount_amount: totals.discountAmount,
           gst_amount: totals.gstAmount,
-          grand_total: grandTotalWithRound,
+          grand_total: finalGrandTotal,
           advance_paid: effectiveAdvance,
-          payment_status:
-            paymentStatus === 'PAID' ? 'paid' :
-            paymentStatus === 'PARTIAL' ? 'partial' : 'pending',
-          payment_mode: paymentMode,
+          store_credits_used: cappedCredits,
+          payment_status: computedPaymentStatus,
+          payment_mode: cappedCredits >= grandTotalWithRound && cappedCredits > 0 ? 'store_wallet' : paymentMode,
           notes: notes || null,
           created_by: user?.id,
-          status: 'draft', // New invoices always start as draft
-        }])
+          status: 'draft',
+        } as never])
         .select()
         .single();
 
 
       if (invoiceError) throw invoiceError;
+
+      // Debit store wallet for credits used
+      if (cappedCredits > 0 && finalClientId) {
+        try {
+          await adjustWallet(
+            finalClientId,
+            -cappedCredits,
+            'invoice',
+            invoice.id,
+            invoiceNum,
+            'Credits applied to invoice',
+          );
+        } catch (e) {
+          console.error('Wallet debit failed', e);
+        }
+      }
 
       // Record the initial payment in invoice_payments (for receipt history)
       if (effectiveAdvance > 0) {
@@ -493,6 +526,7 @@ export function CreateInvoiceDialog({
                   <SelectItem value="upi">UPI</SelectItem>
                   <SelectItem value="card">Card</SelectItem>
                   <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="store_wallet">Store Wallet</SelectItem>
                   <SelectItem value="pay_later">Pay Later</SelectItem>
                 </SelectContent>
               </Select>
@@ -573,9 +607,41 @@ export function CreateInvoiceDialog({
                     {roundOff >= 0 ? '+' : '-'} ₹ {Math.abs(roundOff).toFixed(2)}
                   </span>
                 </div>
+
+                {/* Store Wallet Credits */}
+                {selectedClient && selectedClient !== 'walk-in' && walletBalance > 0 && (
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-4 h-4 text-primary" />
+                      <span className="text-xs text-muted-foreground">
+                        Store Wallet: <span className="font-semibold text-primary">₹ {walletBalance.toFixed(2)}</span> available
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="credits-used" className="text-xs">Use Credits</Label>
+                      <Input
+                        id="credits-used"
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        max={Math.min(walletBalance, grandTotalWithRound)}
+                        value={storeCreditsUsed}
+                        onChange={(e) => setStoreCreditsUsed(parseFloat(e.target.value) || 0)}
+                        className="h-8 w-32 text-right"
+                      />
+                    </div>
+                  </div>
+                )}
+                {cappedCredits > 0 && (
+                  <div className="flex justify-between text-primary">
+                    <span>Less: Store Wallet</span>
+                    <span className="tabular-nums">- ₹ {cappedCredits.toFixed(2)}</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-base font-bold pt-2 border-t">
-                  <span>Grand Total</span>
-                  <span className="text-primary tabular-nums">₹ {grandTotalWithRound.toFixed(2)}</span>
+                  <span>{cappedCredits > 0 ? 'Amount Due' : 'Grand Total'}</span>
+                  <span className="text-primary tabular-nums">₹ {grandTotalAfterCredits.toFixed(2)}</span>
                 </div>
                 {paymentStatus !== 'PAID' && (
                   <>
@@ -603,7 +669,7 @@ export function CreateInvoiceDialog({
                   onValueChange={(v) => {
                     const s = v as 'PAID' | 'PARTIAL' | 'PENDING';
                     setPaymentStatus(s);
-                    if (s === 'PAID') setAmountPaid(grandTotalWithRound);
+                    if (s === 'PAID') setAmountPaid(grandTotalAfterCredits);
                     else if (s === 'PENDING') setAmountPaid(0);
                   }}
                   className="grid grid-cols-1 sm:grid-cols-3 gap-2"
@@ -630,7 +696,7 @@ export function CreateInvoiceDialog({
                       type="number"
                       step="0.01"
                       min={0}
-                      max={grandTotalWithRound}
+                      max={grandTotalAfterCredits}
                       value={amountPaid}
                       onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
                     />

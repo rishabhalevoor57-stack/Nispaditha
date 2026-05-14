@@ -17,6 +17,8 @@ interface InvoicePdfData {
   roundOff?: number;
   advancePaid?: number;
   paymentReceivedDate?: string | null; // ISO/yyyy-mm-dd of latest payment
+  cancelled?: boolean;
+  cancellationReason?: string | null;
 }
 
 const PURPLE: [number, number, number] = [74, 32, 96];
@@ -44,9 +46,31 @@ const formatPaymentMode = (mode: string): string => {
     upi: 'UPI',
     card: 'Card',
     bank_transfer: 'Bank Transfer',
+    store_wallet: 'Store Wallet',
     pay_later: 'Pay Later',
   };
   return modes[mode] || mode.toUpperCase();
+};
+
+// Draws a diagonal CANCELLED watermark across the page
+const drawCancelledWatermark = (doc: jsPDF, reason?: string | null) => {
+  const w = doc.internal.pageSize.getWidth();
+  const h = doc.internal.pageSize.getHeight();
+  doc.saveGraphicsState();
+  (doc as unknown as { setGState: (g: unknown) => void; GState: new (o: { opacity: number }) => unknown }).setGState(
+    new (doc as unknown as { GState: new (o: { opacity: number }) => unknown }).GState({ opacity: 0.18 })
+  );
+  doc.setTextColor(220, 38, 38);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(96);
+  doc.text('CANCELLED', w / 2, h / 2, { align: 'center', angle: 30 });
+  doc.restoreGraphicsState();
+  if (reason) {
+    doc.setFontSize(9);
+    doc.setTextColor(220, 38, 38);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Cancellation reason: ${reason}`, 10, h - 6);
+  }
 };
 
 async function loadLogoDataUrl(): Promise<string | null> {
@@ -511,6 +535,10 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     pageHeight - 4,
     { align: 'right' }
   );
+
+  if (data.cancelled) {
+    drawCancelledWatermark(doc, data.cancellationReason);
+  }
 
   return doc;
 }
