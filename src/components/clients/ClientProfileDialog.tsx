@@ -223,7 +223,12 @@ export function ClientProfileDialog({ client, open, onOpenChange, onUpdate }: Pr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Client Profile</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Client Profile</DialogTitle>
+            <Button size="sm" variant="outline" onClick={() => downloadClientReportPdf(client)}>
+              <Download className="w-4 h-4 mr-1" /> Download Report
+            </Button>
+          </div>
         </DialogHeader>
 
         {/* Profile card */}
