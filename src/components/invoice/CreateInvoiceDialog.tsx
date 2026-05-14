@@ -607,9 +607,41 @@ export function CreateInvoiceDialog({
                     {roundOff >= 0 ? '+' : '-'} ₹ {Math.abs(roundOff).toFixed(2)}
                   </span>
                 </div>
+
+                {/* Store Wallet Credits */}
+                {selectedClient && selectedClient !== 'walk-in' && walletBalance > 0 && (
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-4 h-4 text-primary" />
+                      <span className="text-xs text-muted-foreground">
+                        Store Wallet: <span className="font-semibold text-primary">₹ {walletBalance.toFixed(2)}</span> available
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="credits-used" className="text-xs">Use Credits</Label>
+                      <Input
+                        id="credits-used"
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        max={Math.min(walletBalance, grandTotalWithRound)}
+                        value={storeCreditsUsed}
+                        onChange={(e) => setStoreCreditsUsed(parseFloat(e.target.value) || 0)}
+                        className="h-8 w-32 text-right"
+                      />
+                    </div>
+                  </div>
+                )}
+                {cappedCredits > 0 && (
+                  <div className="flex justify-between text-primary">
+                    <span>Less: Store Wallet</span>
+                    <span className="tabular-nums">- ₹ {cappedCredits.toFixed(2)}</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-base font-bold pt-2 border-t">
-                  <span>Grand Total</span>
-                  <span className="text-primary tabular-nums">₹ {grandTotalWithRound.toFixed(2)}</span>
+                  <span>{cappedCredits > 0 ? 'Amount Due' : 'Grand Total'}</span>
+                  <span className="text-primary tabular-nums">₹ {grandTotalAfterCredits.toFixed(2)}</span>
                 </div>
                 {paymentStatus !== 'PAID' && (
                   <>
