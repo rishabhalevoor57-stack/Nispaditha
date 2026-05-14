@@ -495,10 +495,23 @@ export function ViewInvoiceDialog({
                       onStatusChange={handleStatusChange}
                     />
                   </div>
-                  <Button variant="outline" size="sm" onClick={enterEditMode}>
-                    <Pencil className="w-4 h-4 mr-2" />
-                    Edit Invoice
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {isAdmin && invoice.status !== 'cancelled' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelInvoice}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Cancel Invoice
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" onClick={enterEditMode} disabled={invoice.status === 'cancelled'}>
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Edit Invoice
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-border/50">
