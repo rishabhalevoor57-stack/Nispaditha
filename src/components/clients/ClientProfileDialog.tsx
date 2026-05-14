@@ -257,9 +257,14 @@ export function ClientProfileDialog({ client, open, onOpenChange, onUpdate }: Pr
         <Tabs defaultValue="history" className="mt-4">
           <TabsList>
             <TabsTrigger value="history">Purchase History</TabsTrigger>
+            <TabsTrigger value="wallet">Store Wallet</TabsTrigger>
             <TabsTrigger value="polish">Polish Tracking</TabsTrigger>
             <TabsTrigger value="schemes">Schemes</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="wallet">
+            <StoreWalletCard clientId={client.id} clientName={client.name} />
+          </TabsContent>
 
           {/* Purchase History */}
           <TabsContent value="history">
