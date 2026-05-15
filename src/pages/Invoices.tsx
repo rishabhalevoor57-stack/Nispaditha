@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Eye, Trash2, Download, Printer, ArrowLeftRight } from 'lucide-react';
+import { Plus, Search, Eye, Trash2, Download, Printer, ArrowLeftRight, Coins } from 'lucide-react';
+import { BuybackDialog } from '@/components/returns/BuybackDialog';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { format } from 'date-fns';
 import { CreateInvoiceDialog } from '@/components/invoice/CreateInvoiceDialog';
@@ -26,6 +27,7 @@ export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
   const [returnInvoiceId, setReturnInvoiceId] = useState<string | null>(null);
+  const [buybackInvoiceNum, setBuybackInvoiceNum] = useState<string | null>(null);
   const { toast } = useToast();
   const isAdmin = useIsAdmin();
 
@@ -250,6 +252,14 @@ export default function Invoices() {
           >
             <ArrowLeftRight className="w-4 h-4" />
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => { e.stopPropagation(); setBuybackInvoiceNum(item.invoice_number); }}
+            title="Buyback"
+          >
+            <Coins className="w-4 h-4" />
+          </Button>
           <Button 
             variant="ghost" 
             size="icon"
@@ -332,6 +342,13 @@ export default function Invoices() {
         onOpenChange={(open) => !open && setReturnInvoiceId(null)}
         onComplete={fetchInvoices}
         preselectedInvoiceId={returnInvoiceId}
+      />
+
+      <BuybackDialog
+        open={!!buybackInvoiceNum}
+        onOpenChange={(open) => !open && setBuybackInvoiceNum(null)}
+        onComplete={fetchInvoices}
+        preselectedInvoiceNumber={buybackInvoiceNum}
       />
     </AppLayout>
   );
