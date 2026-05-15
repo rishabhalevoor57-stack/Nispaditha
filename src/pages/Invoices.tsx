@@ -343,6 +343,13 @@ export default function Invoices() {
         onComplete={fetchInvoices}
         preselectedInvoiceId={returnInvoiceId}
       />
+
+      <BuybackDialog
+        open={!!buybackInvoiceNum}
+        onOpenChange={(open) => !open && setBuybackInvoiceNum(null)}
+        onComplete={fetchInvoices}
+        preselectedInvoiceNumber={buybackInvoiceNum}
+      />
     </AppLayout>
   );
 }
