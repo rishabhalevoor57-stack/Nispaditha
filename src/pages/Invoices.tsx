@@ -252,6 +252,14 @@ export default function Invoices() {
           >
             <ArrowLeftRight className="w-4 h-4" />
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => { e.stopPropagation(); setBuybackInvoiceNum(item.invoice_number); }}
+            title="Buyback"
+          >
+            <Coins className="w-4 h-4" />
+          </Button>
           <Button 
             variant="ghost" 
             size="icon"
