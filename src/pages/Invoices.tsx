@@ -27,6 +27,7 @@ export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
   const [returnInvoiceId, setReturnInvoiceId] = useState<string | null>(null);
+  const [buybackInvoiceNum, setBuybackInvoiceNum] = useState<string | null>(null);
   const { toast } = useToast();
   const isAdmin = useIsAdmin();
 
