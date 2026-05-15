@@ -640,6 +640,8 @@ export type Database = {
       invoices: {
         Row: {
           advance_paid: number
+          amount_after_credits: number
+          amount_paid_via_mode: number
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -656,6 +658,7 @@ export type Database = {
           notes: string | null
           paid_at: string | null
           payment_mode: string | null
+          payment_mode_for_remaining: string | null
           payment_status: string
           round_off: number
           sent_at: string | null
@@ -667,6 +670,8 @@ export type Database = {
         }
         Insert: {
           advance_paid?: number
+          amount_after_credits?: number
+          amount_paid_via_mode?: number
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -683,6 +688,7 @@ export type Database = {
           notes?: string | null
           paid_at?: string | null
           payment_mode?: string | null
+          payment_mode_for_remaining?: string | null
           payment_status?: string
           round_off?: number
           sent_at?: string | null
@@ -694,6 +700,8 @@ export type Database = {
         }
         Update: {
           advance_paid?: number
+          amount_after_credits?: number
+          amount_paid_via_mode?: number
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -710,6 +718,7 @@ export type Database = {
           notes?: string | null
           paid_at?: string | null
           payment_mode?: string | null
+          payment_mode_for_remaining?: string | null
           payment_status?: string
           round_off?: number
           sent_at?: string | null
@@ -1154,6 +1163,7 @@ export type Database = {
       }
       repair_items: {
         Row: {
+          amount_credited: number | null
           client_name: string | null
           client_phone: string | null
           created_at: string
@@ -1161,12 +1171,14 @@ export type Database = {
           date_resolved: string | null
           date_sent: string
           id: string
+          metal_type: string | null
           notes: string | null
           original_invoice_id: string | null
           original_invoice_number: string | null
           product_id: string | null
           product_name: string
           quantity: number
+          rate_used: number | null
           sku: string | null
           source: string
           source_reference_id: string | null
@@ -1175,6 +1187,7 @@ export type Database = {
           weight_grams: number
         }
         Insert: {
+          amount_credited?: number | null
           client_name?: string | null
           client_phone?: string | null
           created_at?: string
@@ -1182,12 +1195,14 @@ export type Database = {
           date_resolved?: string | null
           date_sent?: string
           id?: string
+          metal_type?: string | null
           notes?: string | null
           original_invoice_id?: string | null
           original_invoice_number?: string | null
           product_id?: string | null
           product_name: string
           quantity?: number
+          rate_used?: number | null
           sku?: string | null
           source: string
           source_reference_id?: string | null
@@ -1196,6 +1211,7 @@ export type Database = {
           weight_grams?: number
         }
         Update: {
+          amount_credited?: number | null
           client_name?: string | null
           client_phone?: string | null
           created_at?: string
@@ -1203,12 +1219,14 @@ export type Database = {
           date_resolved?: string | null
           date_sent?: string
           id?: string
+          metal_type?: string | null
           notes?: string | null
           original_invoice_id?: string | null
           original_invoice_number?: string | null
           product_id?: string | null
           product_name?: string
           quantity?: number
+          rate_used?: number | null
           sku?: string | null
           source?: string
           source_reference_id?: string | null
@@ -1296,6 +1314,7 @@ export type Database = {
       return_exchanges: {
         Row: {
           additional_charge: number
+          buyback_kind: string | null
           client_id: string | null
           client_name: string | null
           client_phone: string | null
@@ -1304,6 +1323,7 @@ export type Database = {
           disposition: string
           id: string
           live_rate_used: number | null
+          metal_type: string | null
           notes: string | null
           original_invoice_id: string
           original_invoice_number: string
@@ -1321,6 +1341,7 @@ export type Database = {
         }
         Insert: {
           additional_charge?: number
+          buyback_kind?: string | null
           client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
@@ -1329,6 +1350,7 @@ export type Database = {
           disposition?: string
           id?: string
           live_rate_used?: number | null
+          metal_type?: string | null
           notes?: string | null
           original_invoice_id: string
           original_invoice_number: string
@@ -1346,6 +1368,7 @@ export type Database = {
         }
         Update: {
           additional_charge?: number
+          buyback_kind?: string | null
           client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
@@ -1354,6 +1377,7 @@ export type Database = {
           disposition?: string
           id?: string
           live_rate_used?: number | null
+          metal_type?: string | null
           notes?: string | null
           original_invoice_id?: string
           original_invoice_number?: string

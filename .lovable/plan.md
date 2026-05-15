@@ -1,124 +1,82 @@
-## Overview
+# Implementation Plan — Returns/Exchange/Buyback + Invoice Wallet + PDF Fixes
 
-This is a large multi-section build covering returns/exchanges/buyback, a store wallet/credits system, a new repair workflow, invoice cancellation, several invoice bug fixes, and a sidebar rename. I'll group the work into logical phases so nothing breaks existing functionality.
+This is a large multi-part request. I'll execute it in clearly scoped batches so nothing currently working breaks. Below is exactly what I'll change and in what order.
 
----
+## Batch A — Returns / Exchange / Buyback flow
 
-## Phase 1 — Database additions (one migration, additive only)
+**Exchange (CHANGE 1)**
+- Remove "New Items" search/selection from `ExchangeDetailsStep.tsx`.
+- Make Exchange behave like Return: refund = grand total of returned items as Store Credits (default), with a "Refund as Cash" toggle.
+- Zero GST.
+- Add "After Exchange — Send Item To" radio: **Inventory** (default, stock +1) or **Repair** (insert into `repair_items`, stock unchanged).
+- Credits auto-credited to client wallet via `adjustWallet`.
 
-New tables:
-- `store_wallets` — `client_id` (unique), `balance numeric default 0`, `updated_at`
-- `wallet_transactions` — `client_id`, `type` ('credit'|'debit'), `amount`, `source` ('return'|'exchange'|'buyback'|'manual'|'invoice'|'invoice_refund'), `reference_id`, `notes`, `created_by`, `created_at`
-- `repair_items` — `product_id` (nullable), `sku`, `product_name`, `weight_grams`, `quantity`, `original_invoice_id`, `original_invoice_number`, `client_name`, `client_phone`, `source` ('return'|'exchange'|'buyback'), `source_reference_id`, `status` ('in_repair'|'sent_to_inventory'), `date_sent`, `date_resolved`, `notes`
+**Return (CHANGE 2)**
+- Add the same "Send Item To" Inventory/Repair radio in `ReturnDetailsStep.tsx`.
+- Keep existing store-credit/cash refund logic.
 
-New columns (additive):
-- `invoices`: `store_credits_used numeric default 0`, `cancellation_reason text`, `cancelled_at timestamptz`, `cancelled_by uuid`
-- `return_exchanges`: `subtype text` (allow 'buyback'), `refund_method text` ('store_credit'|'cash'), `disposition text` ('repair'|'inventory'), `live_rate_used numeric`, `round_off numeric default 0`, `total_weight numeric`
+**Buyback (CHANGE 3 + follow-up CHANGE 1)**
+- In `BuybackDialog.tsx` add a top selector: **Jewellery Buyback** | **Metal Buyback**.
+- Jewellery: existing flow + editable rate + Round Off field.
+- Metal: no invoice; fields = Metal Type (Silver/Gold/Brass/Other w/ text), Weight, Rate (auto from `business_settings`, editable), Round Off, live calculated amount, "Store Credits to be added" preview.
+- **Remove** the Inventory/Repair toggle from Buyback entirely — all buyback items go straight to `repair_items` automatically (jewellery goes with product link; metal goes as raw entry with metal type in notes).
+- Refund method = Store Credits only. No GST.
 
-RLS: authenticated read/insert/update; admin-only delete. Mirrors existing patterns.
+**Invoice list dropdown (CHANGE 4)**
+- In invoices row actions, add "Buyback" option alongside Return/Exchange. Clicking opens `BuybackDialog` in Jewellery mode with invoice pre-filled.
 
-Helper function `add_wallet_credit(client_id, amount, source, ref_id, notes)` and `use_wallet_credit(...)` to keep balance consistent.
+**Returns page tabs (CHANGE 5)**
+- Tabs already include Buyback. Verify counts and that buyback rows display correctly. Add metal-specific columns when type = buyback (Metal/Weight/Rate/Round Off/Credits/Invoice Ref).
 
-Trigger: when invoice is deleted (not cancelled), free invoice number is automatic since generator already takes MAX+1. For cancel, mark `cancelled_at`/`cancellation_reason`, leave row + number in place (already retired by virtue of existing).
+**Wallet auto-sync (CHANGE 6)**
+- Already done via `adjustWallet`; add toast `₹X credits added to <Client>'s wallet` on confirmation. The `useStoreWallet` hook re-fetches when client dialog opens.
 
-Stock restore on cancel handled in app code (matches existing delete flow).
+## Batch B — Invoice Store Wallet integration
 
----
+**CHANGE 2 + 3 (Invoice form wallet)**
+- In `CreateInvoiceDialog.tsx`:
+  - When existing client selected, fetch wallet balance and show `Store Wallet: ₹X available` chip near client name.
+  - In totals area (before Grand Total), show Store Wallet section with "Use Credits" input, capped at min(balance, grandTotal). Hide entirely if balance = 0.
+  - Show "Amount to Pay" = grandTotal − creditsUsed.
+  - If 0 → auto-mark PAID, payment_mode = `store_wallet`, hide payment fields.
+  - If > 0 → existing payment options (Paid / Advance / Pending) on remaining amount.
+  - On save: write `store_credits_used`, debit wallet via RPC.
 
-## Phase 2 — Sidebar rename (Section 2)
+(Most of this was implemented in prior turn. I'll verify and add the visible "available" chip + green "Paid in Full" badge when credits cover full total.)
 
-Rename "Order Notes" → "Service Form" in `Sidebar.tsx` and the Order Notes page header. Route `/order-notes` stays (no functional change).
+## Batch C — Bug fixes
 
----
+**BUG FIX 4 — Live rate not showing**
+- In `CreateInvoiceDialog` / `MetalRateToggle`, ensure rate loads on mount via the same source used by `LiveMetalRatesCard` (`business_settings.silver_rate_per_gram` / `gold_rate_per_gram`). Show `(from software)` label, fall back to last known with `(last known)`. Allow manual override; auto-fill product Rate/g.
 
-## Phase 3 — Store Wallet core (Sections 4, 5, 11)
+**BUG FIX 5 — Terms text overlap in PDF**
+- In `invoicePdf.ts`, fix Terms rendering: use jsPDF `splitTextToSize` with proper width and increase line spacing. Currently text is being painted at fixed Y without wrapping — switch to wrapped paragraph mode with line height ~1.6.
 
-- `useStoreWallet(clientId)` hook: returns balance + transactions, exposes `addCredit`, `useCredit`, `setBalance`.
-- `StoreWalletCard` component shown in `ClientProfileDialog` next to Outstanding Payments. Includes admin-only "Adjust" button.
-- Wallet transaction history table inside the same dialog.
-- Invoice form: when a client is selected, show a small "Store Wallet: ₹X,XXX available" badge.
-- Invoice totals section: "Use Store Wallet Credits" input (capped at min(balance, grand_total)). Recompute "Amount After Credits". Add "Store Wallet" to payment-mode dropdown — selecting it auto-fills max applicable credit.
-- On invoice create/finalize: write `store_credits_used` to invoice row + insert wallet_transaction (debit) + decrement wallet balance. If amount_after_credits == 0 → mark paid_at & status paid.
+**BUG FIX 6 — Empty space below payment summary**
+- Remove forced full-page height; let signature/footer follow content. Compute `currentY` after Terms and place signature/footer at `currentY + 16`, not at fixed bottom.
 
----
+**BUG FIX 7 — Logo placeholder white box**
+- In header drawing, only draw logo block if `business_settings.logo_url` exists and image loads. On error, skip entirely (no white rect). Don't reserve the box if no logo.
 
-## Phase 4 — Returns/Exchange/Buyback (Sections 1, 12)
+## Batch D — Database
 
-- `ReturnsExchanges` page tabs become: All | Returns | Exchanges | Buyback.
-- Existing Return/Exchange flow:
-  - No GST line on the refund (UI hides GST).
-  - Default refund = grand_total of original invoice for full-invoice return; per-item math kept for partial.
-  - Refund method toggle: "Store Credits" (default) vs "Cash" — Cash only allowed for Returns.
-  - Time-limit warnings (Return 6–10 days, Exchange 4–8 days) — soft warning, not hard block.
-- New Buyback flow (new dialog `BuybackDialog`):
-  - Step 1: enter original invoice number → verify client ownership.
-  - Step 2: pick item(s), enter weight (defaults to product weight × qty). Show today's silver rate (live).
-  - Refund = silver_rate × weight + Round Off.
-  - Refund method = Store Credits only.
-  - Saved as `return_exchanges` with `type='return'`, `subtype='buyback'`, refund_method, live_rate_used, round_off, total_weight.
-- After processing (all 3 types): "Disposition" toggle — "Send to Repair" (creates `repair_items` row, no stock increase) vs "Send to Inventory" (existing stock-restore path). Stored in `disposition`.
-- Credits applied automatically when refund_method='store_credit' (insert wallet_transaction credit + bump balance).
+Add columns (idempotent migration) on `invoices`:
+- `amount_after_credits NUMERIC DEFAULT 0`
+- `amount_paid_via_mode NUMERIC DEFAULT 0`
+- `payment_mode_for_remaining TEXT`
 
----
+(`store_credits_used` already exists.)
 
-## Phase 5 — Repair page (Section 3)
+For Metal Buyback storage: reuse `return_exchanges` with `type='buyback'`, `subtype='metal'|'jewellery'`, store metal type in `notes`/new field. Add `metal_type TEXT NULL` and `buyback_kind TEXT NULL` to `return_exchanges` so the Buyback tab can render metal columns cleanly.
 
-- New route `/repair`, sidebar entry "Repair" (Wrench icon) above "Activity Log".
-- List view (similar to Sold): Date Sent | Product | SKU | Weight | Original Invoice | Client | Status toggle | Actions.
-- Toggle "In Repair" → "Send to Inventory": increments product quantity by `quantity` (or 1), inserts stock_history row, marks repair row `sent_to_inventory` + `date_resolved`.
-- Admin-only delete.
+## Order of execution
 
----
+1. Run migration (Batch D).
+2. Implement Batch A (Returns/Exchange/Buyback UI + logic).
+3. Implement Batch B (invoice wallet visibility polish).
+4. Implement Batch C (PDF + live rate fixes).
+5. Verify by opening Invoice form and Returns page in preview; download a sample PDF.
 
-## Phase 6 — Invoice cancellation (Section 6)
+## Won't touch
 
-- Add `Cancel` button beside Delete in invoice list/view (admin only, only when not already cancelled).
-- Confirm dialog with reason textarea.
-- On confirm: set `status='cancelled'`, `cancelled_at`, `cancellation_reason`; restore stock for each invoice item (mirror delete logic but keep rows); reverse wallet usage (credit back any `store_credits_used`); reverse advance payments? — keep payments rows but mark invoice cancelled (refunds out of scope).
-- UI: red "CANCELLED" badge in list; PDF gets large diagonal red watermark; cannot edit; payment actions disabled.
-- Invoice number is naturally retired because the row remains (generator does MAX+1).
-
----
-
-## Phase 7 — Invoice bug fixes & polish (Sections 7, 8, 9, 10)
-
-- **Section 7** (edit-save bug): in `ViewInvoiceDialog` / edit handler, ensure update payload includes client_name, phone, payment_mode, invoice_date and the form re-fetches after save. Fix any stale-state revert. Confirm Save button visible (z-index/sticky footer).
-- **Section 8** (live rate): in `CreateInvoiceDialog`, fetch silver/gold rate on mount via existing rate hook; show fallback "(last known rate)" if fetch fails; show "Rate unavailable — enter manually" if no value at all; ensure metal toggle updates immediately.
-- **Section 9** (PDF header logo overlap): in `invoicePdf.ts`, give center logo a fixed width column, hide image entirely when missing (no white box).
-- **Section 10** (PAID badge): reduce to 13px / 6px 16px padding, single-line, beside Grand Total.
-
----
-
-## Phase 8 — Client dashboard PDF (Section 5)
-
-- "Download Client Report" button in `ClientProfileDialog`.
-- New util `clientReportPdf.ts` using existing jsPDF setup: purple header (Nispaditha), client info, wallet balance, purchase history, returns/exchanges/buyback history, wallet transactions, lifetime spend, purple footer.
-
----
-
-## Technical notes
-
-- Reuse existing patterns: `is_admin()` for admin-only RLS, soft-update via `useActivityLogger`, `parseDateSafe`, optimistic UI in lists.
-- All new tables get `created_at`/`updated_at` with the standard trigger.
-- No existing tables/columns are removed.
-- Client wallet logic centralized in one hook + one set of RPCs to avoid drift.
-- Invoice save bug fix is targeted; no broader refactor of invoice form.
-- Sidebar route for Service Form keeps `/order-notes` so deep links keep working.
-
----
-
-## Risks / things I'll verify after build
-
-1. Wallet balance never goes negative (DB check + UI cap).
-2. Cancelled invoice doesn't double-restore stock if also deleted later (guard: skip stock restore on delete when already cancelled).
-3. Buyback against invoices with no `weight_grams` (e.g. flat-price items) — allow manual weight entry.
-4. Repair → inventory increments correct product (match by `product_id`; if null, match by SKU).
-5. Existing Returns/Exchange records (no `subtype`/`refund_method`) keep working — defaults handle this.
-
----
-
-## Out of scope unless requested
-
-- Refunding cash payments back when an invoice is cancelled (we mark cancelled + restore stock + credit-back wallet portion only).
-- Wallet expiry / per-store wallets.
-- Buyback for non-silver items (request specifies silver only).
+Invoice layout/branding, GST split, Round Off, Terms content, calculations, SKU search, Pending Payments, Custom Orders, Repair existing flow, existing Supabase columns.
