@@ -408,21 +408,22 @@ export function InvoicePreviewModal({
               </div>
             </div>
 
-            {/* PURPLE FOOTER */}
+            {/* FOOTER (white with bold purple top border) */}
             <div
               className="px-6 py-2.5 flex items-center justify-between"
               style={{
-                background: PURPLE,
-                color: '#fff',
+                background: '#fff',
+                color: PURPLE,
+                borderTop: `4px solid ${PURPLE}`,
                 WebkitPrintColorAdjust: 'exact',
                 printColorAdjust: 'exact',
                 pageBreakInside: 'avoid',
               }}
             >
-              <div className="italic text-[12px]" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+              <div className="italic text-[12px] font-semibold" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: PURPLE }}>
                 Thank you for your business!
               </div>
-              <div className="text-[8.5px]" style={{ color: 'rgba(255,255,255,0.7)' }}>
+              <div className="text-[8.5px]" style={{ color: PURPLE, opacity: 0.75 }}>
                 Computer generated invoice · Nispaditha Ventures LLP
               </div>
             </div>
