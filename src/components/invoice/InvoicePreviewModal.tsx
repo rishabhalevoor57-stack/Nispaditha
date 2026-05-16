@@ -121,25 +121,23 @@ export function InvoicePreviewModal({
             id="invoice-preview"
             style={{ fontFamily: INVOICE_FONT }}
           >
-            {/* PURPLE HEADER (compact) */}
+            {/* HEADER (white with bold purple bottom border) */}
             <div
               className="grid items-center px-5 py-2"
               style={{
-                background: PURPLE,
-                color: '#fff',
+                background: '#fff',
+                color: PURPLE,
                 gridTemplateColumns: '1fr 90px 1fr',
                 minHeight: 64,
                 gap: 8,
+                borderBottom: `4px solid ${PURPLE}`,
               }}
             >
               <div>
-                <div className="font-bold text-[13px] leading-tight">
+                <div className="font-bold text-[13px] leading-tight" style={{ color: PURPLE }}>
                   {businessSettings.business_name || 'Nispaditha Ventures LLP'}
                 </div>
-                <div
-                  className="text-[8px] leading-snug mt-0.5"
-                  style={{ color: 'rgba(255,255,255,0.78)' }}
-                >
+                <div className="text-[8px] leading-snug mt-0.5" style={{ color: '#555' }}>
                   {businessSettings.address ||
                     '60 Feet Rd, AECS Layout - C Block, Kundalahalli, Brookefield, Bengaluru, Karnataka 560037'}
                 </div>
@@ -148,21 +146,17 @@ export function InvoicePreviewModal({
                 <img
                   src="/images/nispaditha-logo.png"
                   alt="Nispaditha"
-                  style={{
-                    height: 50,
-                    objectFit: 'contain',
-                    filter: 'brightness(0) invert(1)',
-                  }}
+                  style={{ height: 50, objectFit: 'contain' }}
                 />
               </div>
-              <div className="text-right text-[10px] leading-snug">
+              <div className="text-right text-[10px] leading-snug" style={{ color: PURPLE }}>
                 <div>Phone: {businessSettings.phone || '99868 64152'}</div>
                 <div
                   className="inline-block mt-1 px-2 py-0.5 text-[8px] tracking-wide"
                   style={{
-                    background: 'rgba(255,255,255,0.13)',
-                    border: '1px solid rgba(255,255,255,0.3)',
+                    border: `1px solid ${PURPLE}`,
                     borderRadius: 3,
+                    color: PURPLE,
                   }}
                 >
                   GSTIN: {businessSettings.gst_number || '29AAAQFN9742E1ZO'}
