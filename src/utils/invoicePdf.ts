@@ -133,33 +133,35 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const roundOff = data.roundOff ?? 0;
   const advancePaid = data.advancePaid ?? 0;
 
-  // ================== PURPLE HEADER (compact, ~22mm) ==================
+  // ================== HEADER (white with bold purple bottom border) ==================
   const headerHeight = 22;
-  doc.setFillColor(...PURPLE);
-  doc.rect(0, 0, pageWidth, headerHeight, 'F');
+  // bold purple bottom border
+  doc.setDrawColor(...PURPLE);
+  doc.setLineWidth(1.4);
+  doc.line(0, headerHeight, pageWidth, headerHeight);
 
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(...PURPLE);
   doc.setFont(FONT, 'bold');
   doc.setFontSize(11);
   doc.text(data.businessSettings.business_name || 'Nispaditha Ventures LLP', margin, 8);
   doc.setFont(FONT, 'normal');
   doc.setFontSize(7);
+  doc.setTextColor(80, 80, 80);
   const addr =
     data.businessSettings.address ||
     '60 Feet Rd, AECS Layout - C Block, Kundalahalli, Brookefield, Bengaluru, Karnataka 560037';
-  const logoSlotW = 30; // reserved center slot for logo
+  const logoSlotW = 30;
   const addrMaxW = pageWidth / 2 - margin - logoSlotW / 2 - 3;
   const wrapped = doc.splitTextToSize(addr, addrMaxW);
   doc.text(wrapped, margin, 12);
 
-  // CENTER logo (white-tinted)
+  // CENTER logo (original colors, no white tint, no background)
   try {
     const raw = await loadLogoDataUrl();
     if (raw) {
-      const white = await whitenLogo(raw);
       const logoH = 16;
       const logoW = 26;
-      doc.addImage(white, 'PNG', pageWidth / 2 - logoW / 2, 3, logoW, logoH);
+      doc.addImage(raw, 'PNG', pageWidth / 2 - logoW / 2, 3, logoW, logoH);
     }
   } catch {
     /* logo optional */
@@ -167,18 +169,18 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
 
   doc.setFont(FONT, 'normal');
   doc.setFontSize(8);
+  doc.setTextColor(...PURPLE);
   doc.text(
     `Phone: ${data.businessSettings.phone || '99868 64152'}`,
     pageWidth - margin,
     9,
     { align: 'right' },
   );
-  // GSTIN as a soft pill
   const gstText = `GSTIN: ${data.businessSettings.gst_number || '29AAAQFN9742E1ZO'}`;
   doc.setFontSize(7.5);
   const gstWidth = doc.getTextWidth(gstText) + 5;
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.2);
+  doc.setDrawColor(...PURPLE);
+  doc.setLineWidth(0.3);
   doc.roundedRect(pageWidth - margin - gstWidth, 12, gstWidth, 5, 1, 1);
   doc.text(gstText, pageWidth - margin - 2.5, 15.5, { align: 'right' });
 
