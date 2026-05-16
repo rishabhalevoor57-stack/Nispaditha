@@ -522,10 +522,11 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(70, 70, 70);
   doc.text('Authorized Signature', pageWidth - margin, sigY + 4, { align: 'right' });
 
-  // ================== FOOTER (always at bottom) ==================
-  doc.setFillColor(...PURPLE);
-  doc.rect(0, pageHeight - footerH, pageWidth, footerH, 'F');
-  doc.setTextColor(255, 255, 255);
+  // ================== FOOTER (white with bold purple top border) ==================
+  doc.setDrawColor(...PURPLE);
+  doc.setLineWidth(1.4);
+  doc.line(0, pageHeight - footerH, pageWidth, pageHeight - footerH);
+  doc.setTextColor(...PURPLE);
   doc.setFont(FONT, 'bold');
   doc.setFontSize(10);
   doc.text('Thank you for your business!', margin, pageHeight - 4);
