@@ -384,11 +384,10 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const leftW = contentWidth / 2 - 3;
 
   // Compute terms box height first (needs to align with right side)
-  const termsLines = [
+  const termsRaw = [
     '1. Payment due within 5 days. Late payments attract 3% per month interest.',
     '2. No return or refund except manufacturing defects or transit damage.',
-    '3. Exchange/repurchase: Material value only. No compensation for making',
-    '   charges, designing charges, wastage, or taxes.',
+    '3. Exchange/repurchase: Material value only. No compensation for making charges, designing charges, wastage, or taxes.',
   ];
 
   const bottomY = yPos;
@@ -494,10 +493,16 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setFont(FONT, 'normal');
   doc.setFontSize(7.5);
   let tY = bottomY + 10;
-  termsLines.forEach((l) => {
-    doc.text(l, margin + 3, tY, { maxWidth: leftW - 6 });
-    tY += 4;
+  const lineH = 3.6;
+  termsRaw.forEach((para) => {
+    const wrappedLines = doc.splitTextToSize(para, leftW - 6) as string[];
+    wrappedLines.forEach((wl) => {
+      doc.text(wl, margin + 3, tY);
+      tY += lineH;
+    });
+    tY += 0.8;
   });
+  const termsContentH = (tY - (bottomY + 10)) + 2;
 
   yPos = bottomY + Math.max(termsBoxH, rightHeight) + 6;
   doc.setTextColor(0, 0, 0);
