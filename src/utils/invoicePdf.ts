@@ -475,9 +475,20 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     }
   }
 
-  // Terms box on left — height matches right side
+  // Pre-measure terms height for proper box sizing
+  doc.setFont(FONT, 'normal');
+  doc.setFontSize(7.5);
+  const lineH = 3.6;
+  let measuredH = 4; // top padding
+  const wrappedParas = termsRaw.map((p) => doc.splitTextToSize(p, leftW - 6) as string[]);
+  wrappedParas.forEach((lines) => {
+    measuredH += lines.length * lineH + 0.8;
+  });
+  measuredH += 2;
+
+  // Terms box on left — height matches right side or terms content
   const rightHeight = rightInnerY - bottomY;
-  const termsBoxH = Math.max(rightHeight, 30);
+  const termsBoxH = Math.max(rightHeight, measuredH, 30);
   doc.setDrawColor(...PURPLE_BORDER);
   doc.setLineWidth(0.3);
   doc.rect(margin, bottomY, leftW, termsBoxH);
@@ -493,18 +504,15 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setFont(FONT, 'normal');
   doc.setFontSize(7.5);
   let tY = bottomY + 10;
-  const lineH = 3.6;
-  termsRaw.forEach((para) => {
-    const wrappedLines = doc.splitTextToSize(para, leftW - 6) as string[];
-    wrappedLines.forEach((wl) => {
+  wrappedParas.forEach((lines) => {
+    lines.forEach((wl) => {
       doc.text(wl, margin + 3, tY);
       tY += lineH;
     });
     tY += 0.8;
   });
-  const termsContentH = (tY - (bottomY + 10)) + 2;
 
-  yPos = bottomY + Math.max(termsBoxH, rightHeight) + 6;
+  yPos = bottomY + termsBoxH + 6;
   doc.setTextColor(0, 0, 0);
   doc.setLineWidth(0.1);
 
