@@ -509,8 +509,8 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     yPos += 6;
   }
 
-  // ================== SIGNATURE (right only) ==================
-  const sigY = Math.max(yPos + 6, pageHeight - footerH - sigReserve);
+  // ================== SIGNATURE (sits right after content, no forced bottom) ==================
+  const sigY = Math.min(yPos + 10, pageHeight - footerH - 6);
   doc.setDrawColor(120, 120, 120);
   doc.setLineWidth(0.3);
   doc.line(pageWidth - margin - 60, sigY, pageWidth - margin, sigY);
