@@ -76,6 +76,21 @@ export default function ReturnsExchanges() {
       cell: (item: ReturnExchange) => format(new Date(item.created_at), 'dd MMM yyyy'),
     },
     {
+      key: 'metal',
+      header: 'Metal / Wt',
+      cell: (item: ReturnExchange) => {
+        if (item.type !== 'buyback') return <span className="text-muted-foreground">-</span>;
+        const m = (item as ReturnExchange & { metal_type?: string | null; total_weight?: number | null }).metal_type;
+        const w = (item as ReturnExchange & { total_weight?: number | null }).total_weight;
+        return (
+          <div className="text-xs">
+            <div className="capitalize font-medium">{m || '-'}</div>
+            {w ? <div className="text-muted-foreground">{Number(w).toFixed(2)} g</div> : null}
+          </div>
+        );
+      },
+    },
+    {
       key: 'amount',
       header: 'Amount',
       cell: (item: ReturnExchange) => {
@@ -92,7 +107,7 @@ export default function ReturnsExchanges() {
       key: 'payment_mode',
       header: 'Payment',
       cell: (item: ReturnExchange) => (
-        <span className="capitalize">{item.payment_mode || '-'}</span>
+        <span className="capitalize">{(item.payment_mode || '-').replace('_', ' ')}</span>
       ),
     },
     {
