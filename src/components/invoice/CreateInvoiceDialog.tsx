@@ -132,8 +132,7 @@ export function CreateInvoiceDialog({
       setSelectedClient('walk-in');
       const adv = Number(prefill.advancePaid) || 0;
       if (adv > 0) {
-        setPaymentStatus('PARTIAL');
-        setAmountPaid(adv);
+        setPayments([{ mode: prefill.paymentMode || 'cash', amount: String(adv) }]);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
