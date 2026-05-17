@@ -385,9 +385,14 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
 
   // Compute terms box height first (needs to align with right side)
   const termsRaw = [
-    '1. Payment due within 5 days. Late payments attract 3% per month interest.',
-    '2. No return or refund except manufacturing defects or transit damage.',
-    '3. Exchange/repurchase: Material value only. No compensation for making charges, designing charges, wastage, or taxes.',
+    '1. No return or refund will be accepted except in cases of manufacturing defects.',
+    '2. Under the exchange & buyback policy, only the metal value will be considered. Making charges, designing charges, wastage, stones, taxes, and other additional charges are non-refundable.',
+    '3. Warranty period is 6 months from the date of purchase. Repairs after the warranty period will be chargeable.',
+    '4. Products that are altered, repaired, resized, damaged, broken, mishandled, or tampered with by third parties will not be eligible for exchange, buyback, repair, or warranty claims.',
+    '5. One-time polishing service will be provided free of charge. Subsequent polishing services will be chargeable.',
+    '6. Original invoice must be presented for all exchange, buyback, repair, polishing, or warranty claims.',
+    '7. Tarnishing or oxidation of silver over time is normal and shall not be considered a manufacturing defect.',
+    '8. The company reserves the right to modify exchange, buyback, repair, and warranty policies without prior notice.',
   ];
 
   const bottomY = yPos;
