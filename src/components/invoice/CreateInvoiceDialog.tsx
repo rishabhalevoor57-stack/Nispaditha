@@ -211,10 +211,9 @@ export function CreateInvoiceDialog({
     setMetalRate('silver');
     setGstPct(3);
     setRoundOff(0);
-    setPaymentStatus('PAID');
-    setAmountPaid(0);
     setWalletBalance(0);
     setStoreCreditsUsed(0);
+    setPayments([]);
   };
 
 
