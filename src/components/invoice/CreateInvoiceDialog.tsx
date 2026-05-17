@@ -76,10 +76,9 @@ export function CreateInvoiceDialog({
   const [metalRate, setMetalRate] = useState<MetalRateOption>('silver');
   const [gstPct, setGstPct] = useState<number>(3);
   const [roundOff, setRoundOff] = useState<number>(0);
-  const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'PARTIAL' | 'PENDING'>('PAID');
-  const [amountPaid, setAmountPaid] = useState<number>(0);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [storeCreditsUsed, setStoreCreditsUsed] = useState<number>(0);
+  const [payments, setPayments] = useState<{ mode: string; amount: string }[]>([]);
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -89,11 +88,18 @@ export function CreateInvoiceDialog({
   const grandTotalWithRound = (totals.grandTotal || 0) + (Number(roundOff) || 0);
   const cappedCredits = Math.min(Math.max(0, Number(storeCreditsUsed) || 0), walletBalance, grandTotalWithRound);
   const grandTotalAfterCredits = Math.max(0, grandTotalWithRound - cappedCredits);
-  const effectiveAdvance =
-    paymentStatus === 'PAID' ? grandTotalAfterCredits :
-    paymentStatus === 'PENDING' ? 0 :
-    Math.max(0, Number(amountPaid) || 0);
-  const balanceDue = Math.max(0, grandTotalAfterCredits - effectiveAdvance);
+  const remainingAfterCredits = grandTotalAfterCredits;
+  const totalPaidViaModes = payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+  const effectiveAdvance = Math.min(totalPaidViaModes, remainingAfterCredits);
+  const balanceDue = Math.max(0, remainingAfterCredits - effectiveAdvance);
+  const fullyPaidByCredits = cappedCredits >= grandTotalWithRound && grandTotalWithRound > 0;
+  const isFullyPaid = fullyPaidByCredits || (grandTotalWithRound > 0 && balanceDue <= 0.001 && (effectiveAdvance > 0 || cappedCredits > 0));
+  const paymentStatusUI: 'PAID' | 'PARTIAL' | 'PENDING' =
+    isFullyPaid ? 'PAID' : effectiveAdvance > 0 ? 'PARTIAL' : 'PENDING';
+  const creditsError =
+    (Number(storeCreditsUsed) || 0) > walletBalance ? 'Exceeds available credits'
+    : (Number(storeCreditsUsed) || 0) > grandTotalWithRound ? 'Exceeds grand total'
+    : '';
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
 
