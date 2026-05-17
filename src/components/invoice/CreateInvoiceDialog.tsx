@@ -264,11 +264,11 @@ export function CreateInvoiceDialog({
 
       // Create invoice with status = 'draft'
       const finalGrandTotal = grandTotalAfterCredits;
-      const fullyPaidByCredits = cappedCredits >= grandTotalWithRound && cappedCredits > 0;
       const computedPaymentStatus =
-        fullyPaidByCredits ? 'paid' :
-        paymentStatus === 'PAID' ? 'paid' :
-        paymentStatus === 'PARTIAL' ? 'partial' : 'pending';
+        isFullyPaid ? 'paid' : effectiveAdvance > 0 ? 'partial' : 'pending';
+      const primaryPayMode = fullyPaidByCredits
+        ? 'store_wallet'
+        : (payments[0]?.mode || paymentMode || 'pay_later');
 
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
@@ -283,7 +283,7 @@ export function CreateInvoiceDialog({
           advance_paid: effectiveAdvance,
           store_credits_used: cappedCredits,
           payment_status: computedPaymentStatus,
-          payment_mode: cappedCredits >= grandTotalWithRound && cappedCredits > 0 ? 'store_wallet' : paymentMode,
+          payment_mode: primaryPayMode,
           notes: notes || null,
           created_by: user?.id,
           status: 'draft',
@@ -310,16 +310,19 @@ export function CreateInvoiceDialog({
         }
       }
 
-      // Record the initial payment in invoice_payments (for receipt history)
-      if (effectiveAdvance > 0) {
+      // Record each payment entry in invoice_payments (for receipt history)
+      const validPayments = payments
+        .map(p => ({ mode: p.mode, amount: parseFloat(p.amount) || 0 }))
+        .filter(p => p.amount > 0);
+      for (const p of validPayments) {
         const { data: receiptNum } = await supabase.rpc('generate_receipt_number');
         await supabase.from('invoice_payments').insert([{
           invoice_id: invoice.id,
           receipt_number: receiptNum,
-          amount: effectiveAdvance,
-          payment_mode: paymentMode,
+          amount: p.amount,
+          payment_mode: p.mode,
           payment_date: format(invoiceDate, 'yyyy-MM-dd'),
-          notes: paymentStatus === 'PAID' ? 'Payment received in full at invoice creation' : 'Advance received at invoice creation',
+          notes: isFullyPaid ? 'Payment received in full at invoice creation' : 'Payment received at invoice creation',
           created_by: user?.id,
         }]);
       }
