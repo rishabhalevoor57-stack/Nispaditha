@@ -385,9 +385,14 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
 
   // Compute terms box height first (needs to align with right side)
   const termsRaw = [
-    '1. Payment due within 5 days. Late payments attract 3% per month interest.',
-    '2. No return or refund except manufacturing defects or transit damage.',
-    '3. Exchange/repurchase: Material value only. No compensation for making charges, designing charges, wastage, or taxes.',
+    '1. No return or refund will be accepted except in cases of manufacturing defects.',
+    '2. Under the exchange & buyback policy, only the metal value will be considered. Making charges, designing charges, wastage, stones, taxes, and other additional charges are non-refundable.',
+    '3. Warranty period is 6 months from the date of purchase. Repairs after the warranty period will be chargeable.',
+    '4. Products that are altered, repaired, resized, damaged, broken, mishandled, or tampered with by third parties will not be eligible for exchange, buyback, repair, or warranty claims.',
+    '5. One-time polishing service will be provided free of charge. Subsequent polishing services will be chargeable.',
+    '6. Original invoice must be presented for all exchange, buyback, repair, polishing, or warranty claims.',
+    '7. Tarnishing or oxidation of silver over time is normal and shall not be considered a manufacturing defect.',
+    '8. The company reserves the right to modify exchange, buyback, repair, and warranty policies without prior notice.',
   ];
 
   const bottomY = yPos;
@@ -478,17 +483,16 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   // Pre-measure terms height for proper box sizing
   doc.setFont(FONT, 'normal');
   doc.setFontSize(7.5);
-  const lineH = 3.6;
-  let measuredH = 4; // top padding
+  const lineH = 4.2; // 7.5pt * 1.6 line-height
+  let measuredH = 8; // top padding (header band)
   const wrappedParas = termsRaw.map((p) => doc.splitTextToSize(p, leftW - 6) as string[]);
   wrappedParas.forEach((lines) => {
-    measuredH += lines.length * lineH + 0.8;
+    measuredH += lines.length * lineH + 0.6;
   });
-  measuredH += 2;
+  measuredH += 3; // bottom padding
 
-  // Terms box on left — height matches right side or terms content
-  const rightHeight = rightInnerY - bottomY;
-  const termsBoxH = Math.max(rightHeight, measuredH, 30);
+  // Terms box on left — auto height to fit all terms
+  const termsBoxH = measuredH;
   doc.setDrawColor(...PURPLE_BORDER);
   doc.setLineWidth(0.3);
   doc.rect(margin, bottomY, leftW, termsBoxH);
@@ -509,7 +513,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       doc.text(wl, margin + 3, tY);
       tY += lineH;
     });
-    tY += 0.8;
+    tY += 0.6;
   });
 
   yPos = bottomY + termsBoxH + 6;

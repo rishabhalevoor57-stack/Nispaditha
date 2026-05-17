@@ -312,10 +312,18 @@ export function InvoicePreviewModal({
                 >
                   Terms & Conditions
                 </div>
-                <ol className="px-4 py-2 text-[9.5px] text-gray-700 list-decimal list-inside space-y-1 leading-snug">
-                  <li>Payment due within 5 days. Late payments attract 3% per month interest.</li>
-                  <li>No return or refund except manufacturing defects or transit damage.</li>
-                  <li>Exchange/repurchase: Material value only. No compensation for making charges, designing charges, wastage, or taxes.</li>
+                <ol
+                  className="px-4 py-2 text-gray-700 list-decimal list-outside space-y-1"
+                  style={{ fontSize: '7.5px', lineHeight: 1.6, wordWrap: 'normal', height: 'auto' }}
+                >
+                  <li>No return or refund will be accepted except in cases of manufacturing defects.</li>
+                  <li>Under the exchange &amp; buyback policy, only the metal value will be considered. Making charges, designing charges, wastage, stones, taxes, and other additional charges are non-refundable.</li>
+                  <li>Warranty period is 6 months from the date of purchase. Repairs after the warranty period will be chargeable.</li>
+                  <li>Products that are altered, repaired, resized, damaged, broken, mishandled, or tampered with by third parties will not be eligible for exchange, buyback, repair, or warranty claims.</li>
+                  <li>One-time polishing service will be provided free of charge. Subsequent polishing services will be chargeable.</li>
+                  <li>Original invoice must be presented for all exchange, buyback, repair, polishing, or warranty claims.</li>
+                  <li>Tarnishing or oxidation of silver over time is normal and shall not be considered a manufacturing defect.</li>
+                  <li>The company reserves the right to modify exchange, buyback, repair, and warranty policies without prior notice.</li>
                 </ol>
               </div>
 
