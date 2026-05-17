@@ -617,99 +617,217 @@ export function CreateInvoiceDialog({
 
                 {/* Store Wallet Credits */}
                 {selectedClient && selectedClient !== 'walk-in' && walletBalance > 0 && (
-                  <div className="flex items-center justify-between gap-3 pt-2 border-t">
+                  <div className="rounded-md border border-primary/30 bg-primary/5 p-3 mt-2 space-y-2">
                     <div className="flex items-center gap-2">
                       <Wallet className="w-4 h-4 text-primary" />
-                      <span className="text-xs text-muted-foreground">
-                        Store Wallet: <span className="font-semibold text-primary">₹ {walletBalance.toFixed(2)}</span> available
-                      </span>
+                      <span className="text-sm font-semibold">Store Wallet</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="credits-used" className="text-xs">Use Credits</Label>
-                      <Input
-                        id="credits-used"
-                        type="number"
-                        step="0.01"
-                        min={0}
-                        max={Math.min(walletBalance, grandTotalWithRound)}
-                        value={storeCreditsUsed}
-                        onChange={(e) => setStoreCreditsUsed(parseFloat(e.target.value) || 0)}
-                        className="h-8 w-32 text-right"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                      <div className="flex justify-between sm:block">
+                        <span className="text-muted-foreground">Available</span>
+                        <div className="font-semibold text-primary tabular-nums">₹ {walletBalance.toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <Label htmlFor="credits-used" className="text-xs text-muted-foreground">Credits to Use</Label>
+                        <Input
+                          id="credits-used"
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          max={Math.min(walletBalance, grandTotalWithRound)}
+                          value={storeCreditsUsed}
+                          onChange={(e) => setStoreCreditsUsed(parseFloat(e.target.value) || 0)}
+                          className="h-8 mt-1 text-right"
+                        />
+                        {creditsError && (
+                          <p className="text-[11px] text-destructive mt-1">{creditsError}</p>
+                        )}
+                      </div>
+                      <div className="flex justify-between sm:block">
+                        <span className="text-muted-foreground text-xs">Remaining</span>
+                        <div className="font-semibold tabular-nums">₹ {(walletBalance - cappedCredits).toFixed(2)}</div>
+                      </div>
                     </div>
                   </div>
                 )}
                 {cappedCredits > 0 && (
                   <div className="flex justify-between text-primary">
-                    <span>Less: Store Wallet</span>
+                    <span>Less: Store Credits Used</span>
                     <span className="tabular-nums">- ₹ {cappedCredits.toFixed(2)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-base font-bold pt-2 border-t">
-                  <span>{cappedCredits > 0 ? 'Amount Due' : 'Grand Total'}</span>
+                  <span>{cappedCredits > 0 ? 'Remaining to Pay' : 'Grand Total'}</span>
                   <span className="text-primary tabular-nums">₹ {grandTotalAfterCredits.toFixed(2)}</span>
                 </div>
-                {paymentStatus !== 'PAID' && (
-                  <>
-                    <div className="flex justify-between pt-1">
-                      <span className="text-muted-foreground">Advance Paid</span>
-                      <span className="tabular-nums text-green-600 font-semibold">
-                        ₹ {effectiveAdvance.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between font-semibold">
-                      <span>Balance Due</span>
-                      <span className="tabular-nums text-primary">
-                        ₹ {balanceDue.toFixed(2)}
-                      </span>
-                    </div>
-                  </>
-                )}
               </div>
 
-              {/* Payment Received Section */}
-              <div className="pt-3 border-t space-y-3">
-                <Label className="text-sm font-semibold">Payment Received</Label>
-                <RadioGroup
-                  value={paymentStatus}
-                  onValueChange={(v) => {
-                    const s = v as 'PAID' | 'PARTIAL' | 'PENDING';
-                    setPaymentStatus(s);
-                    if (s === 'PAID') setAmountPaid(grandTotalAfterCredits);
-                    else if (s === 'PENDING') setAmountPaid(0);
-                  }}
-                  className="grid grid-cols-1 sm:grid-cols-3 gap-2"
-                >
-                  <label className="flex items-center gap-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
-                    <RadioGroupItem value="PAID" id="pay-paid" />
-                    <span className="text-sm">Paid in Full</span>
-                  </label>
-                  <label className="flex items-center gap-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
-                    <RadioGroupItem value="PARTIAL" id="pay-partial" />
-                    <span className="text-sm">Advance / Partial</span>
-                  </label>
-                  <label className="flex items-center gap-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
-                    <RadioGroupItem value="PENDING" id="pay-pending" />
-                    <span className="text-sm">Payment Pending</span>
-                  </label>
-                </RadioGroup>
+              {/* Payment Section */}
+              {remainingAfterCredits <= 0.001 && cappedCredits > 0 ? (
+                <div className="rounded-md border border-green-500/40 bg-green-500/10 px-3 py-2 text-sm font-semibold text-green-700 dark:text-green-400">
+                  ✓ Paid in Full via Store Credits
+                </div>
+              ) : remainingAfterCredits > 0 ? (
+                <div className="pt-3 border-t space-y-3">
+                  <Label className="text-sm font-semibold">Pay Remaining Amount</Label>
+                  {payments.length === 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {(['cash','upi','card','bank_transfer'] as const).map(m => (
+                        <Button
+                          key={m}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPayments([{ mode: m, amount: String(remainingAfterCredits.toFixed(2)) }])}
+                          className="capitalize"
+                        >
+                          {m.replace('_',' ')}
+                        </Button>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPayments([{ mode: 'pay_later', amount: '0' }])}
+                      >
+                        Pay Later
+                      </Button>
+                    </div>
+                  )}
 
-                {paymentStatus === 'PARTIAL' && (
-                  <div className="space-y-2 max-w-xs">
-                    <Label htmlFor="amount-paid">Amount Received (₹)</Label>
-                    <Input
-                      id="amount-paid"
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      max={grandTotalAfterCredits}
-                      value={amountPaid}
-                      onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
-                    />
+                  {payments.map((p, idx) => {
+                    const remainingForThis = Math.max(0, remainingAfterCredits - payments.reduce((s, pp, i) => i === idx ? s : s + (parseFloat(pp.amount)||0), 0));
+                    return (
+                      <div key={idx} className="rounded-md border p-3 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {(['cash','upi','card','bank_transfer'] as const).map(m => (
+                            <Button
+                              key={m}
+                              type="button"
+                              variant={p.mode === m ? 'default' : 'outline'}
+                              size="sm"
+                              className="capitalize"
+                              onClick={() => {
+                                const next = [...payments];
+                                next[idx] = { ...next[idx], mode: m };
+                                setPayments(next);
+                              }}
+                            >
+                              {m.replace('_',' ')}
+                            </Button>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="ml-auto text-destructive"
+                            onClick={() => setPayments(payments.filter((_, i) => i !== idx))}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                          <div>
+                            <Label className="text-xs">Amount Paying via {p.mode.replace('_',' ')}</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min={0}
+                              value={p.amount}
+                              onChange={(e) => {
+                                const next = [...payments];
+                                next[idx] = { ...next[idx], amount: e.target.value };
+                                setPayments(next);
+                              }}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Suggested: ₹ {remainingForThis.toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {payments.length > 0 && balanceDue > 0 && (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="px-0"
+                      onClick={() => setPayments([...payments, { mode: 'cash', amount: String(balanceDue.toFixed(2)) }])}
+                    >
+                      + Add another payment method
+                    </Button>
+                  )}
+
+                  {payments.length > 0 && (
+                    <div className="text-sm space-y-1 pt-2 border-t">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Remaining to Pay</span>
+                        <span className="tabular-nums">₹ {remainingAfterCredits.toFixed(2)}</span>
+                      </div>
+                      {payments.map((p, i) => (
+                        <div key={i} className="flex justify-between text-muted-foreground">
+                          <span className="capitalize">Paying via {p.mode.replace('_',' ')}</span>
+                          <span className="tabular-nums">- ₹ {(parseFloat(p.amount)||0).toFixed(2)}</span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between font-semibold pt-1 border-t">
+                        <span>Balance Due</span>
+                        <span className="tabular-nums text-primary">₹ {balanceDue.toFixed(2)}</span>
+                      </div>
+                      {isFullyPaid ? (
+                        <div className="mt-2 rounded-md border border-green-500/40 bg-green-500/10 px-3 py-1.5 text-xs font-semibold text-green-700 dark:text-green-400 inline-block">
+                          ✓ Paid in Full
+                        </div>
+                      ) : effectiveAdvance > 0 ? (
+                        <div className="mt-2 rounded-md border border-orange-500/40 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-700 dark:text-orange-400 inline-block">
+                          Partial Payment
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {/* Final Payment Summary */}
+              {invoiceItems.length > 0 && (
+                <div className="rounded-md border border-primary/30 bg-muted/40 p-3 mt-3 text-sm space-y-1">
+                  <div className="font-semibold mb-1">Payment Summary</div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Grand Total</span>
+                    <span className="tabular-nums">₹ {grandTotalWithRound.toFixed(2)}</span>
                   </div>
-                )}
-              </div>
+                  {cappedCredits > 0 && (
+                    <div className="flex justify-between text-primary">
+                      <span>Store Credits Used</span>
+                      <span className="tabular-nums">- ₹ {cappedCredits.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {payments.filter(p => (parseFloat(p.amount)||0) > 0).map((p, i) => (
+                    <div key={i} className="flex justify-between text-muted-foreground">
+                      <span className="capitalize">Paid via {p.mode.replace('_',' ')}</span>
+                      <span className="tabular-nums">- ₹ {(parseFloat(p.amount)||0).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-semibold pt-1 border-t">
+                    <span>Balance Due</span>
+                    <span className="tabular-nums text-primary">₹ {balanceDue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Status</span>
+                    <span className={cn(
+                      'font-semibold',
+                      paymentStatusUI === 'PAID' && 'text-green-600',
+                      paymentStatusUI === 'PARTIAL' && 'text-orange-600',
+                      paymentStatusUI === 'PENDING' && 'text-destructive',
+                    )}>{paymentStatusUI}</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
