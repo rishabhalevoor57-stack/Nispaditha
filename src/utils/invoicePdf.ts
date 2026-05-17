@@ -483,17 +483,16 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   // Pre-measure terms height for proper box sizing
   doc.setFont(FONT, 'normal');
   doc.setFontSize(7.5);
-  const lineH = 3.6;
-  let measuredH = 4; // top padding
+  const lineH = 4.2; // 7.5pt * 1.6 line-height
+  let measuredH = 8; // top padding (header band)
   const wrappedParas = termsRaw.map((p) => doc.splitTextToSize(p, leftW - 6) as string[]);
   wrappedParas.forEach((lines) => {
-    measuredH += lines.length * lineH + 0.8;
+    measuredH += lines.length * lineH + 0.6;
   });
-  measuredH += 2;
+  measuredH += 3; // bottom padding
 
-  // Terms box on left — height matches right side or terms content
-  const rightHeight = rightInnerY - bottomY;
-  const termsBoxH = Math.max(rightHeight, measuredH, 30);
+  // Terms box on left — auto height to fit all terms
+  const termsBoxH = measuredH;
   doc.setDrawColor(...PURPLE_BORDER);
   doc.setLineWidth(0.3);
   doc.rect(margin, bottomY, leftW, termsBoxH);
