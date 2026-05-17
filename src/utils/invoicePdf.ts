@@ -513,7 +513,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       doc.text(wl, margin + 3, tY);
       tY += lineH;
     });
-    tY += 0.8;
+    tY += 0.6;
   });
 
   yPos = bottomY + termsBoxH + 6;
