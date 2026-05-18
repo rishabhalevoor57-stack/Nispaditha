@@ -1325,8 +1325,8 @@ export type Database = {
           live_rate_used: number | null
           metal_type: string | null
           notes: string | null
-          original_invoice_id: string
-          original_invoice_number: string
+          original_invoice_id: string | null
+          original_invoice_number: string | null
           payment_mode: string | null
           reason: string | null
           reference_number: string
@@ -1352,8 +1352,8 @@ export type Database = {
           live_rate_used?: number | null
           metal_type?: string | null
           notes?: string | null
-          original_invoice_id: string
-          original_invoice_number: string
+          original_invoice_id?: string | null
+          original_invoice_number?: string | null
           payment_mode?: string | null
           reason?: string | null
           reference_number: string
@@ -1379,8 +1379,8 @@ export type Database = {
           live_rate_used?: number | null
           metal_type?: string | null
           notes?: string | null
-          original_invoice_id?: string
-          original_invoice_number?: string
+          original_invoice_id?: string | null
+          original_invoice_number?: string | null
           payment_mode?: string | null
           reason?: string | null
           reference_number?: string
