@@ -16,6 +16,7 @@ interface InvoicePdfData {
   gstPercentage?: number;
   roundOff?: number;
   advancePaid?: number;
+  storeCreditsUsed?: number;
   paymentReceivedDate?: string | null; // ISO/yyyy-mm-dd of latest payment
   cancelled?: boolean;
   cancellationReason?: string | null;
@@ -132,6 +133,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const gstPct = data.gstPercentage ?? 3;
   const roundOff = data.roundOff ?? 0;
   const advancePaid = data.advancePaid ?? 0;
+  const storeCreditsUsed = data.storeCreditsUsed ?? 0;
 
   // ================== HEADER (white with bold purple bottom border) ==================
   const headerHeight = 22;
@@ -325,7 +327,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const cgst = (data.totals.gstAmount || 0) / 2;
   const sgst = (data.totals.gstAmount || 0) / 2;
   const grandTotalWithRound = (data.totals.grandTotal || 0) + roundOff;
-  const balanceDue = grandTotalWithRound - advancePaid;
+  const balanceDue = grandTotalWithRound - advancePaid - storeCreditsUsed;
 
   doc.setFontSize(9);
   doc.setFont(FONT, 'normal');
@@ -354,7 +356,16 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.text('Round Off', totalsX, yPos);
   const roundSign = roundOff >= 0 ? '+ ' : '- ';
   doc.text(`${roundSign}${money(Math.abs(roundOff))}`, valueX, yPos, { align: 'right' });
-  yPos += rowGap + 2;
+  yPos += rowGap;
+
+  if (storeCreditsUsed > 0) {
+    doc.setTextColor(39, 120, 60);
+    doc.text('Store Credits Redeemed', totalsX, yPos);
+    doc.text(`- ${money(storeCreditsUsed)}`, valueX, yPos, { align: 'right' });
+    doc.setTextColor(60, 60, 60);
+    yPos += rowGap;
+  }
+  yPos += 2;
 
   // ================== GRAND TOTAL BAND ==================
   const bandH = 10;
@@ -370,9 +381,10 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(0, 0, 0);
 
   // ================== STATUS DETERMINATION ==================
-  const isPaidFull = advancePaid >= grandTotalWithRound && grandTotalWithRound > 0;
-  const isOverpaid = advancePaid > grandTotalWithRound && grandTotalWithRound > 0;
-  const isPartial = advancePaid > 0 && advancePaid < grandTotalWithRound;
+  const paidTotal = advancePaid + storeCreditsUsed;
+  const isPaidFull = paidTotal >= grandTotalWithRound - 0.001 && grandTotalWithRound > 0;
+  const isOverpaid = paidTotal > grandTotalWithRound + 0.001 && grandTotalWithRound > 0;
+  const isPartial = paidTotal > 0 && !isPaidFull;
 
   // Reserve space for footer + signature + status section
   const footerH = 11;

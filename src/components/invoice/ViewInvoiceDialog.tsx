@@ -367,6 +367,7 @@ export function ViewInvoiceDialog({
       businessSettings,
       notes: invoice.notes || undefined,
       advancePaid: Number(invoice.advance_paid) || 0,
+      storeCreditsUsed: Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0,
       paymentReceivedDate: invoice.paid_at || null,
       cancelled: invoice.status === 'cancelled',
       cancellationReason: inv.cancellation_reason || null,
@@ -387,6 +388,7 @@ export function ViewInvoiceDialog({
       businessSettings,
       notes: invoice.notes || undefined,
       advancePaid: Number(invoice.advance_paid) || 0,
+      storeCreditsUsed: Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0,
       paymentReceivedDate: invoice.paid_at || null,
       cancelled: invoice.status === 'cancelled',
       cancellationReason: inv.cancellation_reason || null,
@@ -800,6 +802,8 @@ export function ViewInvoiceDialog({
           totals={getTotals()}
           businessSettings={businessSettings}
           notes={invoice.notes || undefined}
+          advancePaid={Number(invoice.advance_paid) || 0}
+          storeCreditsUsed={Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0}
           showMakingCharges={isAdmin}
         />
       )}

@@ -142,6 +142,7 @@ export default function Invoices() {
       businessSettings,
       notes: invoice.notes || undefined,
       advancePaid: Number((invoice as any).advance_paid) || 0,
+      storeCreditsUsed: Number((invoice as any).store_credits_used) || 0,
       paymentReceivedDate: (invoice as any).paid_at || null,
       cancelled: invoice.status === 'cancelled',
       cancellationReason: (invoice as any).cancellation_reason || null,

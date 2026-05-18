@@ -24,6 +24,7 @@ interface InvoicePreviewModalProps {
   gstPercentage?: number;
   roundOff?: number;
   advancePaid?: number;
+  storeCreditsUsed?: number;
 }
 
 const PURPLE = '#4a2060';
@@ -72,6 +73,7 @@ export function InvoicePreviewModal({
   gstPercentage = 3,
   roundOff = 0,
   advancePaid = 0,
+  storeCreditsUsed = 0,
 }: InvoicePreviewModalProps) {
   if (!businessSettings) return null;
 
@@ -84,11 +86,12 @@ export function InvoicePreviewModal({
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
   const grandTotal = (totals.grandTotal || 0) + roundOff;
-  const balanceDue = grandTotal - advancePaid;
+  const paidTotal = advancePaid + storeCreditsUsed;
+  const balanceDue = grandTotal - paidTotal;
 
-  const isPaidFull = advancePaid >= grandTotal && grandTotal > 0;
-  const isOverpaid = advancePaid > grandTotal && grandTotal > 0;
-  const isPartial = advancePaid > 0 && advancePaid < grandTotal;
+  const isPaidFull = paidTotal >= grandTotal - 0.001 && grandTotal > 0;
+  const isOverpaid = paidTotal > grandTotal + 0.001 && grandTotal > 0;
+  const isPartial = paidTotal > 0 && !isPaidFull;
 
   const num: React.CSSProperties = {
     whiteSpace: 'nowrap',
@@ -291,6 +294,9 @@ export function InvoicePreviewModal({
                 <div className="flex justify-between"><span className="text-gray-600">CGST @ {(gstPercentage / 2).toFixed(2)}%</span><span style={num}>{money(cgst)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-600">SGST @ {(gstPercentage / 2).toFixed(2)}%</span><span style={num}>{money(sgst)}</span></div>
                 <div className="flex justify-between text-gray-500 italic"><span>Round Off</span><span style={num}>{`${roundOff >= 0 ? '+' : '\u2212'} ${RUPEE} ${fmt(Math.abs(roundOff))}`}</span></div>
+                {storeCreditsUsed > 0 && (
+                  <div className="flex justify-between" style={{ color: GREEN }}><span>Store Credits Redeemed</span><span style={num}>{`\u2212 ${money(storeCreditsUsed)}`}</span></div>
+                )}
               </div>
             </div>
 

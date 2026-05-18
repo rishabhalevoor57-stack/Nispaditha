@@ -79,7 +79,7 @@ export function useReturnsExchanges() {
           // Was added back to stock on create → subtract it now
           await supabase
             .from('products')
-            .update({ quantity: product.quantity - item.quantity })
+            .update({ quantity: Math.max(0, (product.quantity || 0) - item.quantity) })
             .eq('id', item.product_id);
         } else if (item.direction === 'new') {
           // Was subtracted from stock on create → add it back now
