@@ -263,7 +263,7 @@ export function CreateInvoiceDialog({
       }
 
       // Create invoice with status = 'draft'
-      const finalGrandTotal = grandTotalAfterCredits;
+      const finalGrandTotal = grandTotalWithRound; // store FULL grand total; credits tracked separately
       const computedPaymentStatus =
         isFullyPaid ? 'paid' : effectiveAdvance > 0 ? 'partial' : 'pending';
       const primaryPayMode = fullyPaidByCredits
