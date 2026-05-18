@@ -16,6 +16,7 @@ interface InvoicePdfData {
   gstPercentage?: number;
   roundOff?: number;
   advancePaid?: number;
+  storeCreditsUsed?: number;
   paymentReceivedDate?: string | null; // ISO/yyyy-mm-dd of latest payment
   cancelled?: boolean;
   cancellationReason?: string | null;
