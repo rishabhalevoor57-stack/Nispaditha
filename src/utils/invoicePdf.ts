@@ -327,7 +327,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const cgst = (data.totals.gstAmount || 0) / 2;
   const sgst = (data.totals.gstAmount || 0) / 2;
   const grandTotalWithRound = (data.totals.grandTotal || 0) + roundOff;
-  const balanceDue = grandTotalWithRound - advancePaid;
+  const balanceDue = grandTotalWithRound - advancePaid - storeCreditsUsed;
 
   doc.setFontSize(9);
   doc.setFont(FONT, 'normal');
