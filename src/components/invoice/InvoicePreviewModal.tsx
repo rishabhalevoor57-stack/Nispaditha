@@ -294,6 +294,9 @@ export function InvoicePreviewModal({
                 <div className="flex justify-between"><span className="text-gray-600">CGST @ {(gstPercentage / 2).toFixed(2)}%</span><span style={num}>{money(cgst)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-600">SGST @ {(gstPercentage / 2).toFixed(2)}%</span><span style={num}>{money(sgst)}</span></div>
                 <div className="flex justify-between text-gray-500 italic"><span>Round Off</span><span style={num}>{`${roundOff >= 0 ? '+' : '\u2212'} ${RUPEE} ${fmt(Math.abs(roundOff))}`}</span></div>
+                {storeCreditsUsed > 0 && (
+                  <div className="flex justify-between" style={{ color: GREEN }}><span>Store Credits Redeemed</span><span style={num}>{`\u2212 ${money(storeCreditsUsed)}`}</span></div>
+                )}
               </div>
             </div>
 
