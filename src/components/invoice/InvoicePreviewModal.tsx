@@ -24,6 +24,7 @@ interface InvoicePreviewModalProps {
   gstPercentage?: number;
   roundOff?: number;
   advancePaid?: number;
+  storeCreditsUsed?: number;
 }
 
 const PURPLE = '#4a2060';
