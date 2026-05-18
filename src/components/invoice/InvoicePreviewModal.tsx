@@ -73,6 +73,7 @@ export function InvoicePreviewModal({
   gstPercentage = 3,
   roundOff = 0,
   advancePaid = 0,
+  storeCreditsUsed = 0,
 }: InvoicePreviewModalProps) {
   if (!businessSettings) return null;
 
@@ -85,11 +86,12 @@ export function InvoicePreviewModal({
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
   const grandTotal = (totals.grandTotal || 0) + roundOff;
-  const balanceDue = grandTotal - advancePaid;
+  const paidTotal = advancePaid + storeCreditsUsed;
+  const balanceDue = grandTotal - paidTotal;
 
-  const isPaidFull = advancePaid >= grandTotal && grandTotal > 0;
-  const isOverpaid = advancePaid > grandTotal && grandTotal > 0;
-  const isPartial = advancePaid > 0 && advancePaid < grandTotal;
+  const isPaidFull = paidTotal >= grandTotal - 0.001 && grandTotal > 0;
+  const isOverpaid = paidTotal > grandTotal + 0.001 && grandTotal > 0;
+  const isPartial = paidTotal > 0 && !isPaidFull;
 
   const num: React.CSSProperties = {
     whiteSpace: 'nowrap',
