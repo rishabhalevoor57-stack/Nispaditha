@@ -356,7 +356,16 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.text('Round Off', totalsX, yPos);
   const roundSign = roundOff >= 0 ? '+ ' : '- ';
   doc.text(`${roundSign}${money(Math.abs(roundOff))}`, valueX, yPos, { align: 'right' });
-  yPos += rowGap + 2;
+  yPos += rowGap;
+
+  if (storeCreditsUsed > 0) {
+    doc.setTextColor(39, 120, 60);
+    doc.text('Store Credits Redeemed', totalsX, yPos);
+    doc.text(`- ${money(storeCreditsUsed)}`, valueX, yPos, { align: 'right' });
+    doc.setTextColor(60, 60, 60);
+    yPos += rowGap;
+  }
+  yPos += 2;
 
   // ================== GRAND TOTAL BAND ==================
   const bandH = 10;
