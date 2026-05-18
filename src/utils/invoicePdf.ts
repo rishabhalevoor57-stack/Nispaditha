@@ -133,6 +133,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const gstPct = data.gstPercentage ?? 3;
   const roundOff = data.roundOff ?? 0;
   const advancePaid = data.advancePaid ?? 0;
+  const storeCreditsUsed = data.storeCreditsUsed ?? 0;
 
   // ================== HEADER (white with bold purple bottom border) ==================
   const headerHeight = 22;
