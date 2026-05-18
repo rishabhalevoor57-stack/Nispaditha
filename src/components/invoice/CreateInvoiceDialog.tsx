@@ -372,6 +372,7 @@ export function CreateInvoiceDialog({
           gstPercentage: gstPct,
           roundOff,
           advancePaid: effectiveAdvance,
+          storeCreditsUsed: cappedCredits,
         }, true);
       }
 
@@ -415,6 +416,7 @@ export function CreateInvoiceDialog({
       gstPercentage: gstPct,
       roundOff,
       advancePaid: effectiveAdvance,
+          storeCreditsUsed: cappedCredits,
     }, true);
   };
 
@@ -894,6 +896,7 @@ export function CreateInvoiceDialog({
         gstPercentage={gstPct}
         roundOff={roundOff}
         advancePaid={effectiveAdvance}
+        storeCreditsUsed={cappedCredits}
       />
     )}
   </>
