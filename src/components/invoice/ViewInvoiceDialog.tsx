@@ -218,58 +218,62 @@ export function ViewInvoiceDialog({
 
     setIsSaving(true);
     try {
-      // 1) Restore stock for ALL existing items (so trigger can re-deduct on insert)
-      for (const oldItem of items) {
-        if (!oldItem.product_id) continue;
-        const { data: prod } = await supabase
-          .from('products')
-          .select('quantity')
-          .eq('id', oldItem.product_id)
-          .single();
-        const currentQty = prod?.quantity || 0;
-        await supabase
-          .from('products')
-          .update({ quantity: currentQty + oldItem.quantity })
-          .eq('id', oldItem.product_id);
-        await supabase.from('stock_history').insert({
-          product_id: oldItem.product_id,
-          quantity_change: oldItem.quantity,
-          type: 'in',
-          reason: `Invoice ${invoice.invoice_number} edit — restore`,
-          reference_id: invoice.id,
-          created_by: user?.id,
-        });
-      }
+      const isDraft = invoice.status === 'draft';
 
-      // 2) Delete existing invoice items
-      await supabase.from('invoice_items').delete().eq('invoice_id', invoice.id);
+      // 1) Delete existing items — DB trigger will restore stock automatically
+      //    (trigger skips restore for drafts, which is what we want)
+      const { error: delErr } = await supabase
+        .from('invoice_items')
+        .delete()
+        .eq('invoice_id', invoice.id);
+      if (delErr) throw delErr;
 
-      // 3) Update invoice header
-      await supabase
+      // 2) Update invoice header — preserve advance_paid / store_credits_used
+      const { error: updErr } = await supabase
         .from('invoices')
         .update({
           invoice_date: format(editInvoiceDate, 'yyyy-MM-dd'),
           payment_mode: editPaymentMode,
-          payment_status: editPaymentMode === 'pay_later' ? 'pending' : 'paid',
+          payment_status: isDraft
+            ? 'pending'
+            : (editPaymentMode === 'pay_later' ? 'pending' : (invoice.payment_status || 'paid')),
           notes: editNotes || null,
           subtotal: editTotals.subtotal,
           discount_amount: editTotals.discountAmount,
           gst_amount: editTotals.gstAmount,
           grand_total: editTotals.grandTotal,
-        })
+        } as never)
         .eq('id', invoice.id);
+      if (updErr) throw updErr;
 
-      // 4) Update client info if linked
-      if (invoice.client_id) {
-        const updates: Record<string, unknown> = {};
-        if (editClientName) updates.name = editClientName;
-        if (editClientPhone) updates.phone = editClientPhone;
-        if (Object.keys(updates).length > 0) {
-          await supabase.from('clients').update(updates as never).eq('id', invoice.client_id);
+      // 3) Update / link client info
+      let linkedClientId = invoice.client_id;
+      const trimmedPhone = (editClientPhone || '').trim();
+      if (trimmedPhone) {
+        // upsert client by phone — also keeps walk-ins linkable when phone provided
+        const { data: upsertedId, error: cliErr } = await supabase.rpc('upsert_client_on_invoice', {
+          p_phone: trimmedPhone,
+          p_name: editClientName || 'Walk-in Customer',
+          p_amount: 0,
+        });
+        if (!cliErr && upsertedId) {
+          linkedClientId = upsertedId as string;
+          await supabase
+            .from('clients')
+            .update({ name: editClientName || 'Walk-in Customer', phone: trimmedPhone } as never)
+            .eq('id', linkedClientId);
+          if (linkedClientId !== invoice.client_id) {
+            await supabase.from('invoices').update({ client_id: linkedClientId } as never).eq('id', invoice.id);
+          }
         }
+      } else if (invoice.client_id && editClientName) {
+        await supabase
+          .from('clients')
+          .update({ name: editClientName } as never)
+          .eq('id', invoice.client_id);
       }
 
-      // 5) Insert new invoice items (trigger will reduce stock)
+      // 4) Insert new invoice items (trigger reduces stock for non-draft invoices)
       const itemsToInsert = editItems.map((item) => ({
         invoice_id: invoice.id,
         product_id: item.product_id || null,
@@ -307,6 +311,95 @@ export function ViewInvoiceDialog({
       onStatusChange?.();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Update failed';
+      console.error('Invoice update failed:', error);
+      toast({ variant: 'destructive', title: 'Error', description: message });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleConfirmDraft = async () => {
+    if (!invoice || invoice.status !== 'draft') return;
+    if (!confirm(`Finalize draft ${invoice.invoice_number}? This will assign an invoice number, deduct stock and apply any store credits.`)) return;
+
+    setIsSaving(true);
+    try {
+      // Assign a real invoice number
+      const { data: newNum, error: numErr } = await supabase.rpc('generate_invoice_number');
+      if (numErr) throw numErr;
+
+      const credits = Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0;
+      const advance = Number(invoice.advance_paid) || 0;
+      const total = Number(invoice.grand_total) || 0;
+      const status =
+        credits + advance >= total - 0.001 ? 'paid'
+        : advance > 0 ? 'partial' : 'pending';
+
+      // Flip status FIRST so subsequent reduction we perform manually
+      const { error: flipErr } = await supabase
+        .from('invoices')
+        .update({
+          invoice_number: newNum,
+          status,
+          payment_status: status,
+          paid_at: status === 'paid' ? new Date().toISOString() : null,
+        } as never)
+        .eq('id', invoice.id);
+      if (flipErr) throw flipErr;
+
+      // Manually reduce stock for each item (trigger had skipped because invoice was draft at insert time)
+      for (const it of items) {
+        if (!it.product_id) continue;
+        const { data: prod } = await supabase.from('products').select('quantity').eq('id', it.product_id).single();
+        const currentQty = Number(prod?.quantity) || 0;
+        await supabase.from('products')
+          .update({ quantity: Math.max(0, currentQty - Number(it.quantity)) })
+          .eq('id', it.product_id);
+        await supabase.from('stock_history').insert([{
+          product_id: it.product_id,
+          quantity_change: -Number(it.quantity),
+          type: 'out',
+          reason: `Invoice ${newNum} finalized from draft`,
+          reference_id: invoice.id,
+          created_by: user?.id || null,
+        }]);
+      }
+
+      // Debit wallet for credits
+      if (credits > 0 && invoice.client_id) {
+        try {
+          await adjustWallet(invoice.client_id, -credits, 'invoice', invoice.id, newNum as string, 'Credits applied on draft finalize');
+        } catch (e) { console.error('Wallet debit failed', e); }
+      }
+
+      // Record advance as invoice_payment
+      if (advance > 0) {
+        const { data: rcpt } = await supabase.rpc('generate_receipt_number');
+        await supabase.from('invoice_payments').insert([{
+          invoice_id: invoice.id,
+          receipt_number: rcpt,
+          amount: advance,
+          payment_mode: invoice.payment_mode || 'cash',
+          payment_date: invoice.invoice_date,
+          notes: 'Payment received at draft finalize',
+          created_by: user?.id,
+        }]);
+      }
+
+      logActivity({
+        module: 'invoice',
+        action: 'update',
+        recordId: invoice.id,
+        recordLabel: newNum as string,
+        newValue: { status, finalized_from_draft: true },
+      });
+
+      toast({ title: `Draft finalized as ${newNum}` });
+      await fetchInvoiceDetails();
+      onStatusChange?.();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to finalize draft';
+      console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: message });
     } finally {
       setIsSaving(false);
