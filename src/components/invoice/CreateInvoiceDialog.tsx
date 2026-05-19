@@ -397,6 +397,91 @@ export function CreateInvoiceDialog({
     }
   };
 
+  const handleSaveAsDraft = async () => {
+    if (invoiceItems.length === 0) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Please add at least one product' });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      // Resolve client (do NOT modify client balances for drafts)
+      let finalClientId = selectedClient && selectedClient !== 'walk-in' ? selectedClient : null;
+      if (!finalClientId && clientPhone && clientPhone.trim()) {
+        const { data: existing } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('phone', clientPhone.trim())
+          .maybeSingle();
+        finalClientId = existing?.id || null;
+      }
+
+      const draftNumber = 'DRAFT-' + Date.now().toString(36).toUpperCase();
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert([{
+          invoice_number: draftNumber,
+          client_id: finalClientId,
+          invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
+          subtotal: totals.subtotal,
+          discount_amount: totals.discountAmount,
+          gst_amount: totals.gstAmount,
+          grand_total: grandTotalWithRound,
+          advance_paid: effectiveAdvance,
+          store_credits_used: cappedCredits,
+          payment_status: 'pending',
+          payment_mode: payments[0]?.mode || paymentMode || 'pay_later',
+          notes: notes || null,
+          created_by: user?.id,
+          status: 'draft',
+        } as never])
+        .select()
+        .single();
+
+      if (invoiceError) throw invoiceError;
+
+      // Insert items — trigger now skips stock deduction for drafts
+      const itemsToInsert = invoiceItems.map(item => ({
+        invoice_id: invoice.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        category: item.category,
+        weight_grams: item.pricing_mode === 'flat_price' ? 0 : item.weight_grams,
+        quantity: item.quantity,
+        rate_per_gram: item.pricing_mode === 'flat_price' ? 0 : item.rate_per_gram,
+        gold_value: item.base_price,
+        making_charges: item.pricing_mode === 'flat_price' ? 0 : item.making_charges,
+        discount: item.discount,
+        discounted_making: item.pricing_mode === 'flat_price' ? 0 : item.discounted_making,
+        subtotal: item.line_total,
+        gst_percentage: item.gst_percentage,
+        gst_amount: item.line_total * (item.gst_percentage / 100),
+        total: item.line_total + (item.line_total * (item.gst_percentage / 100)),
+        mrp: item.mrp || 0,
+        description: item.description || null,
+      }));
+      const { error: itemsError } = await supabase.from('invoice_items').insert(itemsToInsert);
+      if (itemsError) throw itemsError;
+
+      logActivity({
+        module: 'invoice',
+        action: 'create',
+        recordId: invoice.id,
+        recordLabel: draftNumber,
+        newValue: { status: 'draft', items_count: invoiceItems.length },
+      });
+
+      toast({ title: 'Invoice saved as draft' });
+      onOpenChange(false);
+      resetForm();
+      onInvoiceCreated();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to save draft';
+      toast({ variant: 'destructive', title: 'Error', description: message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handlePrintPreview = () => {
     if (!businessSettings || invoiceItems.length === 0) {
       toast({ variant: 'destructive', title: 'Error', description: 'Please add products first' });
@@ -864,6 +949,13 @@ export function CreateInvoiceDialog({
             </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleSaveAsDraft}
+              disabled={invoiceItems.length === 0 || isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Save as Draft'}
             </Button>
             <Button
               className="btn-gold"
