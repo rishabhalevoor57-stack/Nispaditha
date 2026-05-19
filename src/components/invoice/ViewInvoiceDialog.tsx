@@ -597,6 +597,17 @@ export function ViewInvoiceDialog({
                     />
                   </div>
                   <div className="flex items-center gap-2">
+                    {invoice.status === 'draft' && (
+                      <Button
+                        size="sm"
+                        className="btn-gold"
+                        onClick={handleConfirmDraft}
+                        disabled={isSaving}
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {isSaving ? 'Finalizing...' : 'Confirm & Finalize'}
+                      </Button>
+                    )}
                     {isAdmin && invoice.status !== 'cancelled' && (
                       <Button
                         variant="outline"
