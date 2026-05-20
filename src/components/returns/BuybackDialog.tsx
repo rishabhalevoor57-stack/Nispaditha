@@ -16,7 +16,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useActivityLogger } from '@/hooks/useActivityLog';
-import { adjustWallet } from '@/hooks/useStoreWallet';
 
 interface Props {
   open: boolean;
@@ -52,6 +51,11 @@ interface ClientLite {
   id: string;
   name: string;
   phone: string | null;
+}
+
+interface BuybackProcessResult {
+  buyback_id?: string;
+  reference_number?: string;
 }
 
 const fmtINR = (n: number) =>
@@ -212,46 +216,10 @@ export function BuybackDialog({ open, onOpenChange, onComplete, preselectedInvoi
     }
     setBusy(true);
     try {
-      const { data: refNum, error: refErr } = await supabase.rpc(
-        'generate_return_exchange_reference',
-        { p_type: 'return' },
-      );
-      if (refErr) throw refErr;
-
       const clientName = invoice.clients?.name || null;
       const clientPhone = invoice.clients?.phone || null;
 
-      const { data: rec, error: recErr } = await supabase
-        .from('return_exchanges')
-        .insert([{
-          reference_number: refNum,
-          type: 'buyback',
-          buyback_kind: 'jewellery',
-          original_invoice_id: invoice.id,
-          original_invoice_number: invoice.invoice_number,
-          client_name: clientName,
-          client_phone: clientPhone,
-          client_id: invoice.client_id,
-          refund_amount: refund,
-          additional_charge: 0,
-          payment_mode: 'store_credit',
-          refund_method: 'store_credit',
-          disposition: 'repair',
-          live_rate_used: silverRate,
-          round_off: roundOff,
-          total_weight: totalWeight,
-          metal_type: 'silver',
-          reason: reason || 'Jewellery Buyback',
-          notes,
-          created_by: user?.id,
-        }] as never)
-        .select()
-        .single();
-      if (recErr) throw recErr;
-
-      const itemsToInsert = selected.map((r) => ({
-        return_exchange_id: rec.id,
-        direction: 'returned' as const,
+      const payload = selected.map((r) => ({
         product_id: r.product_id,
         product_name: r.product_name,
         sku: null,
@@ -259,42 +227,34 @@ export function BuybackDialog({ open, onOpenChange, onComplete, preselectedInvoi
         quantity: r.bb_quantity,
         weight_grams: r.bb_weight * r.bb_quantity,
         rate_per_gram: silverRate,
-        making_charges: 0,
-        discount: 0,
-        line_total: r.bb_weight * r.bb_quantity * silverRate,
-        gst_percentage: 0,
-        gst_amount: 0,
         total: r.bb_weight * r.bb_quantity * silverRate,
       }));
-      await supabase.from('return_exchange_items').insert(itemsToInsert);
 
-      // ALL buyback items go straight to Repair
-      await supabase.from('repair_items').insert(
-        selected.map((r) => ({
-          product_id: r.product_id,
-          sku: null,
-          product_name: r.product_name,
-          weight_grams: r.bb_weight,
-          quantity: r.bb_quantity,
-          original_invoice_id: invoice.id,
-          original_invoice_number: invoice.invoice_number,
-          client_name: clientName,
-          client_phone: clientPhone,
-          source: 'buyback',
-          source_reference_id: rec.id,
-          metal_type: 'silver',
-          rate_used: silverRate,
-          amount_credited: r.bb_weight * r.bb_quantity * silverRate,
-          created_by: user?.id,
-        })),
-      );
+      const { data, error: processErr } = await supabase.rpc('process_buyback', {
+        p_client_id: invoice.client_id,
+        p_invoice_id: invoice.id,
+        p_invoice_number: invoice.invoice_number,
+        p_kind: 'jewellery',
+        p_metal_type: 'silver',
+        p_weight: totalWeight,
+        p_rate_used: silverRate,
+        p_round_off: roundOff,
+        p_total_credits_added: refund,
+        p_reason: reason || 'Jewellery Buyback',
+        p_notes: notes || null,
+        p_destination: 'repair',
+        p_items: payload,
+      });
+      if (processErr) throw processErr;
 
-      await adjustWallet(invoice.client_id, refund, 'buyback', rec.id, refNum, `Buyback against ${invoice.invoice_number}`);
+      const result = (data ?? null) as BuybackProcessResult | null;
+      const refNum = result?.reference_number || 'BUYBACK';
+      const recId = result?.buyback_id || crypto.randomUUID();
 
       logActivity({
         module: 'return',
         action: 'create',
-        recordId: rec.id,
+        recordId: recId,
         recordLabel: refNum,
         newValue: { type: 'buyback', kind: 'jewellery', invoice: invoice.invoice_number, weight: totalWeight, rate: silverRate, refund },
       });
@@ -321,88 +281,43 @@ export function BuybackDialog({ open, onOpenChange, onComplete, preselectedInvoi
     }
     setBusy(true);
     try {
-      const { data: refNum, error: refErr } = await supabase.rpc(
-        'generate_return_exchange_reference',
-        { p_type: 'return' },
-      );
-      if (refErr) throw refErr;
-
       const client = clients.find((c) => c.id === mClientId);
       const metalLabel = metalType === 'other' ? (metalOther || 'Other') : metalType;
 
-      const { data: rec, error: recErr } = await supabase
-        .from('return_exchanges')
-        .insert([{
-          reference_number: refNum,
-          type: 'buyback',
-          buyback_kind: 'metal',
-          original_invoice_id: null as unknown as string, // metal has no invoice
-          original_invoice_number: '-',
-          client_id: mClientId,
-          client_name: client?.name || null,
-          client_phone: client?.phone || null,
-          refund_amount: mAmount,
-          additional_charge: 0,
-          payment_mode: 'store_credit',
-          refund_method: 'store_credit',
-          disposition: 'repair',
-          live_rate_used: mRate,
-          round_off: mRound,
-          total_weight: mWeight,
-          metal_type: metalLabel,
-          reason: 'Metal Buyback',
-          notes: mNotes,
-          created_by: user?.id,
-        }] as never)
-        .select()
-        .single();
-      if (recErr) throw recErr;
+      const { data, error: processErr } = await supabase.rpc('process_buyback', {
+        p_client_id: mClientId,
+        p_invoice_id: null,
+        p_invoice_number: null,
+        p_kind: 'metal',
+        p_metal_type: metalLabel,
+        p_weight: mWeight,
+        p_rate_used: mRate,
+        p_round_off: mRound,
+        p_total_credits_added: mAmount,
+        p_reason: 'Metal Buyback',
+        p_notes: mNotes || null,
+        p_destination: 'repair',
+        p_items: [{
+          product_id: null,
+          product_name: `${metalLabel} ${mWeight}g`,
+          sku: null,
+          category: 'metal',
+          quantity: 1,
+          weight_grams: mWeight,
+          rate_per_gram: mRate,
+          total: mAmount,
+        }],
+      });
+      if (processErr) throw processErr;
 
-      // Single line item representing the raw metal
-      await supabase.from('return_exchange_items').insert([{
-        return_exchange_id: rec.id,
-        direction: 'returned' as const,
-        product_id: null,
-        product_name: `Raw ${metalLabel} (Buyback)`,
-        sku: null,
-        category: 'metal',
-        quantity: 1,
-        weight_grams: mWeight,
-        rate_per_gram: mRate,
-        making_charges: 0,
-        discount: 0,
-        line_total: mAmount,
-        gst_percentage: 0,
-        gst_amount: 0,
-        total: mAmount,
-      }]);
-
-      // Always to Repair
-      await supabase.from('repair_items').insert([{
-        product_id: null,
-        sku: null,
-        product_name: `Raw ${metalLabel}`,
-        weight_grams: mWeight,
-        quantity: 1,
-        original_invoice_id: null,
-        original_invoice_number: null,
-        client_name: client?.name || null,
-        client_phone: client?.phone || null,
-        source: 'metal_buyback',
-        source_reference_id: rec.id,
-        metal_type: metalLabel,
-        rate_used: mRate,
-        amount_credited: mAmount,
-        notes: mNotes || null,
-        created_by: user?.id,
-      }]);
-
-      await adjustWallet(mClientId, mAmount, 'buyback', rec.id, refNum, `Metal buyback (${metalLabel}, ${mWeight}g)`);
+      const result = (data ?? null) as BuybackProcessResult | null;
+      const refNum = result?.reference_number || 'BUYBACK';
+      const recId = result?.buyback_id || crypto.randomUUID();
 
       logActivity({
         module: 'return',
         action: 'create',
-        recordId: rec.id,
+        recordId: recId,
         recordLabel: refNum,
         newValue: { type: 'buyback', kind: 'metal', metal: metalLabel, weight: mWeight, rate: mRate, refund: mAmount },
       });
