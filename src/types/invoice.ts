@@ -56,6 +56,14 @@ export interface Invoice {
   sent_at: string | null;
   paid_at: string | null;
   advance_paid?: number;
+  store_credits_used?: number;
+  payment_mode_1?: string | null;
+  payment_amount_1?: number;
+  payment_mode_2?: string | null;
+  payment_amount_2?: number;
+  total_paid?: number;
+  balance_due?: number;
+  combined_payment_label?: string | null;
 }
 
 export type DiscountType = 'fixed' | 'percentage';
