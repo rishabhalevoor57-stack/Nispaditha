@@ -53,6 +53,11 @@ interface ClientLite {
   phone: string | null;
 }
 
+interface BuybackProcessResult {
+  buyback_id?: string;
+  reference_number?: string;
+}
+
 const fmtINR = (n: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n || 0);
 
@@ -225,7 +230,7 @@ export function BuybackDialog({ open, onOpenChange, onComplete, preselectedInvoi
         total: r.bb_weight * r.bb_quantity * silverRate,
       }));
 
-      const { data: result, error: processErr } = await supabase.rpc('process_buyback', {
+      const { data, error: processErr } = await supabase.rpc('process_buyback', {
         p_client_id: invoice.client_id,
         p_invoice_id: invoice.id,
         p_invoice_number: invoice.invoice_number,
@@ -242,8 +247,9 @@ export function BuybackDialog({ open, onOpenChange, onComplete, preselectedInvoi
       });
       if (processErr) throw processErr;
 
-      const refNum = result?.reference_number as string;
-      const recId = result?.buyback_id as string;
+      const result = (data ?? null) as BuybackProcessResult | null;
+      const refNum = result?.reference_number || 'BUYBACK';
+      const recId = result?.buyback_id || crypto.randomUUID();
 
       logActivity({
         module: 'return',
@@ -278,7 +284,7 @@ export function BuybackDialog({ open, onOpenChange, onComplete, preselectedInvoi
       const client = clients.find((c) => c.id === mClientId);
       const metalLabel = metalType === 'other' ? (metalOther || 'Other') : metalType;
 
-      const { data: result, error: processErr } = await supabase.rpc('process_buyback', {
+      const { data, error: processErr } = await supabase.rpc('process_buyback', {
         p_client_id: mClientId,
         p_invoice_id: null,
         p_invoice_number: null,
@@ -304,8 +310,9 @@ export function BuybackDialog({ open, onOpenChange, onComplete, preselectedInvoi
       });
       if (processErr) throw processErr;
 
-      const refNum = result?.reference_number as string;
-      const recId = result?.buyback_id as string;
+      const result = (data ?? null) as BuybackProcessResult | null;
+      const refNum = result?.reference_number || 'BUYBACK';
+      const recId = result?.buyback_id || crypto.randomUUID();
 
       logActivity({
         module: 'return',
