@@ -143,6 +143,62 @@ export type Database = {
         }
         Relationships: []
       }
+      buybacks: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          destination: string
+          id: string
+          invoice_ref: string | null
+          metal_type: string | null
+          notes: string | null
+          rate_used: number
+          reason: string | null
+          round_off: number
+          total_credits_added: number
+          type: string
+          weight: number
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          destination?: string
+          id?: string
+          invoice_ref?: string | null
+          metal_type?: string | null
+          notes?: string | null
+          rate_used?: number
+          reason?: string | null
+          round_off?: number
+          total_credits_added?: number
+          type: string
+          weight?: number
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          destination?: string
+          id?: string
+          invoice_ref?: string | null
+          metal_type?: string | null
+          notes?: string | null
+          rate_used?: number
+          reason?: string | null
+          round_off?: number
+          total_credits_added?: number
+          type?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buybacks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           created_at: string
@@ -520,6 +576,30 @@ export type Database = {
         }
         Relationships: []
       }
+      hidden_sold_entries: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          entry_key: string
+          source: string
+          source_ref: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          entry_key: string
+          source: string
+          source_ref?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          entry_key?: string
+          source?: string
+          source_ref?: string | null
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           category: string | null
@@ -642,10 +722,12 @@ export type Database = {
           advance_paid: number
           amount_after_credits: number
           amount_paid_via_mode: number
+          balance_due: number
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           client_id: string | null
+          combined_payment_label: string | null
           created_at: string
           created_by: string | null
           discount_amount: number
@@ -657,7 +739,11 @@ export type Database = {
           invoice_number: string
           notes: string | null
           paid_at: string | null
+          payment_amount_1: number
+          payment_amount_2: number
           payment_mode: string | null
+          payment_mode_1: string | null
+          payment_mode_2: string | null
           payment_mode_for_remaining: string | null
           payment_status: string
           round_off: number
@@ -666,16 +752,19 @@ export type Database = {
           store_credits_used: number
           store_id: string | null
           subtotal: number
+          total_paid: number
           updated_at: string
         }
         Insert: {
           advance_paid?: number
           amount_after_credits?: number
           amount_paid_via_mode?: number
+          balance_due?: number
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           client_id?: string | null
+          combined_payment_label?: string | null
           created_at?: string
           created_by?: string | null
           discount_amount?: number
@@ -687,7 +776,11 @@ export type Database = {
           invoice_number: string
           notes?: string | null
           paid_at?: string | null
+          payment_amount_1?: number
+          payment_amount_2?: number
           payment_mode?: string | null
+          payment_mode_1?: string | null
+          payment_mode_2?: string | null
           payment_mode_for_remaining?: string | null
           payment_status?: string
           round_off?: number
@@ -696,16 +789,19 @@ export type Database = {
           store_credits_used?: number
           store_id?: string | null
           subtotal?: number
+          total_paid?: number
           updated_at?: string
         }
         Update: {
           advance_paid?: number
           amount_after_credits?: number
           amount_paid_via_mode?: number
+          balance_due?: number
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           client_id?: string | null
+          combined_payment_label?: string | null
           created_at?: string
           created_by?: string | null
           discount_amount?: number
@@ -717,7 +813,11 @@ export type Database = {
           invoice_number?: string
           notes?: string | null
           paid_at?: string | null
+          payment_amount_1?: number
+          payment_amount_2?: number
           payment_mode?: string | null
+          payment_mode_1?: string | null
+          payment_mode_2?: string | null
           payment_mode_for_remaining?: string | null
           payment_status?: string
           round_off?: number
@@ -726,6 +826,7 @@ export type Database = {
           store_credits_used?: number
           store_id?: string | null
           subtotal?: number
+          total_paid?: number
           updated_at?: string
         }
         Relationships: [
@@ -1164,6 +1265,7 @@ export type Database = {
       repair_items: {
         Row: {
           amount_credited: number | null
+          client_id: string | null
           client_name: string | null
           client_phone: string | null
           created_at: string
@@ -1181,13 +1283,16 @@ export type Database = {
           rate_used: number | null
           sku: string | null
           source: string
+          source_ref_id: string | null
           source_reference_id: string | null
+          source_type: string | null
           status: string
           updated_at: string
           weight_grams: number
         }
         Insert: {
           amount_credited?: number | null
+          client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
           created_at?: string
@@ -1205,13 +1310,16 @@ export type Database = {
           rate_used?: number | null
           sku?: string | null
           source: string
+          source_ref_id?: string | null
           source_reference_id?: string | null
+          source_type?: string | null
           status?: string
           updated_at?: string
           weight_grams?: number
         }
         Update: {
           amount_credited?: number | null
+          client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
           created_at?: string
@@ -1229,12 +1337,22 @@ export type Database = {
           rate_used?: number | null
           sku?: string | null
           source?: string
+          source_ref_id?: string | null
           source_reference_id?: string | null
+          source_type?: string | null
           status?: string
           updated_at?: string
           weight_grams?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "repair_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       return_exchange_items: {
         Row: {
@@ -1791,6 +1909,24 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      process_buyback: {
+        Args: {
+          p_client_id: string
+          p_destination?: string
+          p_invoice_id?: string
+          p_invoice_number?: string
+          p_items?: Json
+          p_kind?: string
+          p_metal_type?: string
+          p_notes?: string
+          p_rate_used?: number
+          p_reason?: string
+          p_round_off?: number
+          p_total_credits_added?: number
+          p_weight?: number
+        }
+        Returns: Json
+      }
       transfer_stock: {
         Args: {
           p_from_store_id: string
