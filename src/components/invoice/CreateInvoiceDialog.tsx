@@ -89,13 +89,27 @@ export function CreateInvoiceDialog({
   const cappedCredits = Math.min(Math.max(0, Number(storeCreditsUsed) || 0), walletBalance, grandTotalWithRound);
   const grandTotalAfterCredits = Math.max(0, grandTotalWithRound - cappedCredits);
   const remainingAfterCredits = grandTotalAfterCredits;
-  const totalPaidViaModes = payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
-  const effectiveAdvance = Math.min(totalPaidViaModes, remainingAfterCredits);
-  const balanceDue = Math.max(0, remainingAfterCredits - effectiveAdvance);
+  const validPayments = payments
+    .map((p) => ({ mode: p.mode, amount: parseFloat(p.amount) || 0 }))
+    .filter((p) => p.amount > 0);
+  const effectivePaymentBreakdown = validPayments.reduce<{ mode: string; amount: number }[]>((acc, payment) => {
+    const used = acc.reduce((sum, item) => sum + item.amount, 0);
+    const remaining = Math.max(0, remainingAfterCredits - used);
+    if (remaining <= 0) return acc;
+    acc.push({ ...payment, amount: Math.min(payment.amount, remaining) });
+    return acc;
+  }, []);
+  const effectiveAdvance = effectivePaymentBreakdown.reduce((sum, item) => sum + item.amount, 0);
+  const totalAccounted = cappedCredits + effectiveAdvance;
+  const balanceDue = Math.max(0, grandTotalWithRound - totalAccounted);
   const fullyPaidByCredits = cappedCredits >= grandTotalWithRound && grandTotalWithRound > 0;
-  const isFullyPaid = fullyPaidByCredits || (grandTotalWithRound > 0 && balanceDue <= 0.001 && (effectiveAdvance > 0 || cappedCredits > 0));
+  const isFullyPaid = grandTotalWithRound > 0 && balanceDue <= 0.001 && totalAccounted > 0;
   const paymentStatusUI: 'PAID' | 'PARTIAL' | 'PENDING' =
-    isFullyPaid ? 'PAID' : effectiveAdvance > 0 ? 'PARTIAL' : 'PENDING';
+    isFullyPaid ? 'PAID' : totalAccounted > 0 ? 'PARTIAL' : 'PENDING';
+  const combinedPaymentLabel = [
+    ...(cappedCredits > 0 ? ['Store Wallet'] : []),
+    ...effectivePaymentBreakdown.map((entry) => entry.mode.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())),
+  ].join(' + ') || 'Pay Later';
   const creditsError =
     (Number(storeCreditsUsed) || 0) > walletBalance ? 'Exceeds available credits'
     : (Number(storeCreditsUsed) || 0) > grandTotalWithRound ? 'Exceeds grand total'
@@ -262,13 +276,12 @@ export function CreateInvoiceDialog({
           .eq('id', finalClientId);
       }
 
-      // Create invoice with status = 'draft'
+      const paymentOne = effectivePaymentBreakdown[0];
+      const paymentTwo = effectivePaymentBreakdown[1];
       const finalGrandTotal = grandTotalWithRound; // store FULL grand total; credits tracked separately
       const computedPaymentStatus =
-        isFullyPaid ? 'paid' : effectiveAdvance > 0 ? 'partial' : 'pending';
-      const primaryPayMode = fullyPaidByCredits
-        ? 'store_wallet'
-        : (payments[0]?.mode || paymentMode || 'pay_later');
+        paymentStatusUI === 'PAID' ? 'paid' : paymentStatusUI === 'PARTIAL' ? 'partial' : 'pending';
+      const primaryPayMode = combinedPaymentLabel;
 
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
@@ -284,9 +297,18 @@ export function CreateInvoiceDialog({
           store_credits_used: cappedCredits,
           payment_status: computedPaymentStatus,
           payment_mode: primaryPayMode,
+          payment_mode_1: paymentOne?.mode || null,
+          payment_amount_1: paymentOne?.amount || 0,
+          payment_mode_2: paymentTwo?.mode || null,
+          payment_amount_2: paymentTwo?.amount || 0,
+          total_paid: totalAccounted,
+          balance_due: balanceDue,
+          combined_payment_label: combinedPaymentLabel,
+          amount_after_credits: remainingAfterCredits,
+          amount_paid_via_mode: effectiveAdvance,
           notes: notes || null,
           created_by: user?.id,
-          status: 'draft',
+          status: computedPaymentStatus === 'paid' ? 'paid' : 'sent',
         } as never])
         .select()
         .single();
@@ -311,10 +333,7 @@ export function CreateInvoiceDialog({
       }
 
       // Record each payment entry in invoice_payments (for receipt history)
-      const validPayments = payments
-        .map(p => ({ mode: p.mode, amount: parseFloat(p.amount) || 0 }))
-        .filter(p => p.amount > 0);
-      for (const p of validPayments) {
+      for (const p of effectivePaymentBreakdown) {
         const { data: receiptNum } = await supabase.rpc('generate_receipt_number');
         await supabase.from('invoice_payments').insert([{
           invoice_id: invoice.id,
@@ -416,6 +435,8 @@ export function CreateInvoiceDialog({
       }
 
       const draftNumber = 'DRAFT-' + Date.now().toString(36).toUpperCase();
+      const paymentOne = effectivePaymentBreakdown[0];
+      const paymentTwo = effectivePaymentBreakdown[1];
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert([{
@@ -428,8 +449,17 @@ export function CreateInvoiceDialog({
           grand_total: grandTotalWithRound,
           advance_paid: effectiveAdvance,
           store_credits_used: cappedCredits,
-          payment_status: 'pending',
-          payment_mode: payments[0]?.mode || paymentMode || 'pay_later',
+          payment_status: paymentStatusUI === 'PAID' ? 'paid' : paymentStatusUI === 'PARTIAL' ? 'partial' : 'pending',
+          payment_mode: combinedPaymentLabel,
+          payment_mode_1: paymentOne?.mode || null,
+          payment_amount_1: paymentOne?.amount || 0,
+          payment_mode_2: paymentTwo?.mode || null,
+          payment_amount_2: paymentTwo?.amount || 0,
+          total_paid: totalAccounted,
+          balance_due: balanceDue,
+          combined_payment_label: combinedPaymentLabel,
+          amount_after_credits: remainingAfterCredits,
+          amount_paid_via_mode: effectiveAdvance,
           notes: notes || null,
           created_by: user?.id,
           status: 'draft',
@@ -488,12 +518,12 @@ export function CreateInvoiceDialog({
       return;
     }
 
-    printInvoice({
+      printInvoice({
       invoiceNumber: 'PREVIEW',
       invoiceDate: invoiceDate.toISOString(),
       clientName: clientName || 'Walk-in Customer',
       clientPhone,
-      paymentMode,
+        paymentMode: combinedPaymentLabel,
       items: invoiceItems,
       totals,
       businessSettings,
@@ -501,7 +531,8 @@ export function CreateInvoiceDialog({
       gstPercentage: gstPct,
       roundOff,
       advancePaid: effectiveAdvance,
-          storeCreditsUsed: cappedCredits,
+        storeCreditsUsed: cappedCredits,
+        paymentBreakdown: effectivePaymentBreakdown,
     }, true);
   };
 
@@ -979,7 +1010,7 @@ export function CreateInvoiceDialog({
         invoiceDate={invoiceDate.toISOString()}
         clientName={clientName || 'Walk-in Customer'}
         clientPhone={clientPhone}
-        paymentMode={paymentMode}
+        paymentMode={combinedPaymentLabel}
         items={invoiceItems}
         totals={totals}
         businessSettings={businessSettings}
@@ -989,6 +1020,7 @@ export function CreateInvoiceDialog({
         roundOff={roundOff}
         advancePaid={effectiveAdvance}
         storeCreditsUsed={cappedCredits}
+        paymentBreakdown={effectivePaymentBreakdown}
       />
     )}
   </>
