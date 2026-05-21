@@ -451,19 +451,53 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     }
     doc.setLineWidth(0.1);
   } else {
-    // Advance Paid box
-    doc.setDrawColor(...PURPLE_BORDER);
-    doc.setLineWidth(0.3);
-    doc.rect(rightX, rightInnerY, rightW, boxH);
-    doc.setTextColor(80, 80, 80);
-    doc.setFont(FONT, 'normal');
-    doc.setFontSize(9);
-    doc.text('Advance Paid', rightX + 3, rightInnerY + 5.7);
-    doc.setFont(FONT, 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(...GREEN_PAID);
-    doc.text(money(advancePaid), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
-    rightInnerY += boxH + 1.5;
+    // Store credits redeemed line
+    if (storeCreditsUsed > 0) {
+      doc.setDrawColor(...PURPLE_BORDER);
+      doc.setLineWidth(0.3);
+      doc.rect(rightX, rightInnerY, rightW, boxH);
+      doc.setTextColor(80, 80, 80);
+      doc.setFont(FONT, 'normal');
+      doc.setFontSize(9);
+      doc.text('Store Credits Redeemed', rightX + 3, rightInnerY + 5.7);
+      doc.setFont(FONT, 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...GREEN_PAID);
+      doc.text(`- ${money(storeCreditsUsed)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+      rightInnerY += boxH + 1.5;
+    }
+
+    // Payment breakdown lines or generic Advance Paid
+    if (breakdown.length > 0) {
+      for (const p of breakdown) {
+        doc.setDrawColor(...PURPLE_BORDER);
+        doc.setLineWidth(0.3);
+        doc.rect(rightX, rightInnerY, rightW, boxH);
+        doc.setTextColor(80, 80, 80);
+        doc.setFont(FONT, 'normal');
+        doc.setFontSize(9);
+        const label = `Paid via ${formatPaymentMode(p.mode)}`;
+        doc.text(label, rightX + 3, rightInnerY + 5.7);
+        doc.setFont(FONT, 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...GREEN_PAID);
+        doc.text(`- ${money(p.amount)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+        rightInnerY += boxH + 1.5;
+      }
+    } else if (advancePaid > 0) {
+      doc.setDrawColor(...PURPLE_BORDER);
+      doc.setLineWidth(0.3);
+      doc.rect(rightX, rightInnerY, rightW, boxH);
+      doc.setTextColor(80, 80, 80);
+      doc.setFont(FONT, 'normal');
+      doc.setFontSize(9);
+      doc.text('Advance Paid', rightX + 3, rightInnerY + 5.7);
+      doc.setFont(FONT, 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...GREEN_PAID);
+      doc.text(`- ${money(advancePaid)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+      rightInnerY += boxH + 1.5;
+    }
 
     // Balance Due box (purple)
     doc.setFillColor(...PURPLE);
@@ -493,7 +527,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       doc.setFont(FONT, 'normal');
       doc.setFontSize(8);
       doc.text(
-        `Excess: ${money(advancePaid - grandTotalWithRound)} (to be adjusted)`,
+        `Excess: ${money(paidTotal - grandTotalWithRound)} (to be adjusted)`,
         rightX + 3,
         rightInnerY + 3,
       );
