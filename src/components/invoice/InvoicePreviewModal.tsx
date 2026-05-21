@@ -8,6 +8,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText } from 'lucide-react';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
 
+interface PaymentBreakdownEntry {
+  mode: string;
+  amount: number;
+}
+
 interface InvoicePreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,6 +30,7 @@ interface InvoicePreviewModalProps {
   roundOff?: number;
   advancePaid?: number;
   storeCreditsUsed?: number;
+  paymentBreakdown?: PaymentBreakdownEntry[];
 }
 
 const PURPLE = '#4a2060';
