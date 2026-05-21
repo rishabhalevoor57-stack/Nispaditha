@@ -3,6 +3,11 @@ import autoTable from 'jspdf-autotable';
 import type { InvoiceItem, InvoiceTotals, BusinessSettings } from '@/types/invoice';
 import { ensureNotoLoaded, registerNotoFont } from './pdfFont';
 
+interface PaymentBreakdownEntry {
+  mode: string;
+  amount: number;
+}
+
 interface InvoicePdfData {
   invoiceNumber: string;
   invoiceDate: string;
@@ -17,7 +22,8 @@ interface InvoicePdfData {
   roundOff?: number;
   advancePaid?: number;
   storeCreditsUsed?: number;
-  paymentReceivedDate?: string | null; // ISO/yyyy-mm-dd of latest payment
+  paymentBreakdown?: PaymentBreakdownEntry[];
+  paymentReceivedDate?: string | null;
   cancelled?: boolean;
   cancellationReason?: string | null;
 }
