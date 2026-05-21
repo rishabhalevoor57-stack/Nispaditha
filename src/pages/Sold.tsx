@@ -296,13 +296,13 @@ export default function Sold() {
       toast({ title: 'Admin only', variant: 'destructive' });
       return;
     }
-    if (!confirm('Remove this sold entry? Inventory stock will be restored.')) return;
+    if (!confirm('Delete this sold entry? This will NOT affect inventory or financials.')) return;
     const { error } = await supabase.from('manual_sold_items' as any).delete().eq('id', manualId);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return;
     }
-    toast({ title: 'Removed', description: 'Stock restored' });
+    toast({ title: 'Sold entry removed' });
     fetchData();
   };
 
