@@ -333,7 +333,10 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const cgst = (data.totals.gstAmount || 0) / 2;
   const sgst = (data.totals.gstAmount || 0) / 2;
   const grandTotalWithRound = (data.totals.grandTotal || 0) + roundOff;
-  const balanceDue = grandTotalWithRound - advancePaid - storeCreditsUsed;
+  const breakdown = data.paymentBreakdown || [];
+  const breakdownTotal = breakdown.reduce((s, p) => s + (p.amount || 0), 0);
+  const cashPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
+  const balanceDue = grandTotalWithRound - cashPaid - storeCreditsUsed;
 
   doc.setFontSize(9);
   doc.setFont(FONT, 'normal');
