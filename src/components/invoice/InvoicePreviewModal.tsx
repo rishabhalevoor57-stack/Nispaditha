@@ -377,15 +377,43 @@ export function InvoicePreviewModal({
                   </div>
                 ) : (
                   <>
-                    <div
-                      className="rounded px-3 py-2 flex items-center justify-between"
-                      style={{ border: `1px solid ${PURPLE_BORDER}` }}
-                    >
-                      <span className="text-[10.5px] text-gray-700">Advance Paid</span>
-                      <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
-                        {money(advancePaid)}
-                      </span>
-                    </div>
+                    {storeCreditsUsed > 0 && (
+                      <div
+                        className="rounded px-3 py-2 flex items-center justify-between"
+                        style={{ border: `1px solid ${PURPLE_BORDER}` }}
+                      >
+                        <span className="text-[10.5px] text-gray-700">Store Credits Redeemed</span>
+                        <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
+                          {`\u2212 ${money(storeCreditsUsed)}`}
+                        </span>
+                      </div>
+                    )}
+                    {paymentBreakdown.length > 0
+                      ? paymentBreakdown.map((p, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded px-3 py-2 flex items-center justify-between"
+                            style={{ border: `1px solid ${PURPLE_BORDER}` }}
+                          >
+                            <span className="text-[10.5px] text-gray-700 capitalize">
+                              {`Paid via ${p.mode.replace(/_/g, ' ')}`}
+                            </span>
+                            <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
+                              {`\u2212 ${money(p.amount)}`}
+                            </span>
+                          </div>
+                        ))
+                      : advancePaid > 0 && (
+                          <div
+                            className="rounded px-3 py-2 flex items-center justify-between"
+                            style={{ border: `1px solid ${PURPLE_BORDER}` }}
+                          >
+                            <span className="text-[10.5px] text-gray-700">Advance Paid</span>
+                            <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
+                              {`\u2212 ${money(advancePaid)}`}
+                            </span>
+                          </div>
+                        )}
                     <div
                       className="rounded px-3 py-2 flex items-center justify-between text-white"
                       style={{ background: PURPLE }}
@@ -409,7 +437,7 @@ export function InvoicePreviewModal({
                     )}
                     {isOverpaid && (
                       <div className="text-[10px] px-1" style={{ color: ORANGE }}>
-                        {`Excess: ${money(advancePaid - grandTotal)} (to be adjusted)`}
+                        {`Excess: ${money(paidTotal - grandTotal)} (to be adjusted)`}
                       </div>
                     )}
                   </>
