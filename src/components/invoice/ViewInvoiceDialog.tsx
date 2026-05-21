@@ -200,7 +200,9 @@ export function ViewInvoiceDialog({
     setEditClientName(invoice.clients?.name || '');
     setEditClientPhone(invoice.clients?.phone || '');
     setEditPaymentMode(invoice.payment_mode || 'cash');
-    setEditInvoiceDate(new Date(invoice.invoice_date));
+    // Parse as local date to avoid UTC shift (yyyy-MM-dd -> midnight local)
+    const [y, m, d] = (invoice.invoice_date || '').split('-').map(Number);
+    setEditInvoiceDate(y && m && d ? new Date(y, m - 1, d) : new Date(invoice.invoice_date));
     setEditNotes(invoice.notes || '');
     setEditItems(getInvoiceItems());
     setIsEditing(true);

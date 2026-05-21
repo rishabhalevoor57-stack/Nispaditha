@@ -8,6 +8,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText } from 'lucide-react';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
 
+interface PaymentBreakdownEntry {
+  mode: string;
+  amount: number;
+}
+
 interface InvoicePreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,6 +30,7 @@ interface InvoicePreviewModalProps {
   roundOff?: number;
   advancePaid?: number;
   storeCreditsUsed?: number;
+  paymentBreakdown?: PaymentBreakdownEntry[];
 }
 
 const PURPLE = '#4a2060';
@@ -74,6 +80,7 @@ export function InvoicePreviewModal({
   roundOff = 0,
   advancePaid = 0,
   storeCreditsUsed = 0,
+  paymentBreakdown = [],
 }: InvoicePreviewModalProps) {
   if (!businessSettings) return null;
 
@@ -86,7 +93,9 @@ export function InvoicePreviewModal({
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
   const grandTotal = (totals.grandTotal || 0) + roundOff;
-  const paidTotal = advancePaid + storeCreditsUsed;
+  const breakdownTotal = paymentBreakdown.reduce((s, p) => s + (p.amount || 0), 0);
+  const cashOrUpiPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
+  const paidTotal = cashOrUpiPaid + storeCreditsUsed;
   const balanceDue = grandTotal - paidTotal;
 
   const isPaidFull = paidTotal >= grandTotal - 0.001 && grandTotal > 0;
@@ -368,15 +377,43 @@ export function InvoicePreviewModal({
                   </div>
                 ) : (
                   <>
-                    <div
-                      className="rounded px-3 py-2 flex items-center justify-between"
-                      style={{ border: `1px solid ${PURPLE_BORDER}` }}
-                    >
-                      <span className="text-[10.5px] text-gray-700">Advance Paid</span>
-                      <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
-                        {money(advancePaid)}
-                      </span>
-                    </div>
+                    {storeCreditsUsed > 0 && (
+                      <div
+                        className="rounded px-3 py-2 flex items-center justify-between"
+                        style={{ border: `1px solid ${PURPLE_BORDER}` }}
+                      >
+                        <span className="text-[10.5px] text-gray-700">Store Credits Redeemed</span>
+                        <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
+                          {`\u2212 ${money(storeCreditsUsed)}`}
+                        </span>
+                      </div>
+                    )}
+                    {paymentBreakdown.length > 0
+                      ? paymentBreakdown.map((p, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded px-3 py-2 flex items-center justify-between"
+                            style={{ border: `1px solid ${PURPLE_BORDER}` }}
+                          >
+                            <span className="text-[10.5px] text-gray-700 capitalize">
+                              {`Paid via ${p.mode.replace(/_/g, ' ')}`}
+                            </span>
+                            <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
+                              {`\u2212 ${money(p.amount)}`}
+                            </span>
+                          </div>
+                        ))
+                      : advancePaid > 0 && (
+                          <div
+                            className="rounded px-3 py-2 flex items-center justify-between"
+                            style={{ border: `1px solid ${PURPLE_BORDER}` }}
+                          >
+                            <span className="text-[10.5px] text-gray-700">Advance Paid</span>
+                            <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
+                              {`\u2212 ${money(advancePaid)}`}
+                            </span>
+                          </div>
+                        )}
                     <div
                       className="rounded px-3 py-2 flex items-center justify-between text-white"
                       style={{ background: PURPLE }}
@@ -400,7 +437,7 @@ export function InvoicePreviewModal({
                     )}
                     {isOverpaid && (
                       <div className="text-[10px] px-1" style={{ color: ORANGE }}>
-                        {`Excess: ${money(advancePaid - grandTotal)} (to be adjusted)`}
+                        {`Excess: ${money(paidTotal - grandTotal)} (to be adjusted)`}
                       </div>
                     )}
                   </>

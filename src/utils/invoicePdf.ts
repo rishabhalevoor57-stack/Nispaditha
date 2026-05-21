@@ -3,6 +3,11 @@ import autoTable from 'jspdf-autotable';
 import type { InvoiceItem, InvoiceTotals, BusinessSettings } from '@/types/invoice';
 import { ensureNotoLoaded, registerNotoFont } from './pdfFont';
 
+interface PaymentBreakdownEntry {
+  mode: string;
+  amount: number;
+}
+
 interface InvoicePdfData {
   invoiceNumber: string;
   invoiceDate: string;
@@ -17,7 +22,8 @@ interface InvoicePdfData {
   roundOff?: number;
   advancePaid?: number;
   storeCreditsUsed?: number;
-  paymentReceivedDate?: string | null; // ISO/yyyy-mm-dd of latest payment
+  paymentBreakdown?: PaymentBreakdownEntry[];
+  paymentReceivedDate?: string | null;
   cancelled?: boolean;
   cancellationReason?: string | null;
 }
@@ -327,7 +333,10 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const cgst = (data.totals.gstAmount || 0) / 2;
   const sgst = (data.totals.gstAmount || 0) / 2;
   const grandTotalWithRound = (data.totals.grandTotal || 0) + roundOff;
-  const balanceDue = grandTotalWithRound - advancePaid - storeCreditsUsed;
+  const breakdown = data.paymentBreakdown || [];
+  const breakdownTotal = breakdown.reduce((s, p) => s + (p.amount || 0), 0);
+  const cashPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
+  const balanceDue = grandTotalWithRound - cashPaid - storeCreditsUsed;
 
   doc.setFontSize(9);
   doc.setFont(FONT, 'normal');
@@ -381,7 +390,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(0, 0, 0);
 
   // ================== STATUS DETERMINATION ==================
-  const paidTotal = advancePaid + storeCreditsUsed;
+  const paidTotal = cashPaid + storeCreditsUsed;
   const isPaidFull = paidTotal >= grandTotalWithRound - 0.001 && grandTotalWithRound > 0;
   const isOverpaid = paidTotal > grandTotalWithRound + 0.001 && grandTotalWithRound > 0;
   const isPartial = paidTotal > 0 && !isPaidFull;
@@ -442,19 +451,53 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     }
     doc.setLineWidth(0.1);
   } else {
-    // Advance Paid box
-    doc.setDrawColor(...PURPLE_BORDER);
-    doc.setLineWidth(0.3);
-    doc.rect(rightX, rightInnerY, rightW, boxH);
-    doc.setTextColor(80, 80, 80);
-    doc.setFont(FONT, 'normal');
-    doc.setFontSize(9);
-    doc.text('Advance Paid', rightX + 3, rightInnerY + 5.7);
-    doc.setFont(FONT, 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(...GREEN_PAID);
-    doc.text(money(advancePaid), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
-    rightInnerY += boxH + 1.5;
+    // Store credits redeemed line
+    if (storeCreditsUsed > 0) {
+      doc.setDrawColor(...PURPLE_BORDER);
+      doc.setLineWidth(0.3);
+      doc.rect(rightX, rightInnerY, rightW, boxH);
+      doc.setTextColor(80, 80, 80);
+      doc.setFont(FONT, 'normal');
+      doc.setFontSize(9);
+      doc.text('Store Credits Redeemed', rightX + 3, rightInnerY + 5.7);
+      doc.setFont(FONT, 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...GREEN_PAID);
+      doc.text(`- ${money(storeCreditsUsed)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+      rightInnerY += boxH + 1.5;
+    }
+
+    // Payment breakdown lines or generic Advance Paid
+    if (breakdown.length > 0) {
+      for (const p of breakdown) {
+        doc.setDrawColor(...PURPLE_BORDER);
+        doc.setLineWidth(0.3);
+        doc.rect(rightX, rightInnerY, rightW, boxH);
+        doc.setTextColor(80, 80, 80);
+        doc.setFont(FONT, 'normal');
+        doc.setFontSize(9);
+        const label = `Paid via ${formatPaymentMode(p.mode)}`;
+        doc.text(label, rightX + 3, rightInnerY + 5.7);
+        doc.setFont(FONT, 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...GREEN_PAID);
+        doc.text(`- ${money(p.amount)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+        rightInnerY += boxH + 1.5;
+      }
+    } else if (advancePaid > 0) {
+      doc.setDrawColor(...PURPLE_BORDER);
+      doc.setLineWidth(0.3);
+      doc.rect(rightX, rightInnerY, rightW, boxH);
+      doc.setTextColor(80, 80, 80);
+      doc.setFont(FONT, 'normal');
+      doc.setFontSize(9);
+      doc.text('Advance Paid', rightX + 3, rightInnerY + 5.7);
+      doc.setFont(FONT, 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...GREEN_PAID);
+      doc.text(`- ${money(advancePaid)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+      rightInnerY += boxH + 1.5;
+    }
 
     // Balance Due box (purple)
     doc.setFillColor(...PURPLE);
@@ -484,7 +527,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       doc.setFont(FONT, 'normal');
       doc.setFontSize(8);
       doc.text(
-        `Excess: ${money(advancePaid - grandTotalWithRound)} (to be adjusted)`,
+        `Excess: ${money(paidTotal - grandTotalWithRound)} (to be adjusted)`,
         rightX + 3,
         rightInnerY + 3,
       );

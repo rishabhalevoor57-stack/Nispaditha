@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trg_restore_stock_on_manual_sold_delete ON public.manual_sold_items;
