@@ -80,6 +80,7 @@ export function InvoicePreviewModal({
   roundOff = 0,
   advancePaid = 0,
   storeCreditsUsed = 0,
+  paymentBreakdown = [],
 }: InvoicePreviewModalProps) {
   if (!businessSettings) return null;
 
@@ -92,7 +93,9 @@ export function InvoicePreviewModal({
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
   const grandTotal = (totals.grandTotal || 0) + roundOff;
-  const paidTotal = advancePaid + storeCreditsUsed;
+  const breakdownTotal = paymentBreakdown.reduce((s, p) => s + (p.amount || 0), 0);
+  const cashOrUpiPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
+  const paidTotal = cashOrUpiPaid + storeCreditsUsed;
   const balanceDue = grandTotal - paidTotal;
 
   const isPaidFull = paidTotal >= grandTotal - 0.001 && grandTotal > 0;
