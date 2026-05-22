@@ -684,6 +684,13 @@ export function ViewInvoiceDialog({
                       <p className="text-muted-foreground">Payment Mode</p>
                       <p className="font-medium capitalize">{invoice.payment_mode || '-'}</p>
                     </div>
+                    <div>
+                      <p className="text-muted-foreground">Client Type</p>
+                      <p className="font-medium capitalize">
+                        {((invoice as unknown as { client_source?: string }).client_source || 'walk_in')
+                          .replace(/_/g, ' ')}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
