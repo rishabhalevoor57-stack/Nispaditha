@@ -229,6 +229,7 @@ export function CreateInvoiceDialog({
     setWalletBalance(0);
     setStoreCreditsUsed(0);
     setPayments([]);
+    setClientSource('walk_in');
   };
 
 
