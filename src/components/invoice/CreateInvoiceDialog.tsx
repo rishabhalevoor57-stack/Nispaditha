@@ -466,6 +466,7 @@ export function CreateInvoiceDialog({
           notes: notes || null,
           created_by: user?.id,
           status: 'draft',
+          client_source: clientSource,
         } as never])
         .select()
         .single();
