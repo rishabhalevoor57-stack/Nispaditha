@@ -207,11 +207,13 @@ export function CreateInvoiceDialog({
         setClientName(client.name);
         setClientPhone(client.phone || '');
       }
+      setClientSource((prev) => (prev === 'walk_in' ? 'existing' : prev));
       getWalletBalance(clientId).then(setWalletBalance).catch(() => setWalletBalance(0));
     } else {
       setClientName('');
       setClientPhone('');
       setWalletBalance(0);
+      setClientSource('walk_in');
     }
   };
 
