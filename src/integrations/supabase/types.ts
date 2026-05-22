@@ -727,6 +727,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           client_id: string | null
+          client_source: string | null
           combined_payment_label: string | null
           created_at: string
           created_by: string | null
@@ -764,6 +765,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           client_id?: string | null
+          client_source?: string | null
           combined_payment_label?: string | null
           created_at?: string
           created_by?: string | null
@@ -801,6 +803,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           client_id?: string | null
+          client_source?: string | null
           combined_payment_label?: string | null
           created_at?: string
           created_by?: string | null

@@ -79,6 +79,7 @@ export function CreateInvoiceDialog({
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [storeCreditsUsed, setStoreCreditsUsed] = useState<number>(0);
   const [payments, setPayments] = useState<{ mode: string; amount: string }[]>([]);
+  const [clientSource, setClientSource] = useState<string>('walk_in');
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -206,11 +207,13 @@ export function CreateInvoiceDialog({
         setClientName(client.name);
         setClientPhone(client.phone || '');
       }
+      setClientSource((prev) => (prev === 'walk_in' ? 'existing' : prev));
       getWalletBalance(clientId).then(setWalletBalance).catch(() => setWalletBalance(0));
     } else {
       setClientName('');
       setClientPhone('');
       setWalletBalance(0);
+      setClientSource('walk_in');
     }
   };
 
@@ -228,6 +231,7 @@ export function CreateInvoiceDialog({
     setWalletBalance(0);
     setStoreCreditsUsed(0);
     setPayments([]);
+    setClientSource('walk_in');
   };
 
 
@@ -309,6 +313,7 @@ export function CreateInvoiceDialog({
           notes: notes || null,
           created_by: user?.id,
           status: computedPaymentStatus === 'paid' ? 'paid' : 'sent',
+          client_source: clientSource,
         } as never])
         .select()
         .single();
@@ -463,6 +468,7 @@ export function CreateInvoiceDialog({
           notes: notes || null,
           created_by: user?.id,
           status: 'draft',
+          client_source: clientSource,
         } as never])
         .select()
         .single();
@@ -595,6 +601,25 @@ export function CreateInvoiceDialog({
                       ))}
                     </>
                   )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Client Type / Source</Label>
+              <Select value={clientSource} onValueChange={setClientSource}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="walk_in">New / Walk-in Customer</SelectItem>
+                  <SelectItem value="existing">Existing Client</SelectItem>
+                  <SelectItem value="website">Website</SelectItem>
+                  <SelectItem value="social_media">Social Media</SelectItem>
+                  <SelectItem value="events">Events</SelectItem>
+                  <SelectItem value="referral">Referral</SelectItem>
+                  <SelectItem value="exhibition">Exhibition</SelectItem>
+                  <SelectItem value="wholesale">Wholesale / Bulk</SelectItem>
+                  <SelectItem value="corporate">Corporate</SelectItem>
                 </SelectContent>
               </Select>
             </div>
