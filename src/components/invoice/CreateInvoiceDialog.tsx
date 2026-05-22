@@ -603,6 +603,25 @@ export function CreateInvoiceDialog({
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Client Type / Source</Label>
+              <Select value={clientSource} onValueChange={setClientSource}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="walk_in">New / Walk-in Customer</SelectItem>
+                  <SelectItem value="existing">Existing Client</SelectItem>
+                  <SelectItem value="website">Website</SelectItem>
+                  <SelectItem value="social_media">Social Media</SelectItem>
+                  <SelectItem value="events">Events</SelectItem>
+                  <SelectItem value="referral">Referral</SelectItem>
+                  <SelectItem value="exhibition">Exhibition</SelectItem>
+                  <SelectItem value="wholesale">Wholesale / Bulk</SelectItem>
+                  <SelectItem value="corporate">Corporate</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>Client Name</Label>
               <Input
                 value={clientName}
