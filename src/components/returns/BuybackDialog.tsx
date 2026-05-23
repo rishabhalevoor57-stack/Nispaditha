@@ -263,7 +263,10 @@ export function BuybackDialog({ open, onOpenChange, onComplete, preselectedInvoi
       onComplete();
       onOpenChange(false);
     } catch (e: unknown) {
-      toast({ variant: 'destructive', title: 'Failed', description: e instanceof Error ? e.message : 'Error' });
+      const err = e as { message?: string; details?: string; hint?: string; code?: string };
+      const desc = [err?.message, err?.details, err?.hint, err?.code ? `(${err.code})` : null].filter(Boolean).join(' — ') || 'Unknown error';
+      console.error('Buyback failed:', e);
+      toast({ variant: 'destructive', title: 'Buyback failed', description: desc });
     } finally {
       setBusy(false);
     }
