@@ -105,9 +105,10 @@ export function CreateInvoiceDialog({
   }, []);
   const effectiveAdvance = effectivePaymentBreakdown.reduce((sum, item) => sum + item.amount, 0);
   const totalAccounted = cappedCredits + effectiveAdvance;
-  const balanceDue = Math.max(0, grandTotalWithRound - totalAccounted);
+  const rawBalance = grandTotalWithRound - totalAccounted;
+  const balanceDue = Math.abs(rawBalance) <= 0.05 ? 0 : Math.max(0, Math.round(rawBalance * 100) / 100);
   const fullyPaidByCredits = cappedCredits >= grandTotalWithRound && grandTotalWithRound > 0;
-  const isFullyPaid = grandTotalWithRound > 0 && balanceDue <= 0.001 && totalAccounted > 0;
+  const isFullyPaid = grandTotalWithRound > 0 && balanceDue === 0 && totalAccounted > 0;
   const paymentStatusUI: 'PAID' | 'PARTIAL' | 'PENDING' =
     isFullyPaid ? 'PAID' : totalAccounted > 0 ? 'PARTIAL' : 'PENDING';
   const combinedPaymentLabel = [
