@@ -339,10 +339,11 @@ export default function Invoices() {
 
       <CreateInvoiceDialog
         open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
+        onOpenChange={(o) => { setIsCreateDialogOpen(o); if (!o) setEditingDraftId(null); }}
         onInvoiceCreated={() => {
           fetchInvoices();
         }}
+        editingDraftId={editingDraftId}
       />
 
       <ViewInvoiceDialog
