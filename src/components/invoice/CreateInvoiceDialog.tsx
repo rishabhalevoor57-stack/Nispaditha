@@ -52,6 +52,7 @@ interface CreateInvoiceDialogProps {
   onOpenChange: (open: boolean) => void;
   onInvoiceCreated: () => void;
   prefill?: InvoicePrefillData | null;
+  editingDraftId?: string | null;
 }
 
 export function CreateInvoiceDialog({
@@ -59,6 +60,7 @@ export function CreateInvoiceDialog({
   onOpenChange,
   onInvoiceCreated,
   prefill,
+  editingDraftId,
 }: CreateInvoiceDialogProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
