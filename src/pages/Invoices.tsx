@@ -23,6 +23,7 @@ export default function Invoices() {
   const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
