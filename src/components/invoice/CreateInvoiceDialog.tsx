@@ -519,41 +519,57 @@ export function CreateInvoiceDialog({
         finalClientId = existing?.id || null;
       }
 
-      const draftNumber = 'DRAFT-' + Date.now().toString(36).toUpperCase();
+      const draftNumber = editingDraftId ? undefined : 'DRAFT-' + Date.now().toString(36).toUpperCase();
       const paymentOne = effectivePaymentBreakdown[0];
       const paymentTwo = effectivePaymentBreakdown[1];
-      const { data: invoice, error: invoiceError } = await supabase
-        .from('invoices')
-        .insert([{
-          invoice_number: draftNumber,
-          client_id: finalClientId,
-          invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
-          subtotal: totals.subtotal,
-          discount_amount: totals.discountAmount,
-          gst_amount: totals.gstAmount,
-          grand_total: grandTotalWithRound,
-          advance_paid: effectiveAdvance,
-          store_credits_used: cappedCredits,
-          payment_status: paymentStatusUI === 'PAID' ? 'paid' : paymentStatusUI === 'PARTIAL' ? 'partial' : 'pending',
-          payment_mode: combinedPaymentLabel,
-          payment_mode_1: paymentOne?.mode || null,
-          payment_amount_1: paymentOne?.amount || 0,
-          payment_mode_2: paymentTwo?.mode || null,
-          payment_amount_2: paymentTwo?.amount || 0,
-          total_paid: totalAccounted,
-          balance_due: balanceDue,
-          combined_payment_label: combinedPaymentLabel,
-          amount_after_credits: remainingAfterCredits,
-          amount_paid_via_mode: effectiveAdvance,
-          notes: notes || null,
-          created_by: user?.id,
-          status: 'draft',
-          client_source: clientSource,
-        } as never])
-        .select()
-        .single();
+      const draftPayload: any = {
+        client_id: finalClientId,
+        invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
+        subtotal: totals.subtotal,
+        discount_amount: totals.discountAmount,
+        gst_amount: totals.gstAmount,
+        grand_total: grandTotalWithRound,
+        advance_paid: 0,
+        store_credits_used: 0,
+        payment_status: 'pending',
+        payment_mode: combinedPaymentLabel,
+        payment_mode_1: paymentOne?.mode || null,
+        payment_amount_1: paymentOne?.amount || 0,
+        payment_mode_2: paymentTwo?.mode || null,
+        payment_amount_2: paymentTwo?.amount || 0,
+        total_paid: 0,
+        balance_due: grandTotalWithRound,
+        combined_payment_label: combinedPaymentLabel,
+        amount_after_credits: remainingAfterCredits,
+        amount_paid_via_mode: 0,
+        notes: notes || null,
+        status: 'draft',
+        client_source: clientSource,
+        gst_percentage: gstPct,
+        round_off: roundOff,
+      };
 
-      if (invoiceError) throw invoiceError;
+      let invoice: any;
+      if (editingDraftId) {
+        // Delete old items first (status still 'draft' → trigger skips stock restore)
+        await supabase.from('invoice_items').delete().eq('invoice_id', editingDraftId);
+        const { data: upd, error: updErr } = await supabase
+          .from('invoices')
+          .update(draftPayload as never)
+          .eq('id', editingDraftId)
+          .select()
+          .single();
+        if (updErr) throw updErr;
+        invoice = upd;
+      } else {
+        const { data: ins, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert([{ ...draftPayload, invoice_number: draftNumber, created_by: user?.id } as never])
+          .select()
+          .single();
+        if (invoiceError) throw invoiceError;
+        invoice = ins;
+      }
 
       // Insert items — trigger now skips stock deduction for drafts
       const itemsToInsert = invoiceItems.map(item => ({
