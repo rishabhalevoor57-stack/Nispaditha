@@ -243,9 +243,16 @@ export function ClientProfileDialog({ client, open, onOpenChange, onUpdate }: Pr
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Client Profile</DialogTitle>
-            <Button size="sm" variant="outline" onClick={() => downloadClientReportPdf(client)}>
-              <Download className="w-4 h-4 mr-1" /> Download Report
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => downloadClientReportPdf(client)}>
+                <Download className="w-4 h-4 mr-1" /> Download Report
+              </Button>
+              {isAdmin && (
+                <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={handleDeleteClient}>
+                  <Trash2 className="w-4 h-4 mr-1" /> Delete Client
+                </Button>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
