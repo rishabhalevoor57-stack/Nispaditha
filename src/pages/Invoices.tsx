@@ -157,14 +157,17 @@ export default function Invoices() {
     paid: invoices.filter(inv => inv.status === 'paid').length,
   };
 
-  // Filter invoices by search term and status
+  // Filter invoices by search term and status (search by invoice #, client name, or phone)
   const filteredInvoices = invoices.filter((invoice) => {
-    const matchesSearch = 
-      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const q = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      invoice.invoice_number.toLowerCase().includes(q) ||
+      (invoice.clients?.name || '').toLowerCase().includes(q) ||
+      (invoice.clients?.phone || '').toLowerCase().includes(q);
+
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
