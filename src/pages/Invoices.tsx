@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Eye, Trash2, Download, Printer, ArrowLeftRight, Coins } from 'lucide-react';
+import { Plus, Search, Eye, Trash2, Download, Printer, ArrowLeftRight, Coins, Pencil } from 'lucide-react';
 import { BuybackDialog } from '@/components/returns/BuybackDialog';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { format } from 'date-fns';
