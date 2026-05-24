@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Phone, Plus, Sparkles, Download } from 'lucide-react';
+import { Phone, Plus, Sparkles, Download, Trash2 } from 'lucide-react';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { StoreWalletCard } from './StoreWalletCard';
 import { downloadClientReportPdf } from '@/utils/clientReportPdf';
 
