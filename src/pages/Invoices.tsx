@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Eye, Trash2, Download, Printer, ArrowLeftRight, Coins } from 'lucide-react';
+import { Plus, Search, Eye, Trash2, Download, Printer, ArrowLeftRight, Coins, Pencil } from 'lucide-react';
 import { BuybackDialog } from '@/components/returns/BuybackDialog';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { format } from 'date-fns';
@@ -23,6 +23,7 @@ export default function Invoices() {
   const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
@@ -157,14 +158,17 @@ export default function Invoices() {
     paid: invoices.filter(inv => inv.status === 'paid').length,
   };
 
-  // Filter invoices by search term and status
+  // Filter invoices by search term and status (search by invoice #, client name, or phone)
   const filteredInvoices = invoices.filter((invoice) => {
-    const matchesSearch = 
-      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const q = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      invoice.invoice_number.toLowerCase().includes(q) ||
+      (invoice.clients?.name || '').toLowerCase().includes(q) ||
+      (invoice.clients?.phone || '').toLowerCase().includes(q);
+
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -237,6 +241,16 @@ export default function Invoices() {
       header: 'Actions',
       cell: (item: Invoice) => (
         <div className="flex items-center gap-1">
+          {item.status === 'draft' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => { e.stopPropagation(); setEditingDraftId(item.id); setIsCreateDialogOpen(true); }}
+              title="Edit Draft"
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="icon"
@@ -309,7 +323,7 @@ export default function Invoices() {
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Search by invoice number or client..."
+          placeholder="Search by invoice number, client name, or phone..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10 max-w-md"
@@ -325,10 +339,11 @@ export default function Invoices() {
 
       <CreateInvoiceDialog
         open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
+        onOpenChange={(o) => { setIsCreateDialogOpen(o); if (!o) setEditingDraftId(null); }}
         onInvoiceCreated={() => {
           fetchInvoices();
         }}
+        editingDraftId={editingDraftId}
       />
 
       <ViewInvoiceDialog

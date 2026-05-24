@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Phone, Plus, Sparkles, Download } from 'lucide-react';
+import { Phone, Plus, Sparkles, Download, Trash2 } from 'lucide-react';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { StoreWalletCard } from './StoreWalletCard';
 import { downloadClientReportPdf } from '@/utils/clientReportPdf';
 
@@ -57,6 +58,23 @@ const fmtDate = (d: string | null) =>
 
 export function ClientProfileDialog({ client, open, onOpenChange, onUpdate }: Props) {
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
+
+  const handleDeleteClient = async () => {
+    if (!client) return;
+    if (!confirm('Delete this client? Their invoice history will be kept but the client profile will be removed.')) return;
+    try {
+      await supabase.from('store_wallets').delete().eq('client_id', client.id);
+      await supabase.from('client_schemes').delete().eq('client_id', client.id);
+      const { error } = await supabase.from('clients').delete().eq('id', client.id);
+      if (error) throw error;
+      toast({ title: 'Client deleted' });
+      onOpenChange(false);
+      onUpdate?.();
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Failed to delete', description: e?.message || 'Error' });
+    }
+  };
   const [history, setHistory] = useState<PurchaseRow[]>([]);
   const [schemes, setSchemes] = useState<Scheme[]>([]);
   const [polishUsed, setPolishUsed] = useState(0);
@@ -225,9 +243,16 @@ export function ClientProfileDialog({ client, open, onOpenChange, onUpdate }: Pr
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Client Profile</DialogTitle>
-            <Button size="sm" variant="outline" onClick={() => downloadClientReportPdf(client)}>
-              <Download className="w-4 h-4 mr-1" /> Download Report
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => downloadClientReportPdf(client)}>
+                <Download className="w-4 h-4 mr-1" /> Download Report
+              </Button>
+              {isAdmin && (
+                <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={handleDeleteClient}>
+                  <Trash2 className="w-4 h-4 mr-1" /> Delete Client
+                </Button>
+              )}
+            </div>
           </div>
         </DialogHeader>
 

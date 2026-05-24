@@ -51,6 +51,7 @@ interface CreateInvoiceDialogProps {
   onOpenChange: (open: boolean) => void;
   onInvoiceCreated: () => void;
   prefill?: InvoicePrefillData | null;
+  editingDraftId?: string | null;
 }
 
 export function CreateInvoiceDialog({
@@ -58,6 +59,7 @@ export function CreateInvoiceDialog({
   onOpenChange,
   onInvoiceCreated,
   prefill,
+  editingDraftId,
 }: CreateInvoiceDialogProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -102,9 +104,10 @@ export function CreateInvoiceDialog({
   }, []);
   const effectiveAdvance = effectivePaymentBreakdown.reduce((sum, item) => sum + item.amount, 0);
   const totalAccounted = cappedCredits + effectiveAdvance;
-  const balanceDue = Math.max(0, grandTotalWithRound - totalAccounted);
+  const rawBalance = grandTotalWithRound - totalAccounted;
+  const balanceDue = Math.abs(rawBalance) <= 0.05 ? 0 : Math.max(0, Math.round(rawBalance * 100) / 100);
   const fullyPaidByCredits = cappedCredits >= grandTotalWithRound && grandTotalWithRound > 0;
-  const isFullyPaid = grandTotalWithRound > 0 && balanceDue <= 0.001 && totalAccounted > 0;
+  const isFullyPaid = grandTotalWithRound > 0 && balanceDue === 0 && totalAccounted > 0;
   const paymentStatusUI: 'PAID' | 'PARTIAL' | 'PENDING' =
     isFullyPaid ? 'PAID' : totalAccounted > 0 ? 'PARTIAL' : 'PENDING';
   const combinedPaymentLabel = [
@@ -152,6 +155,66 @@ export function CreateInvoiceDialog({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, prefill]);
+
+  // Load existing draft for editing
+  useEffect(() => {
+    if (!open || !editingDraftId) return;
+    (async () => {
+      const { data: inv } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('id', editingDraftId)
+        .maybeSingle();
+      if (!inv) return;
+      const { data: items } = await supabase
+        .from('invoice_items')
+        .select('*, products(sku, mrp, pricing_mode)')
+        .eq('invoice_id', editingDraftId);
+
+      setSelectedClient(inv.client_id || 'walk-in');
+      setInvoiceDate(new Date(inv.invoice_date));
+      setNotes(inv.notes || '');
+      setPaymentMode(inv.payment_mode || 'cash');
+      setGstPct(Number(inv.gst_percentage) || 3);
+      setRoundOff(Number(inv.round_off) || 0);
+      setStoreCreditsUsed(Number(inv.store_credits_used) || 0);
+      setClientSource((inv as any).client_source || 'walk_in');
+      // payments
+      const ps: { mode: string; amount: string }[] = [];
+      if (inv.payment_mode_1 && Number(inv.payment_amount_1) > 0) ps.push({ mode: inv.payment_mode_1, amount: String(inv.payment_amount_1) });
+      if (inv.payment_mode_2 && Number(inv.payment_amount_2) > 0) ps.push({ mode: inv.payment_mode_2, amount: String(inv.payment_amount_2) });
+      setPayments(ps);
+      // client name/phone
+      if (inv.client_id) {
+        const { data: c } = await supabase.from('clients').select('name, phone').eq('id', inv.client_id).maybeSingle();
+        if (c) { setClientName(c.name); setClientPhone(c.phone || ''); }
+        try { setWalletBalance(await getWalletBalance(inv.client_id)); } catch { /* ignore */ }
+      }
+      // items
+      const mapped: InvoiceItem[] = (items || []).map((it: any) => ({
+        product_id: it.product_id || '',
+        sku: it.products?.sku || '',
+        product_name: it.product_name,
+        category: it.category || '',
+        weight_grams: Number(it.weight_grams) || 0,
+        quantity: it.quantity || 1,
+        rate_per_gram: Number(it.rate_per_gram) || 0,
+        base_price: Number(it.gold_value) || 0,
+        making_charges: Number(it.making_charges) || 0,
+        making_charges_per_gram: Number(it.weight_grams) > 0 ? Number(it.making_charges) / Number(it.weight_grams) : 0,
+        discount: Number(it.discount) || 0,
+        discount_type: 'fixed',
+        discount_value: Number(it.discount) || 0,
+        discounted_making: Number(it.discounted_making) || 0,
+        line_total: Number(it.subtotal) || 0,
+        gst_percentage: Number(it.gst_percentage) || 3,
+        pricing_mode: (Number(it.rate_per_gram) === 0 && Number(it.making_charges) === 0) ? 'flat_price' : 'weight_based',
+        mrp: Number(it.mrp) || 0,
+        description: it.description || '',
+      }));
+      setInvoiceItems(mapped);
+    })();
+  }, [open, editingDraftId]);
 
   const fetchProducts = async () => {
     // Paginated fetch — show ALL products in invoice search regardless of stock level
@@ -287,39 +350,55 @@ export function CreateInvoiceDialog({
         paymentStatusUI === 'PAID' ? 'paid' : paymentStatusUI === 'PARTIAL' ? 'partial' : 'pending';
       const primaryPayMode = combinedPaymentLabel;
 
-      const { data: invoice, error: invoiceError } = await supabase
-        .from('invoices')
-        .insert([{
-          invoice_number: invoiceNum,
-          client_id: finalClientId,
-          invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
-          subtotal: totals.subtotal,
-          discount_amount: totals.discountAmount,
-          gst_amount: totals.gstAmount,
-          grand_total: finalGrandTotal,
-          advance_paid: effectiveAdvance,
-          store_credits_used: cappedCredits,
-          payment_status: computedPaymentStatus,
-          payment_mode: primaryPayMode,
-          payment_mode_1: paymentOne?.mode || null,
-          payment_amount_1: paymentOne?.amount || 0,
-          payment_mode_2: paymentTwo?.mode || null,
-          payment_amount_2: paymentTwo?.amount || 0,
-          total_paid: totalAccounted,
-          balance_due: balanceDue,
-          combined_payment_label: combinedPaymentLabel,
-          amount_after_credits: remainingAfterCredits,
-          amount_paid_via_mode: effectiveAdvance,
-          notes: notes || null,
-          created_by: user?.id,
-          status: computedPaymentStatus === 'paid' ? 'paid' : 'sent',
-          client_source: clientSource,
-        } as never])
-        .select()
-        .single();
+      const invoicePayload = {
+        invoice_number: invoiceNum,
+        client_id: finalClientId,
+        invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
+        subtotal: totals.subtotal,
+        discount_amount: totals.discountAmount,
+        gst_amount: totals.gstAmount,
+        grand_total: finalGrandTotal,
+        advance_paid: effectiveAdvance,
+        store_credits_used: cappedCredits,
+        payment_status: computedPaymentStatus,
+        payment_mode: primaryPayMode,
+        payment_mode_1: paymentOne?.mode || null,
+        payment_amount_1: paymentOne?.amount || 0,
+        payment_mode_2: paymentTwo?.mode || null,
+        payment_amount_2: paymentTwo?.amount || 0,
+        total_paid: totalAccounted,
+        balance_due: balanceDue,
+        combined_payment_label: combinedPaymentLabel,
+        amount_after_credits: remainingAfterCredits,
+        amount_paid_via_mode: effectiveAdvance,
+        notes: notes || null,
+        status: computedPaymentStatus === 'paid' ? 'paid' : 'sent',
+        client_source: clientSource,
+        gst_percentage: gstPct,
+        round_off: roundOff,
+      };
 
-
-      if (invoiceError) throw invoiceError;
+      let invoice: any;
+      if (editingDraftId) {
+        // Confirming a draft: delete items while still 'draft' (no stock restore), then update + re-insert
+        await supabase.from('invoice_items').delete().eq('invoice_id', editingDraftId);
+        const { data: updated, error: updErr } = await supabase
+          .from('invoices')
+          .update(invoicePayload as never)
+          .eq('id', editingDraftId)
+          .select()
+          .single();
+        if (updErr) throw updErr;
+        invoice = updated;
+      } else {
+        const { data: inserted, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert([{ ...invoicePayload, created_by: user?.id } as never])
+          .select()
+          .single();
+        if (invoiceError) throw invoiceError;
+        invoice = inserted;
+      }
 
       // Debit store wallet for credits used
       if (cappedCredits > 0 && finalClientId) {
@@ -439,41 +518,57 @@ export function CreateInvoiceDialog({
         finalClientId = existing?.id || null;
       }
 
-      const draftNumber = 'DRAFT-' + Date.now().toString(36).toUpperCase();
+      const draftNumber = editingDraftId ? undefined : 'DRAFT-' + Date.now().toString(36).toUpperCase();
       const paymentOne = effectivePaymentBreakdown[0];
       const paymentTwo = effectivePaymentBreakdown[1];
-      const { data: invoice, error: invoiceError } = await supabase
-        .from('invoices')
-        .insert([{
-          invoice_number: draftNumber,
-          client_id: finalClientId,
-          invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
-          subtotal: totals.subtotal,
-          discount_amount: totals.discountAmount,
-          gst_amount: totals.gstAmount,
-          grand_total: grandTotalWithRound,
-          advance_paid: effectiveAdvance,
-          store_credits_used: cappedCredits,
-          payment_status: paymentStatusUI === 'PAID' ? 'paid' : paymentStatusUI === 'PARTIAL' ? 'partial' : 'pending',
-          payment_mode: combinedPaymentLabel,
-          payment_mode_1: paymentOne?.mode || null,
-          payment_amount_1: paymentOne?.amount || 0,
-          payment_mode_2: paymentTwo?.mode || null,
-          payment_amount_2: paymentTwo?.amount || 0,
-          total_paid: totalAccounted,
-          balance_due: balanceDue,
-          combined_payment_label: combinedPaymentLabel,
-          amount_after_credits: remainingAfterCredits,
-          amount_paid_via_mode: effectiveAdvance,
-          notes: notes || null,
-          created_by: user?.id,
-          status: 'draft',
-          client_source: clientSource,
-        } as never])
-        .select()
-        .single();
+      const draftPayload: any = {
+        client_id: finalClientId,
+        invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
+        subtotal: totals.subtotal,
+        discount_amount: totals.discountAmount,
+        gst_amount: totals.gstAmount,
+        grand_total: grandTotalWithRound,
+        advance_paid: 0,
+        store_credits_used: 0,
+        payment_status: 'pending',
+        payment_mode: combinedPaymentLabel,
+        payment_mode_1: paymentOne?.mode || null,
+        payment_amount_1: paymentOne?.amount || 0,
+        payment_mode_2: paymentTwo?.mode || null,
+        payment_amount_2: paymentTwo?.amount || 0,
+        total_paid: 0,
+        balance_due: grandTotalWithRound,
+        combined_payment_label: combinedPaymentLabel,
+        amount_after_credits: remainingAfterCredits,
+        amount_paid_via_mode: 0,
+        notes: notes || null,
+        status: 'draft',
+        client_source: clientSource,
+        gst_percentage: gstPct,
+        round_off: roundOff,
+      };
 
-      if (invoiceError) throw invoiceError;
+      let invoice: any;
+      if (editingDraftId) {
+        // Delete old items first (status still 'draft' → trigger skips stock restore)
+        await supabase.from('invoice_items').delete().eq('invoice_id', editingDraftId);
+        const { data: upd, error: updErr } = await supabase
+          .from('invoices')
+          .update(draftPayload as never)
+          .eq('id', editingDraftId)
+          .select()
+          .single();
+        if (updErr) throw updErr;
+        invoice = upd;
+      } else {
+        const { data: ins, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert([{ ...draftPayload, invoice_number: draftNumber, created_by: user?.id } as never])
+          .select()
+          .single();
+        if (invoiceError) throw invoiceError;
+        invoice = ins;
+      }
 
       // Insert items — trigger now skips stock deduction for drafts
       const itemsToInsert = invoiceItems.map(item => ({
