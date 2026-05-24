@@ -351,39 +351,55 @@ export function CreateInvoiceDialog({
         paymentStatusUI === 'PAID' ? 'paid' : paymentStatusUI === 'PARTIAL' ? 'partial' : 'pending';
       const primaryPayMode = combinedPaymentLabel;
 
-      const { data: invoice, error: invoiceError } = await supabase
-        .from('invoices')
-        .insert([{
-          invoice_number: invoiceNum,
-          client_id: finalClientId,
-          invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
-          subtotal: totals.subtotal,
-          discount_amount: totals.discountAmount,
-          gst_amount: totals.gstAmount,
-          grand_total: finalGrandTotal,
-          advance_paid: effectiveAdvance,
-          store_credits_used: cappedCredits,
-          payment_status: computedPaymentStatus,
-          payment_mode: primaryPayMode,
-          payment_mode_1: paymentOne?.mode || null,
-          payment_amount_1: paymentOne?.amount || 0,
-          payment_mode_2: paymentTwo?.mode || null,
-          payment_amount_2: paymentTwo?.amount || 0,
-          total_paid: totalAccounted,
-          balance_due: balanceDue,
-          combined_payment_label: combinedPaymentLabel,
-          amount_after_credits: remainingAfterCredits,
-          amount_paid_via_mode: effectiveAdvance,
-          notes: notes || null,
-          created_by: user?.id,
-          status: computedPaymentStatus === 'paid' ? 'paid' : 'sent',
-          client_source: clientSource,
-        } as never])
-        .select()
-        .single();
+      const invoicePayload = {
+        invoice_number: invoiceNum,
+        client_id: finalClientId,
+        invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
+        subtotal: totals.subtotal,
+        discount_amount: totals.discountAmount,
+        gst_amount: totals.gstAmount,
+        grand_total: finalGrandTotal,
+        advance_paid: effectiveAdvance,
+        store_credits_used: cappedCredits,
+        payment_status: computedPaymentStatus,
+        payment_mode: primaryPayMode,
+        payment_mode_1: paymentOne?.mode || null,
+        payment_amount_1: paymentOne?.amount || 0,
+        payment_mode_2: paymentTwo?.mode || null,
+        payment_amount_2: paymentTwo?.amount || 0,
+        total_paid: totalAccounted,
+        balance_due: balanceDue,
+        combined_payment_label: combinedPaymentLabel,
+        amount_after_credits: remainingAfterCredits,
+        amount_paid_via_mode: effectiveAdvance,
+        notes: notes || null,
+        status: computedPaymentStatus === 'paid' ? 'paid' : 'sent',
+        client_source: clientSource,
+        gst_percentage: gstPct,
+        round_off: roundOff,
+      };
 
-
-      if (invoiceError) throw invoiceError;
+      let invoice: any;
+      if (editingDraftId) {
+        // Confirming a draft: delete items while still 'draft' (no stock restore), then update + re-insert
+        await supabase.from('invoice_items').delete().eq('invoice_id', editingDraftId);
+        const { data: updated, error: updErr } = await supabase
+          .from('invoices')
+          .update(invoicePayload as never)
+          .eq('id', editingDraftId)
+          .select()
+          .single();
+        if (updErr) throw updErr;
+        invoice = updated;
+      } else {
+        const { data: inserted, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert([{ ...invoicePayload, created_by: user?.id } as never])
+          .select()
+          .single();
+        if (invoiceError) throw invoiceError;
+        invoice = inserted;
+      }
 
       // Debit store wallet for credits used
       if (cappedCredits > 0 && finalClientId) {
