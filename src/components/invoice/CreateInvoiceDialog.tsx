@@ -157,6 +157,66 @@ export function CreateInvoiceDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, prefill]);
 
+  // Load existing draft for editing
+  useEffect(() => {
+    if (!open || !editingDraftId) return;
+    (async () => {
+      const { data: inv } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('id', editingDraftId)
+        .maybeSingle();
+      if (!inv) return;
+      const { data: items } = await supabase
+        .from('invoice_items')
+        .select('*, products(sku, mrp, pricing_mode)')
+        .eq('invoice_id', editingDraftId);
+
+      setSelectedClient(inv.client_id || 'walk-in');
+      setInvoiceDate(new Date(inv.invoice_date));
+      setNotes(inv.notes || '');
+      setPaymentMode(inv.payment_mode || 'cash');
+      setGstPct(Number(inv.gst_percentage) || 3);
+      setRoundOff(Number(inv.round_off) || 0);
+      setStoreCreditsUsed(Number(inv.store_credits_used) || 0);
+      setClientSource((inv as any).client_source || 'walk_in');
+      // payments
+      const ps: { mode: string; amount: string }[] = [];
+      if (inv.payment_mode_1 && Number(inv.payment_amount_1) > 0) ps.push({ mode: inv.payment_mode_1, amount: String(inv.payment_amount_1) });
+      if (inv.payment_mode_2 && Number(inv.payment_amount_2) > 0) ps.push({ mode: inv.payment_mode_2, amount: String(inv.payment_amount_2) });
+      setPayments(ps);
+      // client name/phone
+      if (inv.client_id) {
+        const { data: c } = await supabase.from('clients').select('name, phone').eq('id', inv.client_id).maybeSingle();
+        if (c) { setClientName(c.name); setClientPhone(c.phone || ''); }
+        try { setWalletBalance(await getWalletBalance(inv.client_id)); } catch { /* ignore */ }
+      }
+      // items
+      const mapped: InvoiceItem[] = (items || []).map((it: any) => ({
+        product_id: it.product_id || '',
+        sku: it.products?.sku || '',
+        product_name: it.product_name,
+        category: it.category || '',
+        weight_grams: Number(it.weight_grams) || 0,
+        quantity: it.quantity || 1,
+        rate_per_gram: Number(it.rate_per_gram) || 0,
+        base_price: Number(it.gold_value) || 0,
+        making_charges: Number(it.making_charges) || 0,
+        making_charges_per_gram: Number(it.weight_grams) > 0 ? Number(it.making_charges) / Number(it.weight_grams) : 0,
+        discount: Number(it.discount) || 0,
+        discount_type: 'fixed',
+        discount_value: Number(it.discount) || 0,
+        discounted_making: Number(it.discounted_making) || 0,
+        line_total: Number(it.subtotal) || 0,
+        gst_percentage: Number(it.gst_percentage) || 3,
+        pricing_mode: (Number(it.rate_per_gram) === 0 && Number(it.making_charges) === 0) ? 'flat_price' : 'weight_based',
+        mrp: Number(it.mrp) || 0,
+        description: it.description || '',
+      }));
+      setInvoiceItems(mapped);
+    })();
+  }, [open, editingDraftId]);
+
   const fetchProducts = async () => {
     // Paginated fetch — show ALL products in invoice search regardless of stock level
     const PAGE = 1000;
