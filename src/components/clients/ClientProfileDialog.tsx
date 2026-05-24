@@ -58,6 +58,23 @@ const fmtDate = (d: string | null) =>
 
 export function ClientProfileDialog({ client, open, onOpenChange, onUpdate }: Props) {
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
+
+  const handleDeleteClient = async () => {
+    if (!client) return;
+    if (!confirm('Delete this client? Their invoice history will be kept but the client profile will be removed.')) return;
+    try {
+      await supabase.from('store_wallets').delete().eq('client_id', client.id);
+      await supabase.from('client_schemes').delete().eq('client_id', client.id);
+      const { error } = await supabase.from('clients').delete().eq('id', client.id);
+      if (error) throw error;
+      toast({ title: 'Client deleted' });
+      onOpenChange(false);
+      onUpdate?.();
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Failed to delete', description: e?.message || 'Error' });
+    }
+  };
   const [history, setHistory] = useState<PurchaseRow[]>([]);
   const [schemes, setSchemes] = useState<Scheme[]>([]);
   const [polishUsed, setPolishUsed] = useState(0);
