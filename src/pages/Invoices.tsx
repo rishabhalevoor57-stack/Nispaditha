@@ -241,6 +241,16 @@ export default function Invoices() {
       header: 'Actions',
       cell: (item: Invoice) => (
         <div className="flex items-center gap-1">
+          {item.status === 'draft' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => { e.stopPropagation(); setEditingDraftId(item.id); setIsCreateDialogOpen(true); }}
+              title="Edit Draft"
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="icon"
