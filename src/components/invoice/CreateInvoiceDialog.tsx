@@ -935,7 +935,7 @@ export function CreateInvoiceDialog({
                 <div className="rounded-md border border-green-500/40 bg-green-500/10 px-3 py-2 text-sm font-semibold text-green-700 dark:text-green-400">
                   ✓ Paid in Full via Store Credits
                 </div>
-              ) : remainingAfterCredits > 0 ? (
+              ) : remainingAfterUpfront > 0.001 ? (
                 <div className="pt-3 border-t space-y-3">
                   <Label className="text-sm font-semibold">Pay Remaining Amount</Label>
                   {payments.length === 0 && (
