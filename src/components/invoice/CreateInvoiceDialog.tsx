@@ -81,6 +81,7 @@ export function CreateInvoiceDialog({
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [storeCreditsUsed, setStoreCreditsUsed] = useState<number>(0);
   const [payments, setPayments] = useState<{ mode: string; amount: string }[]>([]);
+  const [upfrontAmount, setUpfrontAmount] = useState<string>('');
   const [clientSource, setClientSource] = useState<string>('walk_in');
 
   const { toast } = useToast();
