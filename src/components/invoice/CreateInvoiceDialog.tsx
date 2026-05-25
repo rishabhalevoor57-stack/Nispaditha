@@ -946,7 +946,7 @@ export function CreateInvoiceDialog({
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => setPayments([{ mode: m, amount: String(remainingAfterCredits.toFixed(2)) }])}
+                          onClick={() => setPayments([{ mode: m, amount: String(remainingAfterUpfront.toFixed(2)) }])}
                           className="capitalize"
                         >
                           {m.replace('_',' ')}
