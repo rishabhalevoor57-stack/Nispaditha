@@ -102,6 +102,8 @@ export function CreateInvoiceDialog({
       .filter((p) => p.amount > 0),
   ];
   const upfrontExceeds = upfrontNum > 0 && upfrontNum - grandTotalAfterCredits > 0.05;
+  const cappedUpfront = Math.min(Math.max(0, upfrontNum), grandTotalAfterCredits);
+  const remainingAfterUpfront = Math.max(0, grandTotalAfterCredits - cappedUpfront);
   const effectivePaymentBreakdown = validPayments.reduce<{ mode: string; amount: number }[]>((acc, payment) => {
     const used = acc.reduce((sum, item) => sum + item.amount, 0);
     const remaining = Math.max(0, remainingAfterCredits - used);
