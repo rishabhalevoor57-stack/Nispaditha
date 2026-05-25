@@ -775,19 +775,33 @@ export function CreateInvoiceDialog({
             </div>
             <div className="space-y-2">
               <Label>Payment Mode</Label>
-              <Select value={paymentMode} onValueChange={setPaymentMode}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="upi">UPI</SelectItem>
-                  <SelectItem value="card">Card</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="store_wallet">Store Wallet</SelectItem>
-                  <SelectItem value="pay_later">Pay Later</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={paymentMode} onValueChange={setPaymentMode}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="upi">UPI</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="store_wallet">Store Wallet</SelectItem>
+                    <SelectItem value="pay_later">Pay Later</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  placeholder="Amount Paying ₹"
+                  value={upfrontAmount}
+                  disabled={paymentMode === 'pay_later'}
+                  onChange={(e) => setUpfrontAmount(e.target.value)}
+                />
+              </div>
+              {upfrontExceeds && (
+                <p className="text-[11px] text-destructive">Amount exceeds total</p>
+              )}
             </div>
           </div>
 
