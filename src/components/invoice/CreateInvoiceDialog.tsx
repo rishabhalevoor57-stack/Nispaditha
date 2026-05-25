@@ -81,6 +81,7 @@ export function CreateInvoiceDialog({
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [storeCreditsUsed, setStoreCreditsUsed] = useState<number>(0);
   const [payments, setPayments] = useState<{ mode: string; amount: string }[]>([]);
+  const [upfrontAmount, setUpfrontAmount] = useState<string>('');
   const [clientSource, setClientSource] = useState<string>('walk_in');
 
   const { toast } = useToast();
@@ -92,9 +93,17 @@ export function CreateInvoiceDialog({
   const cappedCredits = Math.min(Math.max(0, Number(storeCreditsUsed) || 0), walletBalance, grandTotalWithRound);
   const grandTotalAfterCredits = Math.max(0, grandTotalWithRound - cappedCredits);
   const remainingAfterCredits = grandTotalAfterCredits;
-  const validPayments = payments
-    .map((p) => ({ mode: p.mode, amount: parseFloat(p.amount) || 0 }))
-    .filter((p) => p.amount > 0);
+  const upfrontNum = parseFloat(upfrontAmount) || 0;
+  const upfrontEntry = upfrontNum > 0 ? [{ mode: paymentMode, amount: upfrontNum }] : [];
+  const validPayments = [
+    ...upfrontEntry,
+    ...payments
+      .map((p) => ({ mode: p.mode, amount: parseFloat(p.amount) || 0 }))
+      .filter((p) => p.amount > 0),
+  ];
+  const upfrontExceeds = upfrontNum > 0 && upfrontNum - grandTotalAfterCredits > 0.05;
+  const cappedUpfront = Math.min(Math.max(0, upfrontNum), grandTotalAfterCredits);
+  const remainingAfterUpfront = Math.max(0, grandTotalAfterCredits - cappedUpfront);
   const effectivePaymentBreakdown = validPayments.reduce<{ mode: string; amount: number }[]>((acc, payment) => {
     const used = acc.reduce((sum, item) => sum + item.amount, 0);
     const remaining = Math.max(0, remainingAfterCredits - used);
@@ -150,7 +159,7 @@ export function CreateInvoiceDialog({
       setSelectedClient('walk-in');
       const adv = Number(prefill.advancePaid) || 0;
       if (adv > 0) {
-        setPayments([{ mode: prefill.paymentMode || 'cash', amount: String(adv) }]);
+        setUpfrontAmount(String(adv));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,9 +188,14 @@ export function CreateInvoiceDialog({
       setRoundOff(Number(inv.round_off) || 0);
       setStoreCreditsUsed(Number(inv.store_credits_used) || 0);
       setClientSource((inv as any).client_source || 'walk_in');
-      // payments
+      // payments: first one is upfront, second goes into additional payments list
       const ps: { mode: string; amount: string }[] = [];
-      if (inv.payment_mode_1 && Number(inv.payment_amount_1) > 0) ps.push({ mode: inv.payment_mode_1, amount: String(inv.payment_amount_1) });
+      if (inv.payment_mode_1 && Number(inv.payment_amount_1) > 0) {
+        setPaymentMode(inv.payment_mode_1);
+        setUpfrontAmount(String(inv.payment_amount_1));
+      } else {
+        setUpfrontAmount('');
+      }
       if (inv.payment_mode_2 && Number(inv.payment_amount_2) > 0) ps.push({ mode: inv.payment_mode_2, amount: String(inv.payment_amount_2) });
       setPayments(ps);
       // client name/phone
@@ -294,6 +308,7 @@ export function CreateInvoiceDialog({
     setWalletBalance(0);
     setStoreCreditsUsed(0);
     setPayments([]);
+    setUpfrontAmount('');
     setClientSource('walk_in');
   };
 
@@ -762,19 +777,33 @@ export function CreateInvoiceDialog({
             </div>
             <div className="space-y-2">
               <Label>Payment Mode</Label>
-              <Select value={paymentMode} onValueChange={setPaymentMode}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="upi">UPI</SelectItem>
-                  <SelectItem value="card">Card</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="store_wallet">Store Wallet</SelectItem>
-                  <SelectItem value="pay_later">Pay Later</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={paymentMode} onValueChange={setPaymentMode}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="upi">UPI</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="store_wallet">Store Wallet</SelectItem>
+                    <SelectItem value="pay_later">Pay Later</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  placeholder="Amount Paying ₹"
+                  value={upfrontAmount}
+                  disabled={paymentMode === 'pay_later'}
+                  onChange={(e) => setUpfrontAmount(e.target.value)}
+                />
+              </div>
+              {upfrontExceeds && (
+                <p className="text-[11px] text-destructive">Amount exceeds total</p>
+              )}
             </div>
           </div>
 
@@ -906,7 +935,7 @@ export function CreateInvoiceDialog({
                 <div className="rounded-md border border-green-500/40 bg-green-500/10 px-3 py-2 text-sm font-semibold text-green-700 dark:text-green-400">
                   ✓ Paid in Full via Store Credits
                 </div>
-              ) : remainingAfterCredits > 0 ? (
+              ) : remainingAfterUpfront > 0.001 ? (
                 <div className="pt-3 border-t space-y-3">
                   <Label className="text-sm font-semibold">Pay Remaining Amount</Label>
                   {payments.length === 0 && (
@@ -917,7 +946,7 @@ export function CreateInvoiceDialog({
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => setPayments([{ mode: m, amount: String(remainingAfterCredits.toFixed(2)) }])}
+                          onClick={() => setPayments([{ mode: m, amount: String(remainingAfterUpfront.toFixed(2)) }])}
                           className="capitalize"
                         >
                           {m.replace('_',' ')}
@@ -935,7 +964,7 @@ export function CreateInvoiceDialog({
                   )}
 
                   {payments.map((p, idx) => {
-                    const remainingForThis = Math.max(0, remainingAfterCredits - payments.reduce((s, pp, i) => i === idx ? s : s + (parseFloat(pp.amount)||0), 0));
+                    const remainingForThis = Math.max(0, remainingAfterUpfront - payments.reduce((s, pp, i) => i === idx ? s : s + (parseFloat(pp.amount)||0), 0));
                     return (
                       <div key={idx} className="rounded-md border p-3 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
@@ -1005,7 +1034,7 @@ export function CreateInvoiceDialog({
                     <div className="text-sm space-y-1 pt-2 border-t">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Remaining to Pay</span>
-                        <span className="tabular-nums">₹ {remainingAfterCredits.toFixed(2)}</span>
+                        <span className="tabular-nums">₹ {remainingAfterUpfront.toFixed(2)}</span>
                       </div>
                       {payments.map((p, i) => (
                         <div key={i} className="flex justify-between text-muted-foreground">
@@ -1111,7 +1140,7 @@ export function CreateInvoiceDialog({
             <Button
               className="btn-gold"
               onClick={handleCreateInvoice}
-              disabled={invoiceItems.length === 0 || isSubmitting}
+              disabled={invoiceItems.length === 0 || isSubmitting || upfrontExceeds || !!creditsError}
             >
               <Download className="w-4 h-4 mr-2" />
               {isSubmitting ? 'Creating...' : 'Create & Download'}
