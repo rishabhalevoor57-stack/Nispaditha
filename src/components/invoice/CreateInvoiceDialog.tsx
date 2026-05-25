@@ -186,9 +186,14 @@ export function CreateInvoiceDialog({
       setRoundOff(Number(inv.round_off) || 0);
       setStoreCreditsUsed(Number(inv.store_credits_used) || 0);
       setClientSource((inv as any).client_source || 'walk_in');
-      // payments
+      // payments: first one is upfront, second goes into additional payments list
       const ps: { mode: string; amount: string }[] = [];
-      if (inv.payment_mode_1 && Number(inv.payment_amount_1) > 0) ps.push({ mode: inv.payment_mode_1, amount: String(inv.payment_amount_1) });
+      if (inv.payment_mode_1 && Number(inv.payment_amount_1) > 0) {
+        setPaymentMode(inv.payment_mode_1);
+        setUpfrontAmount(String(inv.payment_amount_1));
+      } else {
+        setUpfrontAmount('');
+      }
       if (inv.payment_mode_2 && Number(inv.payment_amount_2) > 0) ps.push({ mode: inv.payment_mode_2, amount: String(inv.payment_amount_2) });
       setPayments(ps);
       // client name/phone
