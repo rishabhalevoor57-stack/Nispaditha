@@ -93,9 +93,15 @@ export function CreateInvoiceDialog({
   const cappedCredits = Math.min(Math.max(0, Number(storeCreditsUsed) || 0), walletBalance, grandTotalWithRound);
   const grandTotalAfterCredits = Math.max(0, grandTotalWithRound - cappedCredits);
   const remainingAfterCredits = grandTotalAfterCredits;
-  const validPayments = payments
-    .map((p) => ({ mode: p.mode, amount: parseFloat(p.amount) || 0 }))
-    .filter((p) => p.amount > 0);
+  const upfrontNum = parseFloat(upfrontAmount) || 0;
+  const upfrontEntry = upfrontNum > 0 ? [{ mode: paymentMode, amount: upfrontNum }] : [];
+  const validPayments = [
+    ...upfrontEntry,
+    ...payments
+      .map((p) => ({ mode: p.mode, amount: parseFloat(p.amount) || 0 }))
+      .filter((p) => p.amount > 0),
+  ];
+  const upfrontExceeds = upfrontNum > 0 && upfrontNum - grandTotalAfterCredits > 0.05;
   const effectivePaymentBreakdown = validPayments.reduce<{ mode: string; amount: number }[]>((acc, payment) => {
     const used = acc.reduce((sum, item) => sum + item.amount, 0);
     const remaining = Math.max(0, remainingAfterCredits - used);
