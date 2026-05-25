@@ -964,7 +964,7 @@ export function CreateInvoiceDialog({
                   )}
 
                   {payments.map((p, idx) => {
-                    const remainingForThis = Math.max(0, remainingAfterCredits - payments.reduce((s, pp, i) => i === idx ? s : s + (parseFloat(pp.amount)||0), 0));
+                    const remainingForThis = Math.max(0, remainingAfterUpfront - payments.reduce((s, pp, i) => i === idx ? s : s + (parseFloat(pp.amount)||0), 0));
                     return (
                       <div key={idx} className="rounded-md border p-3 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
