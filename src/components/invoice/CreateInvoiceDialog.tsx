@@ -1034,7 +1034,7 @@ export function CreateInvoiceDialog({
                     <div className="text-sm space-y-1 pt-2 border-t">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Remaining to Pay</span>
-                        <span className="tabular-nums">₹ {remainingAfterCredits.toFixed(2)}</span>
+                        <span className="tabular-nums">₹ {remainingAfterUpfront.toFixed(2)}</span>
                       </div>
                       {payments.map((p, i) => (
                         <div key={i} className="flex justify-between text-muted-foreground">
