@@ -1140,7 +1140,7 @@ export function CreateInvoiceDialog({
             <Button
               className="btn-gold"
               onClick={handleCreateInvoice}
-              disabled={invoiceItems.length === 0 || isSubmitting}
+              disabled={invoiceItems.length === 0 || isSubmitting || upfrontExceeds || !!creditsError}
             >
               <Download className="w-4 h-4 mr-2" />
               {isSubmitting ? 'Creating...' : 'Create & Download'}
