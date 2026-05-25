@@ -301,6 +301,7 @@ export function CreateInvoiceDialog({
     setWalletBalance(0);
     setStoreCreditsUsed(0);
     setPayments([]);
+    setUpfrontAmount('');
     setClientSource('walk_in');
   };
 
