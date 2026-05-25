@@ -112,13 +112,19 @@ export function CreateInvoiceDialog({
     return acc;
   }, []);
   const effectiveAdvance = effectivePaymentBreakdown.reduce((sum, item) => sum + item.amount, 0);
-  const totalAccounted = cappedCredits + effectiveAdvance;
-  const rawBalance = grandTotalWithRound - totalAccounted;
-  const balanceDue = Math.abs(rawBalance) <= 0.05 ? 0 : Math.max(0, Math.round(rawBalance * 100) / 100);
+  // total_paid = store credits + upfront payment + additional payments (uncapped sum of what user actually entered)
+  const additionalPaymentsTotal = payments
+    .map((p) => parseFloat(p.amount) || 0)
+    .filter((amt) => amt > 0)
+    .reduce((sum, amt) => sum + amt, 0);
+  const totalPaidRaw = cappedCredits + upfrontNum + additionalPaymentsTotal;
+  const totalAccounted = Math.min(totalPaidRaw, grandTotalWithRound);
+  const rawBalance = Math.round((grandTotalWithRound - totalPaidRaw) * 100) / 100;
+  const balanceDue = rawBalance <= 0.05 ? 0 : rawBalance;
   const fullyPaidByCredits = cappedCredits >= grandTotalWithRound && grandTotalWithRound > 0;
-  const isFullyPaid = grandTotalWithRound > 0 && balanceDue === 0 && totalAccounted > 0;
+  const isFullyPaid = grandTotalWithRound > 0 && balanceDue === 0 && totalPaidRaw > 0;
   const paymentStatusUI: 'PAID' | 'PARTIAL' | 'PENDING' =
-    isFullyPaid ? 'PAID' : totalAccounted > 0 ? 'PARTIAL' : 'PENDING';
+    isFullyPaid ? 'PAID' : totalPaidRaw > 0 ? 'PARTIAL' : 'PENDING';
   const combinedPaymentLabel = [
     ...(cappedCredits > 0 ? ['Store Wallet'] : []),
     ...effectivePaymentBreakdown.map((entry) => entry.mode.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())),
