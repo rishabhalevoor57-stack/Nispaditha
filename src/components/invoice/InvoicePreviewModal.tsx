@@ -343,9 +343,55 @@ export function InvoicePreviewModal({
               </div>
 
               <div className="space-y-2">
+                {storeCreditsUsed > 0 && (
+                  <div
+                    className="rounded px-3 py-2 flex items-center justify-between"
+                    style={{ border: `1px solid ${PURPLE_BORDER}` }}
+                  >
+                    <span className="text-[10.5px] text-gray-700">Store Credits Redeemed</span>
+                    <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
+                      {`\u2212 ${money(storeCreditsUsed)}`}
+                    </span>
+                  </div>
+                )}
+                {paymentBreakdown.length > 0
+                  ? paymentBreakdown.filter((p) => p.amount > 0).map((p, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded px-3 py-2 flex items-center justify-between"
+                        style={{ border: `1px solid ${PURPLE_BORDER}` }}
+                      >
+                        <span className="text-[10.5px] text-gray-700 capitalize">
+                          {`Paid via ${p.mode.replace(/_/g, ' ')}`}
+                        </span>
+                        <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
+                          {`\u2212 ${money(p.amount)}`}
+                        </span>
+                      </div>
+                    ))
+                  : advancePaid > 0 && (
+                      <div
+                        className="rounded px-3 py-2 flex items-center justify-between"
+                        style={{ border: `1px solid ${PURPLE_BORDER}` }}
+                      >
+                        <span className="text-[10.5px] text-gray-700">Advance Paid</span>
+                        <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
+                          {`\u2212 ${money(advancePaid)}`}
+                        </span>
+                      </div>
+                    )}
+                <div
+                  className="rounded px-3 py-2 flex items-center justify-between text-white"
+                  style={{ background: PURPLE }}
+                >
+                  <span className="text-[10.5px] uppercase tracking-wider font-semibold">Balance Due</span>
+                  <span className="font-bold" style={{ ...num, fontSize: 13, minWidth: 90, textAlign: 'right' }}>
+                    {money(Math.max(0, balanceDue))}
+                  </span>
+                </div>
                 {isPaidFull && !isOverpaid ? (
                   <div
-                    className="rounded flex items-center justify-center gap-3 py-3"
+                    className="rounded flex items-center justify-center gap-2 py-2"
                     style={{
                       background: GREEN_BG,
                       border: `2px solid ${GREEN}`,
@@ -354,15 +400,15 @@ export function InvoicePreviewModal({
                   >
                     <div
                       style={{
-                        width: 28,
-                        height: 28,
+                        width: 18,
+                        height: 18,
                         background: GREEN,
                         color: '#fff',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: 16,
+                        fontSize: 11,
                         fontWeight: 700,
                       }}
                     >
@@ -370,80 +416,31 @@ export function InvoicePreviewModal({
                     </div>
                     <div
                       className="font-bold uppercase"
-                      style={{ color: GREEN, letterSpacing: 2, fontSize: 14 }}
+                      style={{ color: GREEN, letterSpacing: 1.5, fontSize: 13 }}
                     >
                       Paid in Full
                     </div>
                   </div>
-                ) : (
-                  <>
-                    {storeCreditsUsed > 0 && (
-                      <div
-                        className="rounded px-3 py-2 flex items-center justify-between"
-                        style={{ border: `1px solid ${PURPLE_BORDER}` }}
-                      >
-                        <span className="text-[10.5px] text-gray-700">Store Credits Redeemed</span>
-                        <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
-                          {`\u2212 ${money(storeCreditsUsed)}`}
-                        </span>
-                      </div>
-                    )}
-                    {paymentBreakdown.length > 0
-                      ? paymentBreakdown.map((p, idx) => (
-                          <div
-                            key={idx}
-                            className="rounded px-3 py-2 flex items-center justify-between"
-                            style={{ border: `1px solid ${PURPLE_BORDER}` }}
-                          >
-                            <span className="text-[10.5px] text-gray-700 capitalize">
-                              {`Paid via ${p.mode.replace(/_/g, ' ')}`}
-                            </span>
-                            <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
-                              {`\u2212 ${money(p.amount)}`}
-                            </span>
-                          </div>
-                        ))
-                      : advancePaid > 0 && (
-                          <div
-                            className="rounded px-3 py-2 flex items-center justify-between"
-                            style={{ border: `1px solid ${PURPLE_BORDER}` }}
-                          >
-                            <span className="text-[10.5px] text-gray-700">Advance Paid</span>
-                            <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
-                              {`\u2212 ${money(advancePaid)}`}
-                            </span>
-                          </div>
-                        )}
-                    <div
-                      className="rounded px-3 py-2 flex items-center justify-between text-white"
-                      style={{ background: PURPLE }}
-                    >
-                      <span className="text-[10.5px] uppercase tracking-wider font-semibold">Balance Due</span>
-                      <span className="font-bold" style={{ ...num, fontSize: 13, minWidth: 90, textAlign: 'right' }}>
-                        {money(Math.max(0, balanceDue))}
-                      </span>
-                    </div>
-                    {isPartial && (
-                      <div
-                        className="text-center text-[8.5px] font-bold uppercase tracking-widest py-1 rounded"
-                        style={{
-                          background: ORANGE_BG,
-                          border: `1px solid ${ORANGE}`,
-                          color: ORANGE,
-                        }}
-                      >
-                        Partial Payment
-                      </div>
-                    )}
-                    {isOverpaid && (
-                      <div className="text-[10px] px-1" style={{ color: ORANGE }}>
-                        {`Excess: ${money(paidTotal - grandTotal)} (to be adjusted)`}
-                      </div>
-                    )}
-                  </>
+                ) : isPartial ? (
+                  <div
+                    className="text-center text-[8.5px] font-bold uppercase tracking-widest py-1 rounded"
+                    style={{
+                      background: ORANGE_BG,
+                      border: `1px solid ${ORANGE}`,
+                      color: ORANGE,
+                    }}
+                  >
+                    Partial Payment
+                  </div>
+                ) : null}
+                {isOverpaid && (
+                  <div className="text-[10px] px-1" style={{ color: ORANGE }}>
+                    {`Excess: ${money(paidTotal - grandTotal)} (to be adjusted)`}
+                  </div>
                 )}
               </div>
             </div>
+
 
             {notes && (
               <div className="px-6 mt-4 text-[10px] italic text-gray-500">Note: {notes}</div>

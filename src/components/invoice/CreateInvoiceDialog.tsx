@@ -1089,8 +1089,14 @@ export function CreateInvoiceDialog({
                   </div>
                   {cappedCredits > 0 && (
                     <div className="flex justify-between text-primary">
-                      <span>Store Credits Used</span>
+                      <span>Store Credits Redeemed</span>
                       <span className="tabular-nums">- ₹ {cappedCredits.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {upfrontNum > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span className="capitalize">Paid via {paymentMode.replace('_',' ')}</span>
+                      <span className="tabular-nums">- ₹ {upfrontNum.toFixed(2)}</span>
                     </div>
                   )}
                   {payments.filter(p => (parseFloat(p.amount)||0) > 0).map((p, i) => (
@@ -1103,17 +1109,18 @@ export function CreateInvoiceDialog({
                     <span>Balance Due</span>
                     <span className="tabular-nums text-primary">₹ {balanceDue.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Status</span>
-                    <span className={cn(
-                      'font-semibold',
-                      paymentStatusUI === 'PAID' && 'text-green-600',
-                      paymentStatusUI === 'PARTIAL' && 'text-orange-600',
-                      paymentStatusUI === 'PENDING' && 'text-destructive',
-                    )}>{paymentStatusUI}</span>
-                  </div>
+                  {paymentStatusUI === 'PAID' ? (
+                    <div className="mt-2 rounded-md border border-green-500/40 bg-green-500/10 px-3 py-1.5 text-[13px] font-semibold text-green-700 dark:text-green-400 inline-flex items-center gap-1">
+                      ✓ PAID IN FULL
+                    </div>
+                  ) : paymentStatusUI === 'PARTIAL' ? (
+                    <div className="mt-2 rounded-md border border-orange-500/40 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-700 dark:text-orange-400 inline-block uppercase tracking-wider">
+                      Partial Payment
+                    </div>
+                  ) : null}
                 </div>
               )}
+
             </div>
           )}
 

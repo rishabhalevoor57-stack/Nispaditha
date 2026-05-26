@@ -420,25 +420,77 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   let rightInnerY = bottomY;
   const boxH = 9;
 
+  // Always render breakdown lines (>0 only): Store Credits, then each payment mode
+  if (storeCreditsUsed > 0) {
+    doc.setDrawColor(...PURPLE_BORDER);
+    doc.setLineWidth(0.3);
+    doc.rect(rightX, rightInnerY, rightW, boxH);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont(FONT, 'normal');
+    doc.setFontSize(9);
+    doc.text('Store Credits Redeemed', rightX + 3, rightInnerY + 5.7);
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...GREEN_PAID);
+    doc.text(`- ${money(storeCreditsUsed)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+    rightInnerY += boxH + 1.5;
+  }
+
+  if (breakdown.length > 0) {
+    for (const p of breakdown) {
+      if (!(p.amount > 0)) continue;
+      doc.setDrawColor(...PURPLE_BORDER);
+      doc.setLineWidth(0.3);
+      doc.rect(rightX, rightInnerY, rightW, boxH);
+      doc.setTextColor(80, 80, 80);
+      doc.setFont(FONT, 'normal');
+      doc.setFontSize(9);
+      doc.text(`Paid via ${formatPaymentMode(p.mode)}`, rightX + 3, rightInnerY + 5.7);
+      doc.setFont(FONT, 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...GREEN_PAID);
+      doc.text(`- ${money(p.amount)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+      rightInnerY += boxH + 1.5;
+    }
+  } else if (advancePaid > 0) {
+    doc.setDrawColor(...PURPLE_BORDER);
+    doc.setLineWidth(0.3);
+    doc.rect(rightX, rightInnerY, rightW, boxH);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont(FONT, 'normal');
+    doc.setFontSize(9);
+    doc.text('Advance Paid', rightX + 3, rightInnerY + 5.7);
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...GREEN_PAID);
+    doc.text(`- ${money(advancePaid)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+    rightInnerY += boxH + 1.5;
+  }
+
+  // Balance Due line (always shown)
+  doc.setFillColor(...PURPLE);
+  doc.rect(rightX, rightInnerY, rightW, boxH, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont(FONT, 'bold');
+  doc.setFontSize(9);
+  doc.text('Balance Due', rightX + 3, rightInnerY + 5.7);
+  doc.setFontSize(11);
+  doc.text(money(Math.max(0, balanceDue)), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+  rightInnerY += boxH + 1.5;
+
+  // Badge
   if (isPaidFull && !isOverpaid) {
-    // Compact green PAID stamp (one line, sits beside Grand Total band)
     const stampH = 8;
-    const stampW = 42;
-    const stampX = rightX + rightW - stampW;
     doc.setFillColor(...GREEN_BG);
     doc.setDrawColor(...GREEN_PAID);
     doc.setLineWidth(0.4);
-    doc.roundedRect(stampX, rightInnerY, stampW, stampH, 1.5, 1.5, 'FD');
-    // checkmark
+    doc.roundedRect(rightX, rightInnerY, rightW, stampH, 1.5, 1.5, 'FD');
     doc.setTextColor(...GREEN_PAID);
     doc.setFont(FONT, 'bold');
     doc.setFontSize(9);
-    doc.text('\u2713', stampX + 3, rightInnerY + stampH / 2 + 1.3);
-    doc.setFontSize(8.5);
-    doc.text('PAID IN FULL', stampX + 7, rightInnerY + stampH / 2 + 1.3);
-    rightInnerY += stampH + 3;
-
-    // Payment received date stamp
+    doc.text('\u2713 PAID IN FULL', rightX + rightW / 2, rightInnerY + stampH / 2 + 1.3, { align: 'center' });
+    rightInnerY += stampH + 2;
+    doc.setLineWidth(0.1);
     if (data.paymentReceivedDate) {
       const recvStr = new Date(data.paymentReceivedDate).toLocaleDateString('en-IN', {
         day: '2-digit', month: '2-digit', year: 'numeric',
@@ -449,91 +501,30 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       doc.text(`Payment Received On: ${recvStr}`, rightX, rightInnerY + 4);
       rightInnerY += 7;
     }
-    doc.setLineWidth(0.1);
-  } else {
-    // Store credits redeemed line
-    if (storeCreditsUsed > 0) {
-      doc.setDrawColor(...PURPLE_BORDER);
-      doc.setLineWidth(0.3);
-      doc.rect(rightX, rightInnerY, rightW, boxH);
-      doc.setTextColor(80, 80, 80);
-      doc.setFont(FONT, 'normal');
-      doc.setFontSize(9);
-      doc.text('Store Credits Redeemed', rightX + 3, rightInnerY + 5.7);
-      doc.setFont(FONT, 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...GREEN_PAID);
-      doc.text(`- ${money(storeCreditsUsed)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
-      rightInnerY += boxH + 1.5;
-    }
-
-    // Payment breakdown lines or generic Advance Paid
-    if (breakdown.length > 0) {
-      for (const p of breakdown) {
-        doc.setDrawColor(...PURPLE_BORDER);
-        doc.setLineWidth(0.3);
-        doc.rect(rightX, rightInnerY, rightW, boxH);
-        doc.setTextColor(80, 80, 80);
-        doc.setFont(FONT, 'normal');
-        doc.setFontSize(9);
-        const label = `Paid via ${formatPaymentMode(p.mode)}`;
-        doc.text(label, rightX + 3, rightInnerY + 5.7);
-        doc.setFont(FONT, 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(...GREEN_PAID);
-        doc.text(`- ${money(p.amount)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
-        rightInnerY += boxH + 1.5;
-      }
-    } else if (advancePaid > 0) {
-      doc.setDrawColor(...PURPLE_BORDER);
-      doc.setLineWidth(0.3);
-      doc.rect(rightX, rightInnerY, rightW, boxH);
-      doc.setTextColor(80, 80, 80);
-      doc.setFont(FONT, 'normal');
-      doc.setFontSize(9);
-      doc.text('Advance Paid', rightX + 3, rightInnerY + 5.7);
-      doc.setFont(FONT, 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...GREEN_PAID);
-      doc.text(`- ${money(advancePaid)}`, rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
-      rightInnerY += boxH + 1.5;
-    }
-
-    // Balance Due box (purple)
-    doc.setFillColor(...PURPLE);
-    doc.rect(rightX, rightInnerY, rightW, boxH, 'F');
-    doc.setTextColor(255, 255, 255);
+  } else if (isPartial) {
+    doc.setFillColor(...ORANGE_BG);
+    doc.setDrawColor(...ORANGE);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(rightX, rightInnerY, rightW, 6, 1, 1, 'FD');
+    doc.setTextColor(...ORANGE);
     doc.setFont(FONT, 'bold');
-    doc.setFontSize(9);
-    doc.text('Balance Due', rightX + 3, rightInnerY + 5.7);
-    doc.setFontSize(11);
-    doc.text(money(Math.max(0, balanceDue)), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
-    rightInnerY += boxH + 1.5;
-
-    if (isPartial) {
-      doc.setFillColor(...ORANGE_BG);
-      doc.setDrawColor(...ORANGE);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(rightX, rightInnerY, rightW, 6, 1, 1, 'FD');
-      doc.setTextColor(...ORANGE);
-      doc.setFont(FONT, 'bold');
-      doc.setFontSize(8);
-      doc.text('PARTIAL PAYMENT', rightX + rightW / 2, rightInnerY + 4, { align: 'center' });
-      rightInnerY += 7;
-      doc.setLineWidth(0.1);
-    }
-    if (isOverpaid) {
-      doc.setTextColor(...ORANGE);
-      doc.setFont(FONT, 'normal');
-      doc.setFontSize(8);
-      doc.text(
-        `Excess: ${money(paidTotal - grandTotalWithRound)} (to be adjusted)`,
-        rightX + 3,
-        rightInnerY + 3,
-      );
-      rightInnerY += 5;
-    }
+    doc.setFontSize(8);
+    doc.text('PARTIAL PAYMENT', rightX + rightW / 2, rightInnerY + 4, { align: 'center' });
+    rightInnerY += 7;
+    doc.setLineWidth(0.1);
   }
+  if (isOverpaid) {
+    doc.setTextColor(...ORANGE);
+    doc.setFont(FONT, 'normal');
+    doc.setFontSize(8);
+    doc.text(
+      `Excess: ${money(paidTotal - grandTotalWithRound)} (to be adjusted)`,
+      rightX + 3,
+      rightInnerY + 3,
+    );
+    rightInnerY += 5;
+  }
+
 
   // Pre-measure terms height for proper box sizing
   doc.setFont(FONT, 'normal');
