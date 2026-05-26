@@ -530,13 +530,26 @@ export function CreateInvoiceDialog({
     try {
       // Resolve client (do NOT modify client balances for drafts)
       let finalClientId = selectedClient && selectedClient !== 'walk-in' ? selectedClient : null;
-      if (!finalClientId && clientPhone && clientPhone.trim()) {
+      const phoneTrim = (clientPhone || '').trim();
+      const nameTrim = (clientName || '').trim();
+      if (!finalClientId && phoneTrim) {
         const { data: existing } = await supabase
           .from('clients')
           .select('id')
-          .eq('phone', clientPhone.trim())
+          .eq('phone', phoneTrim)
           .maybeSingle();
         finalClientId = existing?.id || null;
+      }
+      // If still no client but the user entered name or phone, create a lightweight client
+      // so draft retains client info on reload (no balance changes).
+      if (!finalClientId && (phoneTrim || nameTrim)) {
+        const { data: created, error: createErr } = await supabase
+          .from('clients')
+          .insert({ name: nameTrim || 'Walk-in', phone: phoneTrim || null } as never)
+          .select('id')
+          .single();
+        if (createErr) throw createErr;
+        finalClientId = (created as any)?.id || null;
       }
 
       const draftNumber = editingDraftId ? undefined : 'DRAFT-' + Date.now().toString(36).toUpperCase();
