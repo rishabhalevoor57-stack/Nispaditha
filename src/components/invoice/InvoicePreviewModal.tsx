@@ -381,15 +381,17 @@ export function InvoicePreviewModal({
                         </span>
                       </div>
                     )}
-                <div
-                  className="rounded px-3 py-2 flex items-center justify-between text-white"
-                  style={{ background: PURPLE }}
-                >
-                  <span className="text-[10.5px] uppercase tracking-wider font-semibold">Balance Due</span>
-                  <span className="font-bold" style={{ ...num, fontSize: 13, minWidth: 90, textAlign: 'right' }}>
-                    {money(Math.max(0, balanceDue))}
-                  </span>
-                </div>
+                {!isPaidFull && (
+                  <div
+                    className="rounded px-3 py-2 flex items-center justify-between text-white"
+                    style={{ background: PURPLE }}
+                  >
+                    <span className="text-[10.5px] uppercase tracking-wider font-semibold">Balance Due</span>
+                    <span className="font-bold" style={{ ...num, fontSize: 13, minWidth: 90, textAlign: 'right' }}>
+                      {money(Math.max(0, balanceDue))}
+                    </span>
+                  </div>
+                )}
                 {isPaidFull && !isOverpaid ? (
                   <div
                     className="rounded flex items-center justify-center gap-2 py-2"
