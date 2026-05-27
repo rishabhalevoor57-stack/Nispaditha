@@ -26,6 +26,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { InvoiceItemsTable } from './InvoiceItemsTable';
+import { ClientSearchBox } from './ClientSearchBox';
 
 import { InvoicePreviewModal } from './InvoicePreviewModal';
 import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
