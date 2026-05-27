@@ -468,16 +468,18 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     rightInnerY += boxH + 1.5;
   }
 
-  // Balance Due line (always shown)
-  doc.setFillColor(...PURPLE);
-  doc.rect(rightX, rightInnerY, rightW, boxH, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont(FONT, 'bold');
-  doc.setFontSize(9);
-  doc.text('Balance Due', rightX + 3, rightInnerY + 5.7);
-  doc.setFontSize(11);
-  doc.text(money(Math.max(0, balanceDue)), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
-  rightInnerY += boxH + 1.5;
+  // Balance Due line (hidden when fully paid)
+  if (!isPaidFull) {
+    doc.setFillColor(...PURPLE);
+    doc.rect(rightX, rightInnerY, rightW, boxH, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(9);
+    doc.text('Balance Due', rightX + 3, rightInnerY + 5.7);
+    doc.setFontSize(11);
+    doc.text(money(Math.max(0, balanceDue)), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+    rightInnerY += boxH + 1.5;
+  }
 
   // Badge
   if (isPaidFull && !isOverpaid) {
