@@ -96,11 +96,12 @@ export function InvoicePreviewModal({
   const breakdownTotal = paymentBreakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashOrUpiPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
   const paidTotal = cashOrUpiPaid + storeCreditsUsed;
-  const balanceDue = grandTotal - paidTotal;
+  let balanceDue = Math.round((grandTotal - paidTotal) * 100) / 100;
+  if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
 
-  const isPaidFull = paidTotal >= grandTotal - 0.001 && grandTotal > 0;
-  const isOverpaid = paidTotal > grandTotal + 0.001 && grandTotal > 0;
-  const isPartial = paidTotal > 0 && !isPaidFull;
+  const isPaidFull = grandTotal > 0 && balanceDue === 0 && paidTotal > 0;
+  const isOverpaid = paidTotal > grandTotal + 0.05 && grandTotal > 0;
+  const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
 
   const num: React.CSSProperties = {
     whiteSpace: 'nowrap',
@@ -380,15 +381,17 @@ export function InvoicePreviewModal({
                         </span>
                       </div>
                     )}
-                <div
-                  className="rounded px-3 py-2 flex items-center justify-between text-white"
-                  style={{ background: PURPLE }}
-                >
-                  <span className="text-[10.5px] uppercase tracking-wider font-semibold">Balance Due</span>
-                  <span className="font-bold" style={{ ...num, fontSize: 13, minWidth: 90, textAlign: 'right' }}>
-                    {money(Math.max(0, balanceDue))}
-                  </span>
-                </div>
+                {!isPaidFull && (
+                  <div
+                    className="rounded px-3 py-2 flex items-center justify-between text-white"
+                    style={{ background: PURPLE }}
+                  >
+                    <span className="text-[10.5px] uppercase tracking-wider font-semibold">Balance Due</span>
+                    <span className="font-bold" style={{ ...num, fontSize: 13, minWidth: 90, textAlign: 'right' }}>
+                      {money(Math.max(0, balanceDue))}
+                    </span>
+                  </div>
+                )}
                 {isPaidFull && !isOverpaid ? (
                   <div
                     className="rounded flex items-center justify-center gap-2 py-2"

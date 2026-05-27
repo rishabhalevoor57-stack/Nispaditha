@@ -336,7 +336,8 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const breakdown = data.paymentBreakdown || [];
   const breakdownTotal = breakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
-  const balanceDue = grandTotalWithRound - cashPaid - storeCreditsUsed;
+  let balanceDue = Math.round((grandTotalWithRound - cashPaid - storeCreditsUsed) * 100) / 100;
+  if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
 
   doc.setFontSize(9);
   doc.setFont(FONT, 'normal');
@@ -391,9 +392,9 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
 
   // ================== STATUS DETERMINATION ==================
   const paidTotal = cashPaid + storeCreditsUsed;
-  const isPaidFull = paidTotal >= grandTotalWithRound - 0.001 && grandTotalWithRound > 0;
-  const isOverpaid = paidTotal > grandTotalWithRound + 0.001 && grandTotalWithRound > 0;
-  const isPartial = paidTotal > 0 && !isPaidFull;
+  const isPaidFull = grandTotalWithRound > 0 && balanceDue === 0 && paidTotal > 0;
+  const isOverpaid = paidTotal > grandTotalWithRound + 0.05 && grandTotalWithRound > 0;
+  const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
 
   // Reserve space for footer + signature + status section
   const footerH = 11;
@@ -467,16 +468,18 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     rightInnerY += boxH + 1.5;
   }
 
-  // Balance Due line (always shown)
-  doc.setFillColor(...PURPLE);
-  doc.rect(rightX, rightInnerY, rightW, boxH, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont(FONT, 'bold');
-  doc.setFontSize(9);
-  doc.text('Balance Due', rightX + 3, rightInnerY + 5.7);
-  doc.setFontSize(11);
-  doc.text(money(Math.max(0, balanceDue)), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
-  rightInnerY += boxH + 1.5;
+  // Balance Due line (hidden when fully paid)
+  if (!isPaidFull) {
+    doc.setFillColor(...PURPLE);
+    doc.rect(rightX, rightInnerY, rightW, boxH, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(9);
+    doc.text('Balance Due', rightX + 3, rightInnerY + 5.7);
+    doc.setFontSize(11);
+    doc.text(money(Math.max(0, balanceDue)), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+    rightInnerY += boxH + 1.5;
+  }
 
   // Badge
   if (isPaidFull && !isOverpaid) {
