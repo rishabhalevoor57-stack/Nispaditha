@@ -392,9 +392,9 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
 
   // ================== STATUS DETERMINATION ==================
   const paidTotal = cashPaid + storeCreditsUsed;
-  const isPaidFull = paidTotal >= grandTotalWithRound - 0.001 && grandTotalWithRound > 0;
-  const isOverpaid = paidTotal > grandTotalWithRound + 0.001 && grandTotalWithRound > 0;
-  const isPartial = paidTotal > 0 && !isPaidFull;
+  const isPaidFull = grandTotalWithRound > 0 && balanceDue === 0 && paidTotal > 0;
+  const isOverpaid = paidTotal > grandTotalWithRound + 0.05 && grandTotalWithRound > 0;
+  const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
 
   // Reserve space for footer + signature + status section
   const footerH = 11;
