@@ -96,11 +96,12 @@ export function InvoicePreviewModal({
   const breakdownTotal = paymentBreakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashOrUpiPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
   const paidTotal = cashOrUpiPaid + storeCreditsUsed;
-  const balanceDue = grandTotal - paidTotal;
+  let balanceDue = Math.round((grandTotal - paidTotal) * 100) / 100;
+  if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
 
-  const isPaidFull = paidTotal >= grandTotal - 0.001 && grandTotal > 0;
-  const isOverpaid = paidTotal > grandTotal + 0.001 && grandTotal > 0;
-  const isPartial = paidTotal > 0 && !isPaidFull;
+  const isPaidFull = grandTotal > 0 && balanceDue === 0 && paidTotal > 0;
+  const isOverpaid = paidTotal > grandTotal + 0.05 && grandTotal > 0;
+  const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
 
   const num: React.CSSProperties = {
     whiteSpace: 'nowrap',
