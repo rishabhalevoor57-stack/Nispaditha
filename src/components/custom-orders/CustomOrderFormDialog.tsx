@@ -323,13 +323,24 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
             </CardContent>
           </Card>
 
+          {/* Components */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Components</CardTitle>
+              <p className="text-xs text-muted-foreground">Individual parts (hooks, clasps, chains, stones, beads, findings)</p>
+            </CardHeader>
+            <CardContent>
+              <CustomOrderComponentsTable components={components} onChange={setComponents} />
+            </CardContent>
+          </Card>
+
           {/* Charges & Totals */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Additional Charges & Total</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                 <div className="space-y-2">
                   <Label>Design Charges</Label>
                   <Input type="number" min="0" value={designCharges || ''} onChange={(e) => setDesignCharges(parseFloat(e.target.value) || 0)} placeholder="0" />
@@ -346,14 +357,26 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                   <Label>Custom Label</Label>
                   <Input value={additionalChargeLabel} onChange={(e) => setAdditionalChargeLabel(e.target.value)} placeholder="Additional Charge" />
                 </div>
+                <div className="space-y-2">
+                  <Label>GST %</Label>
+                  <Input type="number" min="0" max="100" step="0.01" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} placeholder="3" />
+                </div>
               </div>
               <Separator className="my-4" />
               <div className="space-y-1.5 text-right">
                 <div className="text-sm text-muted-foreground">Items Total: ₹{itemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                {componentsTotal > 0 && <div className="text-sm text-muted-foreground">Components Cost: ₹{componentsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
                 {designCharges > 0 && <div className="text-sm text-muted-foreground">Design Charges: ₹{designCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
                 {additionalCharge > 0 && <div className="text-sm text-muted-foreground">{additionalChargeLabel}: ₹{additionalCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
                 {flatDiscount > 0 && (
                   <div className="text-sm text-destructive">Flat Discount: -₹{flatDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                )}
+                <div className="text-sm text-muted-foreground border-t pt-1 mt-1">Subtotal: ₹{Math.max(0, subTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                {gstPercentage > 0 && (
+                  <>
+                    <div className="text-sm text-muted-foreground">CGST ({(gstPercentage / 2).toFixed(2)}%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    <div className="text-sm text-muted-foreground">SGST ({(gstPercentage / 2).toFixed(2)}%): ₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                  </>
                 )}
                 <div className="text-xl font-bold pt-1">Grand Total: ₹{Math.max(0, totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
               </div>
