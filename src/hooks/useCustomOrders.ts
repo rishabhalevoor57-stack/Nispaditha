@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CustomOrder, CustomOrderItem, CustomOrderStatus } from '@/types/customOrder';
+import { CustomOrder, CustomOrderItem, CustomOrderComponent, CustomOrderStatus } from '@/types/customOrder';
 import { toast } from '@/hooks/use-toast';
 import { ensureClient } from '@/utils/ensureClient';
 
@@ -40,10 +40,11 @@ export const useCustomOrders = () => {
     return data;
   };
 
-  const getOrderWithItems = async (id: string): Promise<CustomOrder & { items: CustomOrderItem[] }> => {
-    const [orderResult, itemsResult] = await Promise.all([
+  const getOrderWithItems = async (id: string): Promise<CustomOrder & { items: CustomOrderItem[]; components: CustomOrderComponent[] }> => {
+    const [orderResult, itemsResult, componentsResult] = await Promise.all([
       supabase.from('custom_orders').select('*').eq('id', id).single(),
       supabase.from('custom_order_items').select('*').eq('custom_order_id', id).order('created_at', { ascending: true }),
+      (supabase.from('custom_order_components' as any).select('*').eq('custom_order_id', id).order('created_at', { ascending: true }) as any),
     ]);
 
     if (orderResult.error) throw orderResult.error;
@@ -57,6 +58,7 @@ export const useCustomOrders = () => {
         discount_type: item.discount_type || 'fixed',
         discount_value: item.discount_value || 0,
       })) as CustomOrderItem[],
+      components: ((componentsResult as any)?.data || []) as CustomOrderComponent[],
     };
   };
 
@@ -78,6 +80,7 @@ export const useCustomOrders = () => {
     mutationFn: async (data: {
       order: Omit<CustomOrder, 'id' | 'created_at' | 'updated_at'>;
       items: Omit<CustomOrderItem, 'id' | 'custom_order_id' | 'created_at'>[];
+      components?: Omit<CustomOrderComponent, 'id' | 'custom_order_id' | 'created_at'>[];
     }) => {
       const { data: orderData, error: orderError } = await supabase
         .from('custom_orders')
@@ -98,6 +101,12 @@ export const useCustomOrders = () => {
           .insert(itemsWithId);
 
         if (itemsError) throw itemsError;
+      }
+
+      if (data.components && data.components.length > 0) {
+        const componentsWithId = data.components.map(c => ({ ...c, custom_order_id: orderData.id }));
+        const { error: compErr } = await (supabase.from('custom_order_components' as any).insert(componentsWithId) as any);
+        if (compErr) throw compErr;
       }
 
       // Lock SKUs
@@ -123,6 +132,7 @@ export const useCustomOrders = () => {
       id: string;
       order: Partial<CustomOrder>;
       items: Omit<CustomOrderItem, 'custom_order_id' | 'created_at'>[];
+      components?: Omit<CustomOrderComponent, 'id' | 'custom_order_id' | 'created_at'>[];
     }) => {
       const { error: orderError } = await supabase
         .from('custom_orders')
@@ -166,6 +176,14 @@ export const useCustomOrders = () => {
           .insert(itemsWithId);
 
         if (itemsError) throw itemsError;
+      }
+
+      // Replace components
+      await (supabase.from('custom_order_components' as any).delete().eq('custom_order_id', data.id) as any);
+      if (data.components && data.components.length > 0) {
+        const compsWithId = data.components.map(c => ({ ...c, custom_order_id: data.id }));
+        const { error: compErr } = await (supabase.from('custom_order_components' as any).insert(compsWithId) as any);
+        if (compErr) throw compErr;
       }
 
       // Lock new SKUs (unless released)

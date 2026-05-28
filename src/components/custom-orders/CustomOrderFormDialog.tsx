@@ -13,7 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { CustomOrderItemsTable } from './CustomOrderItemsTable';
-import { CustomOrder, CustomOrderItem, CustomOrderStatus, CUSTOM_ORDER_STATUS_LABELS } from '@/types/customOrder';
+import { CustomOrderComponentsTable } from './CustomOrderComponentsTable';
+import { CustomOrder, CustomOrderItem, CustomOrderComponent, CustomOrderStatus, CUSTOM_ORDER_STATUS_LABELS } from '@/types/customOrder';
 import { useCustomOrders } from '@/hooks/useCustomOrders';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,6 +48,8 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const [flatDiscount, setFlatDiscount] = useState(0);
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<CustomOrderItem[]>([]);
+  const [components, setComponents] = useState<CustomOrderComponent[]>([]);
+  const [gstPercentage, setGstPercentage] = useState<number>(3);
 
   // Client search
   const [clientSearch, setClientSearch] = useState('');
@@ -56,7 +59,13 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const isEditing = !!order;
 
   const itemsTotal = items.reduce((sum, item) => sum + item.item_total, 0);
-  const totalAmount = itemsTotal + designCharges + additionalCharge - flatDiscount;
+  const componentsTotal = components.reduce((sum, c) => sum + (Number(c.total) || 0), 0);
+  const componentsWeight = components.reduce((sum, c) => sum + (Number(c.weight_grams) || 0) * (Number(c.quantity) || 0), 0);
+  const subTotal = itemsTotal + componentsTotal + designCharges + additionalCharge - flatDiscount;
+  const gstAmount = Math.max(0, subTotal) * (gstPercentage / 100);
+  const cgst = gstAmount / 2;
+  const sgst = gstAmount / 2;
+  const totalAmount = Math.max(0, subTotal) + gstAmount;
 
   // Fetch clients for search
   useEffect(() => {
@@ -100,8 +109,10 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setAdditionalCharge(full.additional_charge);
         setAdditionalChargeLabel(full.additional_charge_label || 'Additional Charge');
         setFlatDiscount(full.flat_discount || 0);
+        setGstPercentage(Number((full as any).gst_percentage) || 3);
         setNotes(full.notes || '');
         setItems(full.items || []);
+        setComponents((full as any).components || []);
       } else {
         const ref = await generateReference();
         setReference(ref);
@@ -114,8 +125,10 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setAdditionalCharge(0);
         setAdditionalChargeLabel('Additional Charge');
         setFlatDiscount(0);
+        setGstPercentage(3);
         setNotes('');
         setItems([]);
+        setComponents([]);
       }
     };
     load();
@@ -136,6 +149,9 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         additional_charge: additionalCharge,
         additional_charge_label: additionalChargeLabel,
         flat_discount: flatDiscount,
+        gst_percentage: gstPercentage,
+        components_total: componentsTotal,
+        components_weight: componentsWeight,
         total_amount: Math.max(0, totalAmount),
         notes: notes || null,
         converted_to_invoice_id: order?.converted_to_invoice_id || null,
@@ -164,10 +180,22 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         item_total: item.item_total,
       }));
 
+      const componentsData = components
+        .filter(c => c.component_name.trim())
+        .map(c => ({
+          component_name: c.component_name,
+          material: c.material || null,
+          weight_grams: c.weight_grams || 0,
+          quantity: c.quantity || 1,
+          unit_price: c.unit_price || 0,
+          rate_per_gram: c.rate_per_gram || 0,
+          total: c.total || 0,
+        }));
+
       if (isEditing) {
-        await updateOrder.mutateAsync({ id: order.id, order: orderData, items: itemsData });
+        await updateOrder.mutateAsync({ id: order.id, order: orderData, items: itemsData, components: componentsData });
       } else {
-        await createOrder.mutateAsync({ order: orderData as any, items: itemsData });
+        await createOrder.mutateAsync({ order: orderData as any, items: itemsData, components: componentsData });
       }
       onOpenChange(false);
     } finally {
@@ -295,13 +323,24 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
             </CardContent>
           </Card>
 
+          {/* Components */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Components</CardTitle>
+              <p className="text-xs text-muted-foreground">Individual parts (hooks, clasps, chains, stones, beads, findings)</p>
+            </CardHeader>
+            <CardContent>
+              <CustomOrderComponentsTable components={components} onChange={setComponents} />
+            </CardContent>
+          </Card>
+
           {/* Charges & Totals */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Additional Charges & Total</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                 <div className="space-y-2">
                   <Label>Design Charges</Label>
                   <Input type="number" min="0" value={designCharges || ''} onChange={(e) => setDesignCharges(parseFloat(e.target.value) || 0)} placeholder="0" />
@@ -318,14 +357,26 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                   <Label>Custom Label</Label>
                   <Input value={additionalChargeLabel} onChange={(e) => setAdditionalChargeLabel(e.target.value)} placeholder="Additional Charge" />
                 </div>
+                <div className="space-y-2">
+                  <Label>GST %</Label>
+                  <Input type="number" min="0" max="100" step="0.01" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} placeholder="3" />
+                </div>
               </div>
               <Separator className="my-4" />
               <div className="space-y-1.5 text-right">
                 <div className="text-sm text-muted-foreground">Items Total: ₹{itemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                {componentsTotal > 0 && <div className="text-sm text-muted-foreground">Components Cost: ₹{componentsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
                 {designCharges > 0 && <div className="text-sm text-muted-foreground">Design Charges: ₹{designCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
                 {additionalCharge > 0 && <div className="text-sm text-muted-foreground">{additionalChargeLabel}: ₹{additionalCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
                 {flatDiscount > 0 && (
                   <div className="text-sm text-destructive">Flat Discount: -₹{flatDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                )}
+                <div className="text-sm text-muted-foreground border-t pt-1 mt-1">Subtotal: ₹{Math.max(0, subTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                {gstPercentage > 0 && (
+                  <>
+                    <div className="text-sm text-muted-foreground">CGST ({(gstPercentage / 2).toFixed(2)}%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    <div className="text-sm text-muted-foreground">SGST ({(gstPercentage / 2).toFixed(2)}%): ₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                  </>
                 )}
                 <div className="text-xl font-bold pt-1">Grand Total: ₹{Math.max(0, totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
               </div>

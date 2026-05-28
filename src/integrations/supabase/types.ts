@@ -379,6 +379,45 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_order_components: {
+        Row: {
+          component_name: string
+          created_at: string
+          custom_order_id: string
+          id: string
+          material: string | null
+          quantity: number
+          rate_per_gram: number
+          total: number
+          unit_price: number
+          weight_grams: number
+        }
+        Insert: {
+          component_name: string
+          created_at?: string
+          custom_order_id: string
+          id?: string
+          material?: string | null
+          quantity?: number
+          rate_per_gram?: number
+          total?: number
+          unit_price?: number
+          weight_grams?: number
+        }
+        Update: {
+          component_name?: string
+          created_at?: string
+          custom_order_id?: string
+          id?: string
+          material?: string | null
+          quantity?: number
+          rate_per_gram?: number
+          total?: number
+          unit_price?: number
+          weight_grams?: number
+        }
+        Relationships: []
+      }
       custom_order_items: {
         Row: {
           base_price: number
@@ -474,12 +513,15 @@ export type Database = {
           additional_charge: number
           additional_charge_label: string | null
           client_name: string
+          components_total: number
+          components_weight: number
           converted_to_invoice_id: string | null
           created_at: string
           created_by: string | null
           design_charges: number
           expected_delivery_date: string | null
           flat_discount: number
+          gst_percentage: number
           id: string
           notes: string | null
           order_date: string
@@ -493,12 +535,15 @@ export type Database = {
           additional_charge?: number
           additional_charge_label?: string | null
           client_name: string
+          components_total?: number
+          components_weight?: number
           converted_to_invoice_id?: string | null
           created_at?: string
           created_by?: string | null
           design_charges?: number
           expected_delivery_date?: string | null
           flat_discount?: number
+          gst_percentage?: number
           id?: string
           notes?: string | null
           order_date?: string
@@ -512,12 +557,15 @@ export type Database = {
           additional_charge?: number
           additional_charge_label?: string | null
           client_name?: string
+          components_total?: number
+          components_weight?: number
           converted_to_invoice_id?: string | null
           created_at?: string
           created_by?: string | null
           design_charges?: number
           expected_delivery_date?: string | null
           flat_discount?: number
+          gst_percentage?: number
           id?: string
           notes?: string | null
           order_date?: string
@@ -1531,6 +1579,87 @@ export type Database = {
           },
         ]
       }
+      service_forms: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          client_phone: string | null
+          completed_at: string | null
+          completed_invoice_id: string | null
+          condition_on_receipt: string | null
+          created_at: string
+          created_by: string | null
+          estimated_cost: number
+          estimated_delivery_date: string | null
+          final_cost: number
+          from_our_shop: boolean
+          id: string
+          item_description: string
+          material: string | null
+          original_invoice_no: string | null
+          other_service_text: string | null
+          photo_url: string | null
+          receipt_number: string
+          service_notes: string | null
+          service_types: string[]
+          status: string
+          updated_at: string
+          weight_grams: number
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          client_phone?: string | null
+          completed_at?: string | null
+          completed_invoice_id?: string | null
+          condition_on_receipt?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_cost?: number
+          estimated_delivery_date?: string | null
+          final_cost?: number
+          from_our_shop?: boolean
+          id?: string
+          item_description: string
+          material?: string | null
+          original_invoice_no?: string | null
+          other_service_text?: string | null
+          photo_url?: string | null
+          receipt_number: string
+          service_notes?: string | null
+          service_types?: string[]
+          status?: string
+          updated_at?: string
+          weight_grams?: number
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          client_phone?: string | null
+          completed_at?: string | null
+          completed_invoice_id?: string | null
+          condition_on_receipt?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_cost?: number
+          estimated_delivery_date?: string | null
+          final_cost?: number
+          from_our_shop?: boolean
+          id?: string
+          item_description?: string
+          material?: string | null
+          original_invoice_no?: string | null
+          other_service_text?: string | null
+          photo_url?: string | null
+          receipt_number?: string
+          service_notes?: string | null
+          service_types?: string[]
+          status?: string
+          updated_at?: string
+          weight_grams?: number
+        }
+        Relationships: []
+      }
       stock_history: {
         Row: {
           created_at: string
@@ -1900,6 +2029,7 @@ export type Database = {
         Args: { p_type: string }
         Returns: string
       }
+      generate_service_receipt_number: { Args: never; Returns: string }
       generate_store_invoice_number: {
         Args: { p_store_id: string }
         Returns: string

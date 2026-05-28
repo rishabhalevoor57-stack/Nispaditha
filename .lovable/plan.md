@@ -1,82 +1,78 @@
-# Implementation Plan — Returns/Exchange/Buyback + Invoice Wallet + PDF Fixes
+# Plan: Custom Order Components + Service Form Rework
 
-This is a large multi-part request. I'll execute it in clearly scoped batches so nothing currently working breaks. Below is exactly what I'll change and in what order.
+This is a large, two-part feature. Below is the implementation plan. Both changes touch DB schema, so I want your approval before running migrations.
 
-## Batch A — Returns / Exchange / Buyback flow
+---
 
-**Exchange (CHANGE 1)**
-- Remove "New Items" search/selection from `ExchangeDetailsStep.tsx`.
-- Make Exchange behave like Return: refund = grand total of returned items as Store Credits (default), with a "Refund as Cash" toggle.
-- Zero GST.
-- Add "After Exchange — Send Item To" radio: **Inventory** (default, stock +1) or **Repair** (insert into `repair_items`, stock unchanged).
-- Credits auto-credited to client wallet via `adjustWallet`.
+## CHANGE 1 — Custom Order: Components Section + Editable GST
 
-**Return (CHANGE 2)**
-- Add the same "Send Item To" Inventory/Repair radio in `ReturnDetailsStep.tsx`.
-- Keep existing store-credit/cash refund logic.
+### Database
+New table `custom_order_components`:
+- `custom_order_id` (FK to custom_orders)
+- `component_name`, `material`, `weight_grams`, `quantity`, `unit_price`, `total`
+- standard timestamps + RLS (same pattern as `custom_order_items`)
 
-**Buyback (CHANGE 3 + follow-up CHANGE 1)**
-- In `BuybackDialog.tsx` add a top selector: **Jewellery Buyback** | **Metal Buyback**.
-- Jewellery: existing flow + editable rate + Round Off field.
-- Metal: no invoice; fields = Metal Type (Silver/Gold/Brass/Other w/ text), Weight, Rate (auto from `business_settings`, editable), Round Off, live calculated amount, "Store Credits to be added" preview.
-- **Remove** the Inventory/Repair toggle from Buyback entirely — all buyback items go straight to `repair_items` automatically (jewellery goes with product link; metal goes as raw entry with metal type in notes).
-- Refund method = Store Credits only. No GST.
+Add columns to `custom_orders`:
+- `gst_percentage` numeric default 3
+- `components_total` numeric default 0
+- `components_weight` numeric default 0
 
-**Invoice list dropdown (CHANGE 4)**
-- In invoices row actions, add "Buyback" option alongside Return/Exchange. Clicking opens `BuybackDialog` in Jewellery mode with invoice pre-filled.
+### Frontend
+- `CustomOrderFormDialog.tsx`: add a "Components" section below product details
+  - Rows with: Component Name, Material, Weight, Qty, Unit Price, Total (auto = weight×rate OR qty×unit_price; if both, prefer qty×unit_price when unit_price>0)
+  - "+ Add Component" dashed purple button
+  - Per-row delete (×)
+  - Summary: Total Component Weight + Total Component Cost
+- Add GST % input field (default 3)
+- Update total calculation: `making_charges + items_total + components_total`, then GST split CGST = SGST = GST/2
+- `useCustomOrders.ts`: save/load components alongside items
+- `ViewCustomOrderDialog.tsx` + PDF: show components table + GST breakdown
 
-**Returns page tabs (CHANGE 5)**
-- Tabs already include Buyback. Verify counts and that buyback rows display correctly. Add metal-specific columns when type = buyback (Metal/Weight/Rate/Round Off/Credits/Invoice Ref).
+---
 
-**Wallet auto-sync (CHANGE 6)**
-- Already done via `adjustWallet`; add toast `₹X credits added to <Client>'s wallet` on confirmation. The `useStoreWallet` hook re-fetches when client dialog opens.
+## CHANGE 2 — Service Form: Complete Rework
 
-## Batch B — Invoice Store Wallet integration
+The current "Service Form" page (`OrderNotes.tsx` + `order_notes` table) is repurposed for general orders. Per your spec, the new Service Form is a distinct workflow (drop-off → receipt → completion → GST invoice). I will build it as a new module rather than break the existing Order Notes flow.
 
-**CHANGE 2 + 3 (Invoice form wallet)**
-- In `CreateInvoiceDialog.tsx`:
-  - When existing client selected, fetch wallet balance and show `Store Wallet: ₹X available` chip near client name.
-  - In totals area (before Grand Total), show Store Wallet section with "Use Credits" input, capped at min(balance, grandTotal). Hide entirely if balance = 0.
-  - Show "Amount to Pay" = grandTotal − creditsUsed.
-  - If 0 → auto-mark PAID, payment_mode = `store_wallet`, hide payment fields.
-  - If > 0 → existing payment options (Paid / Advance / Pending) on remaining amount.
-  - On save: write `store_credits_used`, debit wallet via RPC.
+### Database
+New tables:
 
-(Most of this was implemented in prior turn. I'll verify and add the visible "available" chip + green "Paid in Full" badge when credits cover full total.)
+**`service_forms`**
+- `receipt_number` (auto SVC-000001 via new RPC `generate_service_receipt_number`)
+- `client_id`, `client_name`, `client_phone`
+- `item_description`, `from_our_shop` bool, `original_invoice_no`
+- `material` (gold/silver/brass/other), `weight_grams`
+- `condition_on_receipt`, `photo_url`
+- `service_types` text[] (multi-select), `other_service_text`
+- `service_notes`, `estimated_delivery_date`, `estimated_cost`
+- `status` enum: received | in_progress | ready | completed
+- `completed_invoice_id` (FK invoices, nullable)
+- timestamps, RLS like order_notes
 
-## Batch C — Bug fixes
+New storage bucket: `service-form-images` (public, for condition photos).
 
-**BUG FIX 4 — Live rate not showing**
-- In `CreateInvoiceDialog` / `MetalRateToggle`, ensure rate loads on mount via the same source used by `LiveMetalRatesCard` (`business_settings.silver_rate_per_gram` / `gold_rate_per_gram`). Show `(from software)` label, fall back to last known with `(last known)`. Allow manual override; auto-fill product Rate/g.
+### Frontend — New module
+- `src/pages/ServiceForms.tsx` — list view with columns + status badges + actions
+- `src/components/service-forms/ServiceFormDialog.tsx` — create/edit form with the 4 sections (client search reusing `ClientSearchBox` + new-client inline-add, jewellery details, service details)
+- `src/components/service-forms/ViewServiceFormDialog.tsx`
+- `src/components/service-forms/ServiceFormTable.tsx`
+- `src/components/service-forms/CompleteServiceDialog.tsx` — converts to GST service invoice (5% GST, CGST/SGST split, payment mode)
+- `src/utils/serviceReceiptPdf.ts` — Service Receipt PDF (purple header, SVC-xxx, signature line)
+- `src/hooks/useServiceForms.ts`
+- Sidebar: add "Service Forms" nav entry (the existing "Service Form" entry stays — it points to Order Notes / general orders)
+- Routing in `App.tsx`: add `/service-forms`
 
-**BUG FIX 5 — Terms text overlap in PDF**
-- In `invoicePdf.ts`, fix Terms rendering: use jsPDF `splitTextToSize` with proper width and increase line spacing. Currently text is being painted at fixed Y without wrapping — switch to wrapped paragraph mode with line height ~1.6.
+### Service Invoice generation (Complete & Bill)
+- Uses existing `invoices` table with GST = 5% override
+- Items: each selected service becomes an invoice line (description = service name, qty = 1, total = portion of final charge — or single line "Service: Polish, Repair" with total = final charge)
+- After invoice creation, `service_forms.status = 'completed'` and `completed_invoice_id` set
+- Reuses `InvoicePreviewModal` / existing PDF for the invoice itself
 
-**BUG FIX 6 — Empty space below payment summary**
-- Remove forced full-page height; let signature/footer follow content. Compute `currentY` after Terms and place signature/footer at `currentY + 16`, not at fixed bottom.
+---
 
-**BUG FIX 7 — Logo placeholder white box**
-- In header drawing, only draw logo block if `business_settings.logo_url` exists and image loads. On error, skip entirely (no white rect). Don't reserve the box if no logo.
+## Scope notes
+- This is a large change (~15 new files, 2 migrations, ~1500+ LOC). I'll do it in two commits internally but one response.
+- I will NOT modify existing Order Notes / invoice / inventory logic beyond adding the new module and sidebar entry.
+- Existing memories preserved (multi-store, audit trail, billing logic, etc.).
 
-## Batch D — Database
-
-Add columns (idempotent migration) on `invoices`:
-- `amount_after_credits NUMERIC DEFAULT 0`
-- `amount_paid_via_mode NUMERIC DEFAULT 0`
-- `payment_mode_for_remaining TEXT`
-
-(`store_credits_used` already exists.)
-
-For Metal Buyback storage: reuse `return_exchanges` with `type='buyback'`, `subtype='metal'|'jewellery'`, store metal type in `notes`/new field. Add `metal_type TEXT NULL` and `buyback_kind TEXT NULL` to `return_exchanges` so the Buyback tab can render metal columns cleanly.
-
-## Order of execution
-
-1. Run migration (Batch D).
-2. Implement Batch A (Returns/Exchange/Buyback UI + logic).
-3. Implement Batch B (invoice wallet visibility polish).
-4. Implement Batch C (PDF + live rate fixes).
-5. Verify by opening Invoice form and Returns page in preview; download a sample PDF.
-
-## Won't touch
-
-Invoice layout/branding, GST split, Round Off, Terms content, calculations, SKU search, Pending Payments, Custom Orders, Repair existing flow, existing Supabase columns.
+Approve to proceed and I'll run the migrations + write the code.

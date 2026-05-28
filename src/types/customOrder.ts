@@ -23,6 +23,19 @@ export interface CustomOrderItem {
   created_at?: string;
 }
 
+export interface CustomOrderComponent {
+  id?: string;
+  custom_order_id?: string;
+  component_name: string;
+  material?: string | null;
+  weight_grams: number;
+  quantity: number;
+  unit_price: number;
+  rate_per_gram: number;
+  total: number;
+  created_at?: string;
+}
+
 export interface CustomOrder {
   id: string;
   reference_number: string;
@@ -36,12 +49,16 @@ export interface CustomOrder {
   additional_charge_label: string;
   flat_discount: number;
   total_amount: number;
+  gst_percentage?: number;
+  components_total?: number;
+  components_weight?: number;
   notes: string | null;
   converted_to_invoice_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
   items?: CustomOrderItem[];
+  components?: CustomOrderComponent[];
 }
 
 export type CustomOrderStatus = 'draft' | 'confirmed' | 'in_production' | 'ready' | 'delivered' | 'released';
