@@ -109,8 +109,10 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setAdditionalCharge(full.additional_charge);
         setAdditionalChargeLabel(full.additional_charge_label || 'Additional Charge');
         setFlatDiscount(full.flat_discount || 0);
+        setGstPercentage(Number((full as any).gst_percentage) || 3);
         setNotes(full.notes || '');
         setItems(full.items || []);
+        setComponents((full as any).components || []);
       } else {
         const ref = await generateReference();
         setReference(ref);
@@ -123,8 +125,10 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setAdditionalCharge(0);
         setAdditionalChargeLabel('Additional Charge');
         setFlatDiscount(0);
+        setGstPercentage(3);
         setNotes('');
         setItems([]);
+        setComponents([]);
       }
     };
     load();
