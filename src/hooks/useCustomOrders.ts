@@ -80,6 +80,7 @@ export const useCustomOrders = () => {
     mutationFn: async (data: {
       order: Omit<CustomOrder, 'id' | 'created_at' | 'updated_at'>;
       items: Omit<CustomOrderItem, 'id' | 'custom_order_id' | 'created_at'>[];
+      components?: Omit<CustomOrderComponent, 'id' | 'custom_order_id' | 'created_at'>[];
     }) => {
       const { data: orderData, error: orderError } = await supabase
         .from('custom_orders')
@@ -100,6 +101,12 @@ export const useCustomOrders = () => {
           .insert(itemsWithId);
 
         if (itemsError) throw itemsError;
+      }
+
+      if (data.components && data.components.length > 0) {
+        const componentsWithId = data.components.map(c => ({ ...c, custom_order_id: orderData.id }));
+        const { error: compErr } = await (supabase.from('custom_order_components' as any).insert(componentsWithId) as any);
+        if (compErr) throw compErr;
       }
 
       // Lock SKUs
