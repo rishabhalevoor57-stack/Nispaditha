@@ -40,10 +40,11 @@ export const useCustomOrders = () => {
     return data;
   };
 
-  const getOrderWithItems = async (id: string): Promise<CustomOrder & { items: CustomOrderItem[] }> => {
-    const [orderResult, itemsResult] = await Promise.all([
+  const getOrderWithItems = async (id: string): Promise<CustomOrder & { items: CustomOrderItem[]; components: CustomOrderComponent[] }> => {
+    const [orderResult, itemsResult, componentsResult] = await Promise.all([
       supabase.from('custom_orders').select('*').eq('id', id).single(),
       supabase.from('custom_order_items').select('*').eq('custom_order_id', id).order('created_at', { ascending: true }),
+      (supabase.from('custom_order_components' as any).select('*').eq('custom_order_id', id).order('created_at', { ascending: true }) as any),
     ]);
 
     if (orderResult.error) throw orderResult.error;
@@ -57,6 +58,7 @@ export const useCustomOrders = () => {
         discount_type: item.discount_type || 'fixed',
         discount_value: item.discount_value || 0,
       })) as CustomOrderItem[],
+      components: ((componentsResult as any)?.data || []) as CustomOrderComponent[],
     };
   };
 
