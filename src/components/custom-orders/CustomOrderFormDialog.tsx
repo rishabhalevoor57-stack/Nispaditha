@@ -48,6 +48,8 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const [flatDiscount, setFlatDiscount] = useState(0);
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<CustomOrderItem[]>([]);
+  const [components, setComponents] = useState<CustomOrderComponent[]>([]);
+  const [gstPercentage, setGstPercentage] = useState<number>(3);
 
   // Client search
   const [clientSearch, setClientSearch] = useState('');
@@ -57,7 +59,13 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const isEditing = !!order;
 
   const itemsTotal = items.reduce((sum, item) => sum + item.item_total, 0);
-  const totalAmount = itemsTotal + designCharges + additionalCharge - flatDiscount;
+  const componentsTotal = components.reduce((sum, c) => sum + (Number(c.total) || 0), 0);
+  const componentsWeight = components.reduce((sum, c) => sum + (Number(c.weight_grams) || 0) * (Number(c.quantity) || 0), 0);
+  const subTotal = itemsTotal + componentsTotal + designCharges + additionalCharge - flatDiscount;
+  const gstAmount = Math.max(0, subTotal) * (gstPercentage / 100);
+  const cgst = gstAmount / 2;
+  const sgst = gstAmount / 2;
+  const totalAmount = Math.max(0, subTotal) + gstAmount;
 
   // Fetch clients for search
   useEffect(() => {
