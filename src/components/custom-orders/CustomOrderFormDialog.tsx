@@ -13,7 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { CustomOrderItemsTable } from './CustomOrderItemsTable';
-import { CustomOrder, CustomOrderItem, CustomOrderStatus, CUSTOM_ORDER_STATUS_LABELS } from '@/types/customOrder';
+import { CustomOrderComponentsTable } from './CustomOrderComponentsTable';
+import { CustomOrder, CustomOrderItem, CustomOrderComponent, CustomOrderStatus, CUSTOM_ORDER_STATUS_LABELS } from '@/types/customOrder';
 import { useCustomOrders } from '@/hooks/useCustomOrders';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
