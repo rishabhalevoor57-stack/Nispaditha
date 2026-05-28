@@ -132,6 +132,7 @@ export const useCustomOrders = () => {
       id: string;
       order: Partial<CustomOrder>;
       items: Omit<CustomOrderItem, 'custom_order_id' | 'created_at'>[];
+      components?: Omit<CustomOrderComponent, 'id' | 'custom_order_id' | 'created_at'>[];
     }) => {
       const { error: orderError } = await supabase
         .from('custom_orders')
@@ -175,6 +176,14 @@ export const useCustomOrders = () => {
           .insert(itemsWithId);
 
         if (itemsError) throw itemsError;
+      }
+
+      // Replace components
+      await (supabase.from('custom_order_components' as any).delete().eq('custom_order_id', data.id) as any);
+      if (data.components && data.components.length > 0) {
+        const compsWithId = data.components.map(c => ({ ...c, custom_order_id: data.id }));
+        const { error: compErr } = await (supabase.from('custom_order_components' as any).insert(compsWithId) as any);
+        if (compErr) throw compErr;
       }
 
       // Lock new SKUs (unless released)
