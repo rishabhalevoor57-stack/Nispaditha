@@ -149,6 +149,9 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         additional_charge: additionalCharge,
         additional_charge_label: additionalChargeLabel,
         flat_discount: flatDiscount,
+        gst_percentage: gstPercentage,
+        components_total: componentsTotal,
+        components_weight: componentsWeight,
         total_amount: Math.max(0, totalAmount),
         notes: notes || null,
         converted_to_invoice_id: order?.converted_to_invoice_id || null,
@@ -177,10 +180,22 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         item_total: item.item_total,
       }));
 
+      const componentsData = components
+        .filter(c => c.component_name.trim())
+        .map(c => ({
+          component_name: c.component_name,
+          material: c.material || null,
+          weight_grams: c.weight_grams || 0,
+          quantity: c.quantity || 1,
+          unit_price: c.unit_price || 0,
+          rate_per_gram: c.rate_per_gram || 0,
+          total: c.total || 0,
+        }));
+
       if (isEditing) {
-        await updateOrder.mutateAsync({ id: order.id, order: orderData, items: itemsData });
+        await updateOrder.mutateAsync({ id: order.id, order: orderData, items: itemsData, components: componentsData });
       } else {
-        await createOrder.mutateAsync({ order: orderData as any, items: itemsData });
+        await createOrder.mutateAsync({ order: orderData as any, items: itemsData, components: componentsData });
       }
       onOpenChange(false);
     } finally {
