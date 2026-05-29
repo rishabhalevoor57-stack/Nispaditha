@@ -965,6 +965,7 @@ export function ViewInvoiceDialog({
           notes={invoice.notes || undefined}
           advancePaid={Number(invoice.advance_paid) || 0}
           storeCreditsUsed={Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0}
+          roundOff={Number(invoice.round_off) || 0}
           showMakingCharges={isAdmin}
         />
       )}
