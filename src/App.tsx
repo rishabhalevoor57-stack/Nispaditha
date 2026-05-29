@@ -102,9 +102,6 @@ const AppRoutes = () => {
       <Route
         path="/repair"
         element={
-      <Route
-        path="/repair"
-        element={
           <ProtectedRoute>
             <Repair />
           </ProtectedRoute>
@@ -118,11 +115,15 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
+      <Route
+        path="/order-notes"
+        element={
+          <ProtectedRoute>
             <OrderNotes />
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/custom-orders"
         element={
