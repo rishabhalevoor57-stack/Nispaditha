@@ -234,6 +234,8 @@ export function ViewInvoiceDialog({
       if (delErr) throw delErr;
 
       // 2) Update invoice header — preserve advance_paid / store_credits_used
+      const newRoundOff = Number(editRoundOff) || 0;
+      const newGrandTotal = (editTotals.grandTotal || 0) + newRoundOff;
       const { error: updErr } = await supabase
         .from('invoices')
         .update({
@@ -246,7 +248,8 @@ export function ViewInvoiceDialog({
           subtotal: editTotals.subtotal,
           discount_amount: editTotals.discountAmount,
           gst_amount: editTotals.gstAmount,
-          grand_total: editTotals.grandTotal,
+          round_off: newRoundOff,
+          grand_total: newGrandTotal,
         } as never)
         .eq('id', invoice.id);
       if (updErr) throw updErr;
