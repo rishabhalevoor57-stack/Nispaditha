@@ -52,6 +52,7 @@ interface InvoiceDetails {
   gst_amount: number;
   grand_total: number;
   advance_paid: number;
+  round_off: number;
   payment_mode: string | null;
   payment_status: string;
   notes: string | null;
@@ -115,6 +116,7 @@ export function ViewInvoiceDialog({
   const [editNotes, setEditNotes] = useState('');
   const [editItems, setEditItems] = useState<InvoiceItem[]>([]);
   const [editMetalRate, setEditMetalRate] = useState<MetalRateOption>('silver');
+  const [editRoundOff, setEditRoundOff] = useState<number>(0);
 
   const { toast } = useToast();
   const { user, userRole } = useAuth();
@@ -205,6 +207,7 @@ export function ViewInvoiceDialog({
     setEditInvoiceDate(y && m && d ? new Date(y, m - 1, d) : new Date(invoice.invoice_date));
     setEditNotes(invoice.notes || '');
     setEditItems(getInvoiceItems());
+    setEditRoundOff(Number(invoice.round_off) || 0);
     setIsEditing(true);
   };
 
@@ -231,6 +234,8 @@ export function ViewInvoiceDialog({
       if (delErr) throw delErr;
 
       // 2) Update invoice header — preserve advance_paid / store_credits_used
+      const newRoundOff = Number(editRoundOff) || 0;
+      const newGrandTotal = (editTotals.grandTotal || 0) + newRoundOff;
       const { error: updErr } = await supabase
         .from('invoices')
         .update({
@@ -243,7 +248,8 @@ export function ViewInvoiceDialog({
           subtotal: editTotals.subtotal,
           discount_amount: editTotals.discountAmount,
           gst_amount: editTotals.gstAmount,
-          grand_total: editTotals.grandTotal,
+          round_off: newRoundOff,
+          grand_total: newGrandTotal,
         } as never)
         .eq('id', invoice.id);
       if (updErr) throw updErr;
@@ -466,6 +472,7 @@ export function ViewInvoiceDialog({
       paymentReceivedDate: invoice.paid_at || null,
       cancelled: invoice.status === 'cancelled',
       cancellationReason: inv.cancellation_reason || null,
+      roundOff: Number(invoice.round_off) || 0,
     }, isAdmin);
   };
 
@@ -487,6 +494,7 @@ export function ViewInvoiceDialog({
       paymentReceivedDate: invoice.paid_at || null,
       cancelled: invoice.status === 'cancelled',
       cancellationReason: inv.cancellation_reason || null,
+      roundOff: Number(invoice.round_off) || 0,
     }, isAdmin);
   };
 
@@ -767,6 +775,12 @@ export function ViewInvoiceDialog({
                     <span className="text-muted-foreground">GST (3%)</span>
                     <span>{formatCurrency(Number(invoice.gst_amount))}</span>
                   </div>
+                  {Number(invoice.round_off) !== 0 && (
+                    <div className="flex justify-between text-muted-foreground italic">
+                      <span>Round Off</span>
+                      <span>{(Number(invoice.round_off) >= 0 ? '+ ' : '- ')}{formatCurrency(Math.abs(Number(invoice.round_off)))}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-lg font-bold pt-2 border-t">
                     <span>Grand Total</span>
                     <span className="text-primary">{formatCurrency(Number(invoice.grand_total))}</span>
@@ -877,7 +891,41 @@ export function ViewInvoiceDialog({
                 />
 
                 {editItems.length > 0 && (
-                  <InvoiceTotalsSection totals={editTotals} isAdmin={true} />
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-round-off">Round Off</Label>
+                        <Input
+                          id="edit-round-off"
+                          type="number"
+                          step="0.01"
+                          value={editRoundOff}
+                          onChange={(e) => setEditRoundOff(parseFloat(e.target.value) || 0)}
+                          placeholder="e.g. -0.53"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Adjusts Grand Total. Use a negative value (e.g. -0.53) to round down.
+                        </p>
+                      </div>
+                      <div className="md:col-span-2 flex items-end">
+                        <div className="w-full bg-muted/40 rounded-md p-3 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Subtotal − Discount + GST</span>
+                            <span>{formatCurrency(editTotals.grandTotal)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Round Off</span>
+                            <span>{(editRoundOff >= 0 ? '+ ' : '- ')}{formatCurrency(Math.abs(editRoundOff))}</span>
+                          </div>
+                          <div className="flex justify-between font-bold pt-2 border-t mt-2">
+                            <span>New Grand Total</span>
+                            <span className="text-primary">{formatCurrency((editTotals.grandTotal || 0) + (Number(editRoundOff) || 0))}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <InvoiceTotalsSection totals={editTotals} isAdmin={true} />
+                  </>
                 )}
 
                 <div className="space-y-2">
@@ -917,6 +965,7 @@ export function ViewInvoiceDialog({
           notes={invoice.notes || undefined}
           advancePaid={Number(invoice.advance_paid) || 0}
           storeCreditsUsed={Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0}
+          roundOff={Number(invoice.round_off) || 0}
           showMakingCharges={isAdmin}
         />
       )}
