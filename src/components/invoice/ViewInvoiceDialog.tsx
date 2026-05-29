@@ -773,6 +773,12 @@ export function ViewInvoiceDialog({
                     <span className="text-muted-foreground">GST (3%)</span>
                     <span>{formatCurrency(Number(invoice.gst_amount))}</span>
                   </div>
+                  {Number(invoice.round_off) !== 0 && (
+                    <div className="flex justify-between text-muted-foreground italic">
+                      <span>Round Off</span>
+                      <span>{(Number(invoice.round_off) >= 0 ? '+ ' : '- ')}{formatCurrency(Math.abs(Number(invoice.round_off)))}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-lg font-bold pt-2 border-t">
                     <span>Grand Total</span>
                     <span className="text-primary">{formatCurrency(Number(invoice.grand_total))}</span>
