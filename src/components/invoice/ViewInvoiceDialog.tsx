@@ -207,6 +207,7 @@ export function ViewInvoiceDialog({
     setEditInvoiceDate(y && m && d ? new Date(y, m - 1, d) : new Date(invoice.invoice_date));
     setEditNotes(invoice.notes || '');
     setEditItems(getInvoiceItems());
+    setEditRoundOff(Number(invoice.round_off) || 0);
     setIsEditing(true);
   };
 
