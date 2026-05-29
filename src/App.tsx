@@ -23,7 +23,7 @@ import RecycleBin from "./pages/RecycleBin";
 import LeftOverPayments from "./pages/LeftOverPayments";
 import Sold from "./pages/Sold";
 import Repair from "./pages/Repair";
-import Repair from "./pages/Repair";
+import NotFound from "./pages/NotFound";
 import ServiceForms from "./pages/ServiceForms";
 
 const queryClient = new QueryClient();
