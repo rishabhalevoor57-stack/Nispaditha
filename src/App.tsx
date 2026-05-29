@@ -23,7 +23,8 @@ import RecycleBin from "./pages/RecycleBin";
 import LeftOverPayments from "./pages/LeftOverPayments";
 import Sold from "./pages/Sold";
 import Repair from "./pages/Repair";
-import NotFound from "./pages/NotFound";
+import Repair from "./pages/Repair";
+import ServiceForms from "./pages/ServiceForms";
 
 const queryClient = new QueryClient();
 
@@ -101,15 +102,23 @@ const AppRoutes = () => {
       <Route
         path="/repair"
         element={
+      <Route
+        path="/repair"
+        element={
           <ProtectedRoute>
             <Repair />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/order-notes"
+        path="/service-forms"
         element={
           <ProtectedRoute>
+            <ServiceForms />
+          </ProtectedRoute>
+        }
+      />
+
             <OrderNotes />
           </ProtectedRoute>
         }
