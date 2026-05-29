@@ -52,6 +52,7 @@ interface InvoiceDetails {
   gst_amount: number;
   grand_total: number;
   advance_paid: number;
+  round_off: number;
   payment_mode: string | null;
   payment_status: string;
   notes: string | null;
