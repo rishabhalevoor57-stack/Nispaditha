@@ -147,6 +147,7 @@ export default function Invoices() {
       paymentReceivedDate: (invoice as any).paid_at || null,
       cancelled: invoice.status === 'cancelled',
       cancellationReason: (invoice as any).cancellation_reason || null,
+      roundOff: Number((invoice as any).round_off) || 0,
     }, true);
   };
 
