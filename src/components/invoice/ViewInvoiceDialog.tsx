@@ -889,7 +889,41 @@ export function ViewInvoiceDialog({
                 />
 
                 {editItems.length > 0 && (
-                  <InvoiceTotalsSection totals={editTotals} isAdmin={true} />
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-round-off">Round Off</Label>
+                        <Input
+                          id="edit-round-off"
+                          type="number"
+                          step="0.01"
+                          value={editRoundOff}
+                          onChange={(e) => setEditRoundOff(parseFloat(e.target.value) || 0)}
+                          placeholder="e.g. -0.53"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Adjusts Grand Total. Use a negative value (e.g. -0.53) to round down.
+                        </p>
+                      </div>
+                      <div className="md:col-span-2 flex items-end">
+                        <div className="w-full bg-muted/40 rounded-md p-3 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Subtotal − Discount + GST</span>
+                            <span>{formatCurrency(editTotals.grandTotal)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Round Off</span>
+                            <span>{(editRoundOff >= 0 ? '+ ' : '- ')}{formatCurrency(Math.abs(editRoundOff))}</span>
+                          </div>
+                          <div className="flex justify-between font-bold pt-2 border-t mt-2">
+                            <span>New Grand Total</span>
+                            <span className="text-primary">{formatCurrency((editTotals.grandTotal || 0) + (Number(editRoundOff) || 0))}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <InvoiceTotalsSection totals={editTotals} isAdmin={true} />
+                  </>
                 )}
 
                 <div className="space-y-2">
