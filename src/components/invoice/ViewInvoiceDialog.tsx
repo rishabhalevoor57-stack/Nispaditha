@@ -116,6 +116,7 @@ export function ViewInvoiceDialog({
   const [editNotes, setEditNotes] = useState('');
   const [editItems, setEditItems] = useState<InvoiceItem[]>([]);
   const [editMetalRate, setEditMetalRate] = useState<MetalRateOption>('silver');
+  const [editRoundOff, setEditRoundOff] = useState<number>(0);
 
   const { toast } = useToast();
   const { user, userRole } = useAuth();
