@@ -494,6 +494,7 @@ export function ViewInvoiceDialog({
       paymentReceivedDate: invoice.paid_at || null,
       cancelled: invoice.status === 'cancelled',
       cancellationReason: inv.cancellation_reason || null,
+      roundOff: Number(invoice.round_off) || 0,
     }, isAdmin);
   };
 
