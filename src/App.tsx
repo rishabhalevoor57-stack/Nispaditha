@@ -24,6 +24,7 @@ import LeftOverPayments from "./pages/LeftOverPayments";
 import Sold from "./pages/Sold";
 import Repair from "./pages/Repair";
 import NotFound from "./pages/NotFound";
+import ServiceForms from "./pages/ServiceForms";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,14 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/service-forms"
+        element={
+          <ProtectedRoute>
+            <ServiceForms />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/order-notes"
         element={
           <ProtectedRoute>
@@ -114,6 +123,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/custom-orders"
         element={
