@@ -161,6 +161,21 @@ export function ViewInvoiceDialog({
 
     if (invoiceResult.data) {
       const data = invoiceResult.data as Record<string, unknown>;
+      const subtotal = Number(data.subtotal) || 0;
+      const discount = Number(data.discount_amount) || 0;
+      const gst = Number(data.gst_amount) || 0;
+      const roundOffVal = Number(data.round_off) || 0;
+      const computedGrand = Math.round((subtotal - discount + gst + roundOffVal) * 100) / 100;
+      const storedGrand = Number(data.grand_total) || 0;
+      // Auto-heal stored grand_total if it doesn't include round_off
+      if (Math.abs(computedGrand - storedGrand) > 0.001) {
+        data.grand_total = computedGrand;
+        supabase
+          .from('invoices')
+          .update({ grand_total: computedGrand } as never)
+          .eq('id', invoiceId)
+          .then(() => {});
+      }
       setInvoice({
         ...data,
         status: (data.status as InvoiceStatus) || 'draft',
