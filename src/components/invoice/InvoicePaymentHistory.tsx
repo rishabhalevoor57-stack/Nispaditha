@@ -40,7 +40,9 @@ export function InvoicePaymentHistory({ invoiceId, invoiceNumber, grandTotal, cu
   if (rows.length === 0) return null;
 
   const totalPaid = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
-  const balance = Math.max(0, grandTotal - totalPaid);
+  const rawBalance = Math.round((grandTotal - totalPaid) * 100) / 100;
+  const balance = Math.abs(rawBalance) <= 0.05 ? 0 : Math.max(0, rawBalance);
+  const isFullyPaid = balance === 0 && totalPaid > 0;
 
   const downloadReceipt = (idx: number) => {
     if (!businessSettings) return;
@@ -83,9 +85,13 @@ export function InvoicePaymentHistory({ invoiceId, invoiceNumber, grandTotal, cu
           </div>
         ))}
       </div>
-      <div className="flex justify-between border-t pt-3 text-sm">
+      <div className="flex justify-between border-t pt-3 text-sm items-center">
         <span>Total Paid: <span className="font-semibold text-primary">₹ {totalPaid.toFixed(2)}</span></span>
-        <span>Balance: <span className="font-semibold text-amber-600">₹ {balance.toFixed(2)}</span></span>
+        {isFullyPaid ? (
+          <span className="px-2 py-1 rounded-md bg-green-100 text-green-700 font-semibold">✓ PAID IN FULL</span>
+        ) : (
+          <span>Balance: <span className="font-semibold text-amber-600">₹ {balance.toFixed(2)}</span></span>
+        )}
       </div>
     </div>
   );
