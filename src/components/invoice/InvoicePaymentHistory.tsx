@@ -85,9 +85,13 @@ export function InvoicePaymentHistory({ invoiceId, invoiceNumber, grandTotal, cu
           </div>
         ))}
       </div>
-      <div className="flex justify-between border-t pt-3 text-sm">
+      <div className="flex justify-between border-t pt-3 text-sm items-center">
         <span>Total Paid: <span className="font-semibold text-primary">₹ {totalPaid.toFixed(2)}</span></span>
-        <span>Balance: <span className="font-semibold text-amber-600">₹ {balance.toFixed(2)}</span></span>
+        {isFullyPaid ? (
+          <span className="px-2 py-1 rounded-md bg-green-100 text-green-700 font-semibold">✓ PAID IN FULL</span>
+        ) : (
+          <span>Balance: <span className="font-semibold text-amber-600">₹ {balance.toFixed(2)}</span></span>
+        )}
       </div>
     </div>
   );
