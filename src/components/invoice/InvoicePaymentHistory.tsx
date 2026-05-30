@@ -40,7 +40,9 @@ export function InvoicePaymentHistory({ invoiceId, invoiceNumber, grandTotal, cu
   if (rows.length === 0) return null;
 
   const totalPaid = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
-  const balance = Math.max(0, grandTotal - totalPaid);
+  const rawBalance = Math.round((grandTotal - totalPaid) * 100) / 100;
+  const balance = Math.abs(rawBalance) <= 0.05 ? 0 : Math.max(0, rawBalance);
+  const isFullyPaid = balance === 0 && totalPaid > 0;
 
   const downloadReceipt = (idx: number) => {
     if (!businessSettings) return;
