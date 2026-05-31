@@ -292,18 +292,26 @@ export function InvoicePreviewModal({
               </table>
             </div>
 
-            {/* TOTALS BLOCK */}
+            {/* TOTALS BLOCK — MRP-based (discount applied once) */}
             <div className="px-6 mt-4 flex justify-end">
               <div className="w-80 text-[11.5px] space-y-1">
-                <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span style={num}>{money(totals.subtotal)}</span></div>
+                <div className="flex justify-between text-[13px] font-bold">
+                  <span>MRP (Total)</span>
+                  <span style={num}>{money(totals.subtotal + totals.discountAmount)}</span>
+                </div>
                 {totals.discountAmount > 0 && (
                   <div className="flex justify-between" style={{ color: '#b91c1c' }}>
-                    <span>Total Discount</span><span style={num}>{`\u2212 ${money(totals.discountAmount)}`}</span>
+                    <span>{'\u2212 Discount'}</span><span style={num}>{`\u2212 ${money(totals.discountAmount)}`}</span>
                   </div>
                 )}
                 <div className="flex justify-between"><span className="text-gray-600">CGST @ {(gstPercentage / 2).toFixed(2)}%</span><span style={num}>{money(cgst)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-600">SGST @ {(gstPercentage / 2).toFixed(2)}%</span><span style={num}>{money(sgst)}</span></div>
-                <div className="flex justify-between text-gray-500 italic"><span>Round Off</span><span style={num}>{`${roundOff >= 0 ? '+' : '\u2212'} ${RUPEE} ${fmt(Math.abs(roundOff))}`}</span></div>
+                {roundOff !== 0 && (
+                  <div className="flex justify-between text-gray-500 italic">
+                    <span>{roundOff >= 0 ? 'Round Off' : '\u2212 Round Off'}</span>
+                    <span style={num}>{`${RUPEE} ${fmt(Math.abs(roundOff))}`}</span>
+                  </div>
+                )}
                 {storeCreditsUsed > 0 && (
                   <div className="flex justify-between" style={{ color: GREEN }}><span>Store Credits Redeemed</span><span style={num}>{`\u2212 ${money(storeCreditsUsed)}`}</span></div>
                 )}

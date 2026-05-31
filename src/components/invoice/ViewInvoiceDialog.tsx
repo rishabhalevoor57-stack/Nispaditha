@@ -774,33 +774,53 @@ export function ViewInvoiceDialog({
                   </table>
                 </div>
 
-                {/* Totals */}
-                <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatCurrency(Number(invoice.subtotal))}</span>
-                  </div>
-                  {isAdmin && Number(invoice.discount_amount) > 0 && (
-                    <div className="flex justify-between text-destructive">
-                      <span>Total Discount</span>
-                      <span>-{formatCurrency(Number(invoice.discount_amount))}</span>
+                {/* Totals — MRP-based (discount applied once) */}
+                {(() => {
+                  const sub = Number(invoice.subtotal) || 0;
+                  const disc = Number(invoice.discount_amount) || 0;
+                  const gst = Number(invoice.gst_amount) || 0;
+                  const ro = Number(invoice.round_off) || 0;
+                  const mrpTotal = sub + disc;
+                  const cgstV = gst / 2;
+                  const sgstV = gst / 2;
+                  const gstPctView = sub > 0 ? (gst / sub) * 100 : 3;
+                  const grand = sub + gst + ro;
+                  return (
+                    <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between text-base font-bold">
+                        <span>MRP (Total)</span>
+                        <span className="tabular-nums">{formatCurrency(mrpTotal)}</span>
+                      </div>
+                      {isAdmin && disc > 0 && (
+                        <div className="flex justify-between text-destructive">
+                          <span>− Discount</span>
+                          <span className="tabular-nums">−{formatCurrency(disc)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">CGST @ {(gstPctView / 2).toFixed(2)}%</span>
+                        <span className="tabular-nums">{formatCurrency(cgstV)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">SGST @ {(gstPctView / 2).toFixed(2)}%</span>
+                        <span className="tabular-nums">{formatCurrency(sgstV)}</span>
+                      </div>
+                      {ro !== 0 && (
+                        <div className="flex justify-between text-muted-foreground italic">
+                          <span>{ro >= 0 ? 'Round Off' : '− Round Off'}</span>
+                          <span className="tabular-nums">{formatCurrency(Math.abs(ro))}</span>
+                        </div>
+                      )}
+                      <div
+                        className="flex items-center justify-between mt-2 px-3 py-2 rounded-md text-white font-bold"
+                        style={{ background: '#4a2060' }}
+                      >
+                        <span className="uppercase tracking-wider text-sm">Grand Total</span>
+                        <span className="tabular-nums text-lg">{formatCurrency(grand)}</span>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">GST (3%)</span>
-                    <span>{formatCurrency(Number(invoice.gst_amount))}</span>
-                  </div>
-                  {Number(invoice.round_off) !== 0 && (
-                    <div className="flex justify-between text-muted-foreground italic">
-                      <span>Round Off</span>
-                      <span>{(Number(invoice.round_off) >= 0 ? '+ ' : '- ')}{formatCurrency(Math.abs(Number(invoice.round_off)))}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                    <span>Grand Total</span>
-                    <span className="text-primary">{formatCurrency(Number(invoice.grand_total))}</span>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 <InvoicePaymentHistory
                   invoiceId={invoice.id}
@@ -939,7 +959,7 @@ export function ViewInvoiceDialog({
                         </div>
                       </div>
                     </div>
-                    <InvoiceTotalsSection totals={editTotals} isAdmin={true} />
+                    <InvoiceTotalsSection totals={editTotals} isAdmin={true} roundOff={editRoundOff} />
                   </>
                 )}
 

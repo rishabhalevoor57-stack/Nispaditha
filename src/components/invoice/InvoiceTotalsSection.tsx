@@ -3,6 +3,8 @@ import type { InvoiceTotals } from '@/types/invoice';
 interface InvoiceTotalsSectionProps {
   totals: InvoiceTotals;
   isAdmin: boolean;
+  gstPercentage?: number;
+  roundOff?: number;
 }
 
 const formatCurrency = (amount: number) => {
@@ -13,26 +15,52 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-export function InvoiceTotalsSection({ totals, isAdmin }: InvoiceTotalsSectionProps) {
+export function InvoiceTotalsSection({
+  totals,
+  isAdmin,
+  gstPercentage = 3,
+  roundOff = 0,
+}: InvoiceTotalsSectionProps) {
+  // Taxable Amount = subtotal (line_total already has discount deducted).
+  // MRP Total = Taxable + Discount (gross, before deduction).
+  const taxable = totals.subtotal;
+  const mrpTotal = taxable + totals.discountAmount;
+  const cgst = totals.gstAmount / 2;
+  const sgst = totals.gstAmount / 2;
+  const grandTotal = taxable + totals.gstAmount + roundOff;
+
   return (
     <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-      <div className="flex justify-between">
-        <span className="text-muted-foreground">Subtotal</span>
-        <span>{formatCurrency(totals.subtotal)}</span>
+      <div className="flex justify-between text-base font-bold">
+        <span>MRP (Total)</span>
+        <span className="tabular-nums">{formatCurrency(mrpTotal)}</span>
       </div>
       {isAdmin && totals.discountAmount > 0 && (
         <div className="flex justify-between text-destructive">
-          <span>Total Discount (on MC)</span>
-          <span>-{formatCurrency(totals.discountAmount)}</span>
+          <span>− Discount</span>
+          <span className="tabular-nums">−{formatCurrency(totals.discountAmount)}</span>
         </div>
       )}
       <div className="flex justify-between">
-        <span className="text-muted-foreground">GST (3%)</span>
-        <span>{formatCurrency(totals.gstAmount)}</span>
+        <span className="text-muted-foreground">CGST @ {(gstPercentage / 2).toFixed(2)}%</span>
+        <span className="tabular-nums">{formatCurrency(cgst)}</span>
       </div>
-      <div className="flex justify-between text-lg font-bold pt-2 border-t">
-        <span>Grand Total</span>
-        <span className="text-primary">{formatCurrency(totals.grandTotal)}</span>
+      <div className="flex justify-between">
+        <span className="text-muted-foreground">SGST @ {(gstPercentage / 2).toFixed(2)}%</span>
+        <span className="tabular-nums">{formatCurrency(sgst)}</span>
+      </div>
+      {roundOff !== 0 && (
+        <div className="flex justify-between text-muted-foreground italic">
+          <span>{roundOff >= 0 ? 'Round Off' : '− Round Off'}</span>
+          <span className="tabular-nums">{formatCurrency(Math.abs(roundOff))}</span>
+        </div>
+      )}
+      <div
+        className="flex items-center justify-between mt-2 px-3 py-2 rounded-md text-white font-bold"
+        style={{ background: '#4a2060' }}
+      >
+        <span className="uppercase tracking-wider text-sm">Grand Total</span>
+        <span className="tabular-nums text-lg">{formatCurrency(grandTotal)}</span>
       </div>
     </div>
   );

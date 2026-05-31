@@ -344,13 +344,22 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(60, 60, 60);
 
   const rowGap = 5;
-  doc.text('Subtotal', totalsX, yPos);
-  doc.text(money(data.totals.subtotal), valueX, yPos, { align: 'right' });
+
+  // MRP (Total) — gross before discount; bold + slightly larger
+  const mrpTotal = (data.totals.subtotal || 0) + (data.totals.discountAmount || 0);
+  doc.setFont(FONT, 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(20, 20, 20);
+  doc.text('MRP (Total)', totalsX, yPos);
+  doc.text(money(mrpTotal), valueX, yPos, { align: 'right' });
+  doc.setFont(FONT, 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 60, 60);
   yPos += rowGap;
 
   if (data.totals.discountAmount > 0) {
     doc.setTextColor(180, 30, 30);
-    doc.text('Total Discount', totalsX, yPos);
+    doc.text('- Discount', totalsX, yPos);
     doc.text(`- ${money(data.totals.discountAmount)}`, valueX, yPos, { align: 'right' });
     doc.setTextColor(60, 60, 60);
     yPos += rowGap;
@@ -363,10 +372,16 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.text(money(sgst), valueX, yPos, { align: 'right' });
   yPos += rowGap;
 
-  doc.text('Round Off', totalsX, yPos);
-  const roundSign = roundOff >= 0 ? '+ ' : '- ';
-  doc.text(`${roundSign}${money(Math.abs(roundOff))}`, valueX, yPos, { align: 'right' });
-  yPos += rowGap;
+  if (roundOff !== 0) {
+    doc.setFont(FONT, 'italic');
+    doc.setTextColor(120, 120, 120);
+    const roLabel = roundOff >= 0 ? 'Round Off' : '- Round Off';
+    doc.text(roLabel, totalsX, yPos);
+    doc.text(money(Math.abs(roundOff)), valueX, yPos, { align: 'right' });
+    doc.setFont(FONT, 'normal');
+    doc.setTextColor(60, 60, 60);
+    yPos += rowGap;
+  }
 
   if (storeCreditsUsed > 0) {
     doc.setTextColor(39, 120, 60);
