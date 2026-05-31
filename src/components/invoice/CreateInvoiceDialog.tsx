@@ -853,16 +853,16 @@ export function CreateInvoiceDialog({
                 </div>
               </div>
 
-              {/* Live Totals Summary */}
+              {/* Live Totals Summary — MRP-based display (discount applied once) */}
               <div className="text-sm space-y-1 pt-2 border-t">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="tabular-nums">₹ {totals.subtotal.toFixed(2)}</span>
+                <div className="flex justify-between text-base font-bold">
+                  <span>MRP (Total)</span>
+                  <span className="tabular-nums">₹ {(totals.subtotal + totals.discountAmount).toFixed(2)}</span>
                 </div>
                 {totals.discountAmount > 0 && (
                   <div className="flex justify-between text-destructive">
-                    <span>Total Discount</span>
-                    <span className="tabular-nums">- ₹ {totals.discountAmount.toFixed(2)}</span>
+                    <span>− Discount</span>
+                    <span className="tabular-nums">− ₹ {totals.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -873,12 +873,12 @@ export function CreateInvoiceDialog({
                   <span className="text-muted-foreground">SGST @ {(gstPct / 2).toFixed(2)}%</span>
                   <span className="tabular-nums">₹ {sgst.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-muted-foreground italic">
-                  <span>Round Off</span>
-                  <span className="tabular-nums">
-                    {roundOff >= 0 ? '+' : '-'} ₹ {Math.abs(roundOff).toFixed(2)}
-                  </span>
-                </div>
+                {roundOff !== 0 && (
+                  <div className="flex justify-between text-muted-foreground italic">
+                    <span>{roundOff >= 0 ? 'Round Off' : '− Round Off'}</span>
+                    <span className="tabular-nums">₹ {Math.abs(roundOff).toFixed(2)}</span>
+                  </div>
+                )}
 
                 {/* Store Wallet Credits */}
                 {selectedClient && selectedClient !== 'walk-in' && walletBalance > 0 && (
@@ -922,9 +922,14 @@ export function CreateInvoiceDialog({
                   </div>
                 )}
 
-                <div className="flex justify-between text-base font-bold pt-2 border-t">
-                  <span>{cappedCredits > 0 ? 'Remaining to Pay' : 'Grand Total'}</span>
-                  <span className="text-primary tabular-nums">₹ {grandTotalAfterCredits.toFixed(2)}</span>
+                <div
+                  className="flex items-center justify-between mt-2 px-3 py-2 rounded-md text-white font-bold"
+                  style={{ background: '#4a2060' }}
+                >
+                  <span className="uppercase tracking-wider text-sm">
+                    {cappedCredits > 0 ? 'Remaining to Pay' : 'Grand Total'}
+                  </span>
+                  <span className="tabular-nums text-lg">₹ {grandTotalAfterCredits.toFixed(2)}</span>
                 </div>
               </div>
 
