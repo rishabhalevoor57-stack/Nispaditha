@@ -178,12 +178,12 @@ export function InvoiceItemsTable({
                 <th className="px-3 py-3 text-center font-medium">Mode</th>
                 <th className="px-3 py-3 text-right font-medium">Wt(G)</th>
                 <th className="px-3 py-3 text-center font-medium">Qty</th>
-                <th className="px-3 py-3 text-right font-medium">Disc (₹)</th>
+                <th className="px-3 py-3 text-right font-medium min-w-[200px]">Discount</th>
                 <th className="px-3 py-3 text-right font-medium">Rate/g</th>
                 <th className="px-3 py-3 text-right font-medium">Metal Price</th>
                 <th className="px-3 py-3 text-right font-medium">MC</th>
                 <th className="px-3 py-3 text-right font-medium">MC/g</th>
-                <th className="px-3 py-3 text-right font-medium">MRP</th>
+                
                 <th className="px-3 py-3 text-right font-medium">Total</th>
                 <th className="px-3 py-3 text-center font-medium w-12"></th>
               </tr>
@@ -250,7 +250,7 @@ export function InvoiceItemsTable({
                             }
                             value={item.discount_value}
                             onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
-                            className="w-20 h-8 text-right"
+                            className="w-28 h-8 text-right"
                             title={isFlat ? "Discount on total amount" : "Discount applies only on MC"}
                           />
                         </div>
@@ -286,7 +286,7 @@ export function InvoiceItemsTable({
                           />
                         )}
                       </td>
-                      <td className="px-3 py-3 text-right text-muted-foreground align-middle">{item.mrp > 0 ? formatCurrency(item.mrp) : '-'}</td>
+                      
                       <td className="px-3 py-3 text-right font-medium align-middle">{formatCurrency(item.line_total)}</td>
                       <td className="px-3 py-3 text-center align-middle">
                         <Button
@@ -301,7 +301,7 @@ export function InvoiceItemsTable({
                       </td>
                     </tr>
                     <tr className="border-t border-dashed border-border/40">
-                      <td colSpan={13} className="px-3 py-2 bg-muted/10">
+                      <td colSpan={12} className="px-3 py-2 bg-muted/10">
                         <Input
                           type="text"
                           value={item.description || ''}
