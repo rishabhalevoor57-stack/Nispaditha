@@ -30,13 +30,13 @@ export function InvoiceTotalsSection({
   const grandTotal = taxable + totals.gstAmount + roundOff;
 
   return (
-    <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-      <div className="flex justify-between text-base font-bold">
+    <div className="bg-muted/30 rounded-lg p-5 space-y-2.5 text-[15px]">
+      <div className="flex justify-between text-lg font-bold">
         <span>MRP (Total)</span>
         <span className="tabular-nums">{formatCurrency(mrpTotal)}</span>
       </div>
       {isAdmin && totals.discountAmount > 0 && (
-        <div className="flex justify-between text-destructive">
+        <div className="flex justify-between text-destructive font-medium">
           <span>− Discount</span>
           <span className="tabular-nums">−{formatCurrency(totals.discountAmount)}</span>
         </div>
@@ -56,11 +56,11 @@ export function InvoiceTotalsSection({
         </div>
       )}
       <div
-        className="flex items-center justify-between mt-2 px-3 py-2 rounded-md text-white font-bold"
+        className="flex items-center justify-between mt-3 px-5 py-4 rounded-md text-white font-bold"
         style={{ background: '#4a2060' }}
       >
-        <span className="uppercase tracking-wider text-sm">Grand Total</span>
-        <span className="tabular-nums text-lg">{formatCurrency(grandTotal)}</span>
+        <span className="uppercase tracking-wider text-base">Grand Total</span>
+        <span className="tabular-nums text-2xl">{formatCurrency(grandTotal)}</span>
       </div>
     </div>
   );

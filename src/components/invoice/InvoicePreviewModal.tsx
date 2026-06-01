@@ -227,14 +227,13 @@ export function InvoicePreviewModal({
               >
                 <colgroup>
                   <col style={{ width: '4%' }} />
-                  <col style={{ width: '27%' }} />
-                  <col style={{ width: '13%' }} />
-                  <col style={{ width: '7%' }} />
-                  <col style={{ width: '5%' }} />
-                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '30%' }} />
+                  <col style={{ width: '14%' }} />
                   <col style={{ width: '8%' }} />
-                  <col style={{ width: '13%' }} />
-                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '5%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '14%' }} />
                 </colgroup>
                 <thead>
                   <tr style={{ background: PURPLE, color: '#fff' }}>
@@ -244,8 +243,7 @@ export function InvoicePreviewModal({
                     <th className="px-1 py-2 text-right font-semibold">Wt(G)</th>
                     <th className="px-1 py-2 text-center font-semibold">Qty</th>
                     <th className="px-1 py-2 text-right font-semibold" style={{ whiteSpace: 'nowrap' }}>MC ({RUPEE})</th>
-                    <th className="px-1 py-2 text-right font-semibold" style={{ whiteSpace: 'nowrap' }}>Disc ({RUPEE})</th>
-                    <th className="px-1 py-2 text-right font-semibold" style={{ whiteSpace: 'nowrap' }}>MRP ({RUPEE})</th>
+                    <th className="px-1 py-2 text-right font-semibold" style={{ whiteSpace: 'nowrap' }}>Discount ({RUPEE})</th>
                     <th className="px-1 py-2 text-right font-semibold" style={{ whiteSpace: 'nowrap' }}>Total ({RUPEE})</th>
                   </tr>
                 </thead>
@@ -278,9 +276,6 @@ export function InvoicePreviewModal({
                         </td>
                         <td className="px-1 py-2 text-right border-t" style={{ ...num, borderColor: '#eee' }}>
                           {item.discount > 0 ? fmt(item.discount) : '-'}
-                        </td>
-                        <td className="px-1 py-2 text-right border-t" style={{ ...num, borderColor: '#eee' }}>
-                          {item.mrp > 0 ? fmt(item.mrp) : '-'}
                         </td>
                         <td className="px-1 py-2 text-right border-t font-semibold" style={{ ...num, borderColor: '#eee' }}>
                           {fmt(item.line_total)}

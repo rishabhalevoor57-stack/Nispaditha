@@ -596,7 +596,7 @@ export function ViewInvoiceDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-[95vw] w-[95vw] !max-h-[95vh] h-[95vh] xl:min-w-[1600px] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-primary" />
@@ -734,7 +734,7 @@ export function ViewInvoiceDialog({
                             <th className="px-3 py-3 text-right font-medium">Discount</th>
                           </>
                         )}
-                        <th className="px-3 py-3 text-right font-medium">MRP</th>
+                        
                         <th className="px-3 py-3 text-right font-medium">Total</th>
                       </tr>
                     </thead>
@@ -765,7 +765,7 @@ export function ViewInvoiceDialog({
                                 </td>
                               </>
                             )}
-                            <td className="px-3 py-3 text-right text-muted-foreground">{Number(item.mrp) > 0 ? formatCurrency(Number(item.mrp)) : '-'}</td>
+                            
                             <td className="px-3 py-3 text-right font-medium">{formatCurrency(Number(item.subtotal))}</td>
                           </tr>
                         );
@@ -840,7 +840,7 @@ export function ViewInvoiceDialog({
                 )}
 
                 {/* Actions */}
-                <div className="flex flex-wrap justify-end gap-3">
+                <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-background border-t flex flex-wrap justify-end gap-3 z-10">
                   <Button variant="outline" onClick={() => setShowPreview(true)}>
                     <Eye className="w-4 h-4 mr-2" />
                     Preview Invoice
@@ -968,7 +968,7 @@ export function ViewInvoiceDialog({
                   <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={2} />
                 </div>
 
-                <div className="flex flex-wrap justify-end gap-3">
+                <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-background border-t flex flex-wrap justify-end gap-3 z-10">
                   <Button variant="outline" onClick={cancelEdit} disabled={isSaving}>
                     <XCircle className="w-4 h-4 mr-2" />
                     Cancel
