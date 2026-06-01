@@ -264,8 +264,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     { header: 'Wt(G)', dataKey: 'weight' },
     { header: 'Qty', dataKey: 'qty' },
     { header: `MC (${RUPEE})`, dataKey: 'mc' },
-    { header: `Disc (${RUPEE})`, dataKey: 'disc' },
-    { header: `MRP (${RUPEE})`, dataKey: 'mrp' },
+    { header: `Discount (${RUPEE})`, dataKey: 'disc' },
     { header: `Total (${RUPEE})`, dataKey: 'total' },
   ];
 
@@ -279,7 +278,6 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       qty: item.quantity.toString(),
       mc: isFlat || !item.making_charges ? '-' : fmt(item.making_charges),
       disc: item.discount > 0 ? fmt(item.discount) : '-',
-      mrp: item.mrp > 0 ? fmt(item.mrp) : '-',
       total: fmt(item.line_total),
     };
   });
@@ -312,14 +310,13 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     alternateRowStyles: { fillColor: ROW_ALT },
     columnStyles: {
       0: { cellWidth: contentWidth * 0.04, halign: 'center' },
-      1: { cellWidth: contentWidth * 0.27, halign: 'left', overflow: 'ellipsize' },
-      2: { cellWidth: contentWidth * 0.13, halign: 'left', overflow: 'ellipsize' },
-      3: { cellWidth: contentWidth * 0.07, halign: 'right' },
+      1: { cellWidth: contentWidth * 0.30, halign: 'left', overflow: 'ellipsize' },
+      2: { cellWidth: contentWidth * 0.14, halign: 'left', overflow: 'ellipsize' },
+      3: { cellWidth: contentWidth * 0.08, halign: 'right' },
       4: { cellWidth: contentWidth * 0.05, halign: 'center' },
-      5: { cellWidth: contentWidth * 0.10, halign: 'right' },
-      6: { cellWidth: contentWidth * 0.08, halign: 'right' },
-      7: { cellWidth: contentWidth * 0.13, halign: 'right' },
-      8: { cellWidth: contentWidth * 0.13, halign: 'right' },
+      5: { cellWidth: contentWidth * 0.11, halign: 'right' },
+      6: { cellWidth: contentWidth * 0.14, halign: 'right' },
+      7: { cellWidth: contentWidth * 0.14, halign: 'right' },
     },
   });
 
