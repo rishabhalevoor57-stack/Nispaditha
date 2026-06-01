@@ -734,7 +734,7 @@ export function ViewInvoiceDialog({
                             <th className="px-3 py-3 text-right font-medium">Discount</th>
                           </>
                         )}
-                        <th className="px-3 py-3 text-right font-medium">MRP</th>
+                        
                         <th className="px-3 py-3 text-right font-medium">Total</th>
                       </tr>
                     </thead>
@@ -765,7 +765,7 @@ export function ViewInvoiceDialog({
                                 </td>
                               </>
                             )}
-                            <td className="px-3 py-3 text-right text-muted-foreground">{Number(item.mrp) > 0 ? formatCurrency(Number(item.mrp)) : '-'}</td>
+                            
                             <td className="px-3 py-3 text-right font-medium">{formatCurrency(Number(item.subtotal))}</td>
                           </tr>
                         );
