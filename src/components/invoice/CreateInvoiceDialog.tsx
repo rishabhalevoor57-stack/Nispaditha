@@ -679,7 +679,7 @@ export function CreateInvoiceDialog({
       onOpenChange(isOpen);
       if (!isOpen) resetForm();
     }}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="!max-w-[95vw] w-[95vw] !max-h-[95vh] h-[95vh] xl:min-w-[1600px] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="w-5 h-5 text-primary" />
@@ -1120,7 +1120,7 @@ export function CreateInvoiceDialog({
           </div>
 
           {/* Actions */}
-          <div className="flex flex-wrap justify-end gap-3">
+          <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-background border-t flex flex-wrap justify-end gap-3 z-10">
             <Button
               variant="outline"
               onClick={() => setShowPreview(true)}
