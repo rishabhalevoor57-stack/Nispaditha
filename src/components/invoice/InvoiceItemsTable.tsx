@@ -43,6 +43,7 @@ export function InvoiceItemsTable({
     updateItemRate,
     updateItemWeight,
     updateItemMakingCharges,
+    updateItemMrp,
   } = useInvoiceCalculations(items);
 
   const searchWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -117,6 +118,12 @@ export function InvoiceItemsTable({
     onItemsChange(updatedItems);
   };
 
+  const handleMrpChange = (index: number, mrp: number) => {
+    const updatedItems = [...items];
+    updatedItems[index] = updateItemMrp(updatedItems[index], mrp);
+    onItemsChange(updatedItems);
+  };
+
   const handleRateInputChange = (index: number, rate: number) => {
     const item = items[index];
     if (item.pricing_mode === 'flat_price') return;
@@ -178,6 +185,7 @@ export function InvoiceItemsTable({
                 <th className="px-3 py-3 text-center font-medium">Mode</th>
                 <th className="px-3 py-3 text-right font-medium">Wt(G)</th>
                 <th className="px-3 py-3 text-center font-medium">Qty</th>
+                <th className="px-3 py-3 text-right font-medium">MRP</th>
                 <th className="px-3 py-3 text-right font-medium min-w-[200px]">Discount</th>
                 <th className="px-3 py-3 text-right font-medium">Rate/g</th>
                 <th className="px-3 py-3 text-right font-medium">Metal Price</th>
@@ -225,6 +233,16 @@ export function InvoiceItemsTable({
                           value={item.quantity}
                           onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
                           className="w-16 h-8 text-center"
+                        />
+                      </td>
+                      <td className="px-3 py-3 text-right align-middle">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.mrp}
+                          onChange={(e) => handleMrpChange(index, parseFloat(e.target.value) || 0)}
+                          className="w-28 h-8 text-right"
                         />
                       </td>
                       <td className="px-3 py-3 text-right align-middle">
@@ -301,7 +319,7 @@ export function InvoiceItemsTable({
                       </td>
                     </tr>
                     <tr className="border-t border-dashed border-border/40">
-                      <td colSpan={12} className="px-3 py-2 bg-muted/10">
+                      <td colSpan={13} className="px-3 py-2 bg-muted/10">
                         <Input
                           type="text"
                           value={item.description || ''}
