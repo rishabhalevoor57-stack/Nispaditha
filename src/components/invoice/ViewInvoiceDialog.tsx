@@ -730,6 +730,7 @@ export function ViewInvoiceDialog({
                         {isAdmin && (
                           <>
                             <th className="px-3 py-3 text-right font-medium">MC</th>
+                            <th className="px-3 py-3 text-right font-medium">MRP</th>
                             <th className="px-3 py-3 text-right font-medium">MC/g</th>
                             <th className="px-3 py-3 text-right font-medium">Discount</th>
                           </>
@@ -757,6 +758,7 @@ export function ViewInvoiceDialog({
                             {isAdmin && (
                               <>
                                 <td className="px-3 py-3 text-right">{isFlat ? '-' : formatCurrency(Number(item.making_charges))}</td>
+                                <td className="px-3 py-3 text-right">{formatCurrency(Number(item.mrp) || 0)}</td>
                                 <td className="px-3 py-3 text-right text-xs text-muted-foreground">
                                   {isFlat ? '-' : (Number(item.weight_grams) > 0 ? formatCurrency(Number(item.making_charges) / Number(item.weight_grams)) + '/g' : '-')}
                                 </td>
