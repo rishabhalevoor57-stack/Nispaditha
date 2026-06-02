@@ -945,7 +945,7 @@ export function ViewInvoiceDialog({
                       <div className="md:col-span-2 flex items-end">
                         <div className="w-full bg-muted/40 rounded-md p-3 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Subtotal − Discount + GST</span>
+                            <span className="text-muted-foreground">Taxable + CGST + SGST</span>
                             <span>{formatCurrency(editTotals.grandTotal)}</span>
                           </div>
                           <div className="flex justify-between">
