@@ -332,37 +332,66 @@ export function CreateInvoiceDialog({
       // Generate invoice number
       const { data: invoiceNum } = await supabase.rpc('generate_invoice_number');
 
-      // Auto-create or update client if phone number is provided
+      // Resolve client by priority: selected ID → phone → exact name → walk-in (only if both empty)
       let finalClientId = selectedClient && selectedClient !== 'walk-in' ? selectedClient : null;
-      
-      if (clientPhone && clientPhone.trim()) {
-        // Use the upsert function to create or update client
+      const phoneTrim = (clientPhone || '').trim();
+      const nameTrim = (clientName || '').trim();
+
+      if (phoneTrim) {
+        // Upsert by phone (creates or updates)
         const { data: clientId, error: clientError } = await supabase.rpc('upsert_client_on_invoice', {
-          p_phone: clientPhone.trim(),
-          p_name: clientName || 'Walk-in Customer',
+          p_phone: phoneTrim,
+          p_name: nameTrim || 'Walk-in Customer',
           p_amount: totals.grandTotal,
         });
-        
         if (clientError) {
           console.error('Error upserting client:', clientError);
         } else if (clientId) {
           finalClientId = clientId;
         }
+      } else if (!finalClientId && nameTrim) {
+        // No phone, no selection — match by exact name; create if not found
+        const { data: existing } = await supabase
+          .from('clients')
+          .select('id, total_purchases')
+          .ilike('name', nameTrim)
+          .maybeSingle();
+        if (existing?.id) {
+          finalClientId = existing.id;
+          await supabase
+            .from('clients')
+            .update({
+              last_invoice_date: new Date().toISOString(),
+              total_purchases: (Number(existing.total_purchases) || 0) + totals.grandTotal,
+            })
+            .eq('id', finalClientId);
+        } else {
+          const { data: created } = await supabase
+            .from('clients')
+            .insert({
+              name: nameTrim,
+              last_invoice_date: new Date().toISOString(),
+              total_purchases: totals.grandTotal,
+            } as never)
+            .select('id')
+            .single();
+          finalClientId = (created as any)?.id || null;
+        }
       } else if (finalClientId) {
-        // Update existing selected client's purchase history using raw update
+        // Existing selected client — update purchase history
         const { data: currentClient } = await supabase
           .from('clients')
-          .select('total_purchases')
+          .select('total_purchases, name, phone')
           .eq('id', finalClientId)
           .single();
 
-        await supabase
-          .from('clients')
-          .update({
-            last_invoice_date: new Date().toISOString(),
-            total_purchases: (currentClient?.total_purchases || 0) + totals.grandTotal,
-          })
-          .eq('id', finalClientId);
+        const updatePayload: any = {
+          last_invoice_date: new Date().toISOString(),
+          total_purchases: (currentClient?.total_purchases || 0) + totals.grandTotal,
+        };
+        // Keep name in sync if user edited it
+        if (nameTrim && currentClient?.name !== nameTrim) updatePayload.name = nameTrim;
+        await supabase.from('clients').update(updatePayload).eq('id', finalClientId);
       }
 
       const paymentOne = effectivePaymentBreakdown[0];
