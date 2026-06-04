@@ -251,14 +251,31 @@ export function ViewInvoiceDialog({
       // 2) Update invoice header — preserve advance_paid / store_credits_used
       const newRoundOff = Number(editRoundOff) || 0;
       const newGrandTotal = (editTotals.grandTotal || 0) + newRoundOff;
+
+      // Recompute payment_status from REAL payments vs new grand_total
+      // (Discount/Adjusted amounts must NOT influence status.)
+      let computedStatus: string;
+      if (isDraft) {
+        computedStatus = 'pending';
+      } else {
+        const { data: payRows } = await supabase
+          .from('invoice_payments')
+          .select('amount')
+          .eq('invoice_id', invoice.id);
+        const credits = Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0;
+        const paidSum = (payRows || []).reduce((s, r: any) => s + Number(r.amount || 0), 0) + credits;
+        const diff = Math.round((newGrandTotal - paidSum) * 100) / 100;
+        if (paidSum <= 0) computedStatus = 'pending';
+        else if (diff <= 0.05) computedStatus = 'paid';
+        else computedStatus = 'partial';
+      }
+
       const { error: updErr } = await supabase
         .from('invoices')
         .update({
           invoice_date: format(editInvoiceDate, 'yyyy-MM-dd'),
           payment_mode: editPaymentMode,
-          payment_status: isDraft
-            ? 'pending'
-            : (editPaymentMode === 'pay_later' ? 'pending' : (invoice.payment_status || 'paid')),
+          payment_status: computedStatus,
           notes: editNotes || null,
           subtotal: editTotals.subtotal,
           discount_amount: editTotals.discountAmount,
@@ -269,31 +286,52 @@ export function ViewInvoiceDialog({
         .eq('id', invoice.id);
       if (updErr) throw updErr;
 
-      // 3) Update / link client info
+      // 3) Resolve & link client by priority: existing client_id → phone → exact name → walk-in
       let linkedClientId = invoice.client_id;
       const trimmedPhone = (editClientPhone || '').trim();
+      const trimmedName = (editClientName || '').trim();
+
       if (trimmedPhone) {
-        // upsert client by phone — also keeps walk-ins linkable when phone provided
+        // Upsert by phone
         const { data: upsertedId, error: cliErr } = await supabase.rpc('upsert_client_on_invoice', {
           p_phone: trimmedPhone,
-          p_name: editClientName || 'Walk-in Customer',
+          p_name: trimmedName || 'Walk-in Customer',
           p_amount: 0,
         });
         if (!cliErr && upsertedId) {
           linkedClientId = upsertedId as string;
           await supabase
             .from('clients')
-            .update({ name: editClientName || 'Walk-in Customer', phone: trimmedPhone } as never)
+            .update({ name: trimmedName || 'Walk-in Customer', phone: trimmedPhone } as never)
             .eq('id', linkedClientId);
-          if (linkedClientId !== invoice.client_id) {
-            await supabase.from('invoices').update({ client_id: linkedClientId } as never).eq('id', invoice.id);
-          }
         }
-      } else if (invoice.client_id && editClientName) {
+      } else if (linkedClientId && trimmedName) {
+        // Have an existing client — update its name (phone may legitimately be blank)
         await supabase
           .from('clients')
-          .update({ name: editClientName } as never)
-          .eq('id', invoice.client_id);
+          .update({ name: trimmedName } as never)
+          .eq('id', linkedClientId);
+      } else if (!linkedClientId && trimmedName) {
+        // No client linked yet, no phone — match by exact name, else create
+        const { data: existing } = await supabase
+          .from('clients')
+          .select('id')
+          .ilike('name', trimmedName)
+          .maybeSingle();
+        if (existing?.id) {
+          linkedClientId = existing.id;
+        } else {
+          const { data: created } = await supabase
+            .from('clients')
+            .insert({ name: trimmedName } as never)
+            .select('id')
+            .single();
+          linkedClientId = (created as any)?.id || null;
+        }
+      }
+
+      if (linkedClientId && linkedClientId !== invoice.client_id) {
+        await supabase.from('invoices').update({ client_id: linkedClientId } as never).eq('id', invoice.id);
       }
 
       // 4) Insert new invoice items (trigger reduces stock for non-draft invoices)
