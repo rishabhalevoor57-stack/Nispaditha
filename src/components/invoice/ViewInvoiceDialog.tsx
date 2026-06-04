@@ -385,6 +385,19 @@ export function ViewInvoiceDialog({
 
     setIsSaving(true);
     try {
+      // SAFEGUARD: re-fetch latest status to prevent double-finalize race (would double-deduct stock)
+      const { data: latest, error: chkErr } = await supabase
+        .from('invoices')
+        .select('status')
+        .eq('id', invoice.id)
+        .single();
+      if (chkErr) throw chkErr;
+      if (!latest || (latest as { status: string }).status !== 'draft') {
+        toast({ variant: 'destructive', title: 'Already finalized', description: 'This invoice is no longer a draft.' });
+        await fetchInvoiceDetails();
+        return;
+      }
+
       // Assign a real invoice number
       const { data: newNum, error: numErr } = await supabase.rpc('generate_invoice_number');
       if (numErr) throw numErr;
@@ -396,8 +409,9 @@ export function ViewInvoiceDialog({
         credits + advance >= total - 0.001 ? 'paid'
         : advance > 0 ? 'partial' : 'pending';
 
-      // Flip status FIRST so subsequent reduction we perform manually
-      const { error: flipErr } = await supabase
+      // Flip status FIRST (only if still draft) so subsequent reduction we perform manually.
+      // The .eq('status','draft') is a concurrency guard — if another tab already flipped it, this updates 0 rows.
+      const { data: flipped, error: flipErr } = await supabase
         .from('invoices')
         .update({
           invoice_number: newNum,
@@ -405,8 +419,16 @@ export function ViewInvoiceDialog({
           payment_status: status,
           paid_at: status === 'paid' ? new Date().toISOString() : null,
         } as never)
-        .eq('id', invoice.id);
+        .eq('id', invoice.id)
+        .eq('status', 'draft')
+        .select('id');
       if (flipErr) throw flipErr;
+      if (!flipped || flipped.length === 0) {
+        toast({ variant: 'destructive', title: 'Already finalized', description: 'This draft was finalized elsewhere.' });
+        await fetchInvoiceDetails();
+        return;
+      }
+
 
       // Manually reduce stock for each item (trigger had skipped because invoice was draft at insert time)
       for (const it of items) {
