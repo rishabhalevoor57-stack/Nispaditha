@@ -148,6 +148,9 @@ export default function Invoices() {
       cancelled: invoice.status === 'cancelled',
       cancellationReason: (invoice as any).cancellation_reason || null,
       roundOff: Number((invoice as any).round_off) || 0,
+      metalRateLabel: businessSettings?.silver_rate_per_gram
+        ? `Silver Rate: ₹ ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(businessSettings.silver_rate_per_gram))}/g`
+        : undefined,
     }, true);
   };
 
