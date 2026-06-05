@@ -1660,6 +1660,48 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_deduction_blocks: {
+        Row: {
+          attempted_by: string | null
+          attempted_quantity: number
+          created_at: string
+          current_stock: number | null
+          id: string
+          invoice_id: string | null
+          invoice_number: string | null
+          invoice_status: string | null
+          product_id: string | null
+          product_name: string | null
+          reason: string
+        }
+        Insert: {
+          attempted_by?: string | null
+          attempted_quantity?: number
+          created_at?: string
+          current_stock?: number | null
+          id?: string
+          invoice_id?: string | null
+          invoice_number?: string | null
+          invoice_status?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          reason: string
+        }
+        Update: {
+          attempted_by?: string | null
+          attempted_quantity?: number
+          created_at?: string
+          current_stock?: number | null
+          id?: string
+          invoice_id?: string | null
+          invoice_number?: string | null
+          invoice_status?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          reason?: string
+        }
+        Relationships: []
+      }
       stock_history: {
         Row: {
           created_at: string
