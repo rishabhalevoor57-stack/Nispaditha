@@ -1220,6 +1220,7 @@ export function CreateInvoiceDialog({
         advancePaid={effectiveAdvance}
         storeCreditsUsed={cappedCredits}
         paymentBreakdown={effectivePaymentBreakdown}
+        metalRateLabel={metalRateLabel}
       />
     )}
   </>
