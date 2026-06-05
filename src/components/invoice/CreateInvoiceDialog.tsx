@@ -147,6 +147,17 @@ export function CreateInvoiceDialog({
     return 0;
   })();
 
+  // Label shown on the invoice/PDF so the customer can see the live metal rate used
+  const metalRateLabel = (() => {
+    const fmtRate = (r: number) =>
+      new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(r || 0);
+    if (metalRate === 'gold_22k') return `Gold 22K Rate: ₹ ${fmtRate(goldRate)}/g`;
+    if (metalRate === 'gold_18k') return `Gold 18K Rate: ₹ ${fmtRate(goldRate * (18 / 22))}/g`;
+    if (metalRate === 'silver') return `Silver Rate: ₹ ${fmtRate(silverRate)}/g`;
+    return '';
+  })();
+
+
 
   useEffect(() => {
     if (open) {
