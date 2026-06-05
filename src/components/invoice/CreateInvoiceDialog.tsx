@@ -538,6 +538,7 @@ export function CreateInvoiceDialog({
           roundOff,
           advancePaid: effectiveAdvance,
           storeCreditsUsed: cappedCredits,
+          metalRateLabel,
         }, true);
       }
 
