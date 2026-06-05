@@ -31,6 +31,7 @@ interface InvoicePreviewModalProps {
   advancePaid?: number;
   storeCreditsUsed?: number;
   paymentBreakdown?: PaymentBreakdownEntry[];
+  metalRateLabel?: string;
 }
 
 const PURPLE = '#4a2060';
