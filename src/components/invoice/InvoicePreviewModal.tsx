@@ -31,6 +31,7 @@ interface InvoicePreviewModalProps {
   advancePaid?: number;
   storeCreditsUsed?: number;
   paymentBreakdown?: PaymentBreakdownEntry[];
+  metalRateLabel?: string;
 }
 
 const PURPLE = '#4a2060';
@@ -81,6 +82,7 @@ export function InvoicePreviewModal({
   advancePaid = 0,
   storeCreditsUsed = 0,
   paymentBreakdown = [],
+  metalRateLabel,
 }: InvoicePreviewModalProps) {
   if (!businessSettings) return null;
 
@@ -210,12 +212,22 @@ export function InvoicePreviewModal({
             </div>
 
             {/* BILL TO ROW (no duplicate payment pill) */}
-            <div className="px-6 py-3">
-              <div className="text-[18px] font-bold leading-tight">
-                {clientName || 'Walk-in Customer'}
+            <div className="px-6 py-3 flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[18px] font-bold leading-tight">
+                  {clientName || 'Walk-in Customer'}
+                </div>
+                {clientPhone && (
+                  <div className="text-[11px] text-gray-500 mt-0.5">{clientPhone}</div>
+                )}
               </div>
-              {clientPhone && (
-                <div className="text-[11px] text-gray-500 mt-0.5">{clientPhone}</div>
+              {metalRateLabel && (
+                <div
+                  className="text-[10.5px] font-semibold px-3 py-1.5 rounded"
+                  style={{ background: PURPLE_LIGHT, color: PURPLE, border: `1px solid ${PURPLE_BORDER}`, whiteSpace: 'nowrap' }}
+                >
+                  {metalRateLabel}
+                </div>
               )}
             </div>
 
