@@ -529,6 +529,12 @@ export function ViewInvoiceDialog({
     };
   };
 
+  const buildMetalRateLabel = () => {
+    const r = Number(businessSettings?.silver_rate_per_gram) || 0;
+    if (!r) return undefined;
+    return `Silver Rate: ₹ ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(r)}/g`;
+  };
+
   const handleDownload = () => {
     if (!invoice || !businessSettings) return;
     const inv = invoice as unknown as { cancellation_reason?: string | null };
@@ -548,6 +554,7 @@ export function ViewInvoiceDialog({
       cancelled: invoice.status === 'cancelled',
       cancellationReason: inv.cancellation_reason || null,
       roundOff: Number(invoice.round_off) || 0,
+      metalRateLabel: buildMetalRateLabel(),
     }, isAdmin);
   };
 
@@ -570,6 +577,7 @@ export function ViewInvoiceDialog({
       cancelled: invoice.status === 'cancelled',
       cancellationReason: inv.cancellation_reason || null,
       roundOff: Number(invoice.round_off) || 0,
+      metalRateLabel: buildMetalRateLabel(),
     }, isAdmin);
   };
 
