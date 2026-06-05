@@ -254,6 +254,25 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.setTextColor(110, 110, 110);
     doc.text(data.clientPhone, margin, yPos + 10);
   }
+  // Metal rate badge on the right side
+  if (data.metalRateLabel) {
+    const pageW = doc.internal.pageSize.getWidth();
+    const label = data.metalRateLabel;
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(9);
+    const textW = doc.getTextWidth(label);
+    const padX = 3;
+    const boxW = textW + padX * 2;
+    const boxH = 6;
+    const boxX = pageW - margin - boxW;
+    const boxY = yPos + 1;
+    doc.setFillColor(...PURPLE_LIGHT);
+    doc.setDrawColor(...PURPLE_BORDER);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(boxX, boxY, boxW, boxH, 1, 1, 'FD');
+    doc.setTextColor(...PURPLE);
+    doc.text(label, boxX + padX, boxY + 4.2);
+  }
   yPos += 14;
   doc.setTextColor(0, 0, 0);
 
