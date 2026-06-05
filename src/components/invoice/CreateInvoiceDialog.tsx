@@ -708,7 +708,7 @@ export function CreateInvoiceDialog({
       onOpenChange(isOpen);
       if (!isOpen) resetForm();
     }}>
-      <DialogContent className="!max-w-[95vw] w-[95vw] !max-h-[95vh] h-[95vh] xl:min-w-[1600px] overflow-y-auto">
+      <DialogContent className="!max-w-[min(1600px,96vw)] w-[96vw] !max-h-[95vh] h-[95vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="w-5 h-5 text-primary" />
