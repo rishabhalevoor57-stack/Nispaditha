@@ -26,6 +26,7 @@ interface InvoicePdfData {
   paymentReceivedDate?: string | null;
   cancelled?: boolean;
   cancellationReason?: string | null;
+  metalRateLabel?: string;
 }
 
 const PURPLE: [number, number, number] = [74, 32, 96];
