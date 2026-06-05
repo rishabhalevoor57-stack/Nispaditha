@@ -1072,6 +1072,7 @@ export function ViewInvoiceDialog({
           storeCreditsUsed={Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0}
           roundOff={Number(invoice.round_off) || 0}
           showMakingCharges={isAdmin}
+          metalRateLabel={buildMetalRateLabel()}
         />
       )}
     </>
