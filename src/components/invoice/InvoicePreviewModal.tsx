@@ -82,6 +82,7 @@ export function InvoicePreviewModal({
   advancePaid = 0,
   storeCreditsUsed = 0,
   paymentBreakdown = [],
+  metalRateLabel,
 }: InvoicePreviewModalProps) {
   if (!businessSettings) return null;
 
