@@ -148,9 +148,25 @@ export default function Invoices() {
       cancelled: invoice.status === 'cancelled',
       cancellationReason: (invoice as any).cancellation_reason || null,
       roundOff: Number((invoice as any).round_off) || 0,
-      metalRateLabel: businessSettings?.silver_rate_per_gram
-        ? `Silver Rate: ₹ ${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Number(businessSettings.silver_rate_per_gram))}/g`
-        : undefined,
+      metalRateLabel: (() => {
+        const silver = Number(businessSettings?.silver_rate_per_gram) || 0;
+        const gold = Number(businessSettings?.gold_rate_per_gram) || 0;
+        const fmt = (r: number) =>
+          new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(r || 0);
+        const rates = invoiceItems
+          .filter((i) => i.pricing_mode !== 'flat_price' && Number(i.rate_per_gram) > 0)
+          .map((i) => Number(i.rate_per_gram));
+        const hasGold = rates.some((r) => gold > 0 && r >= gold * 0.7);
+        const hasSilver = rates.some((r) => silver > 0 && r < (gold || Infinity) * 0.7);
+        const labels: string[] = [];
+        if (hasGold && gold > 0) labels.push(`Gold Rate: ₹ ${fmt(gold)}/g`);
+        if (hasSilver && silver > 0) labels.push(`Silver Rate: ₹ ${fmt(silver)}/g`);
+        if (!labels.length) {
+          if (silver > 0) labels.push(`Silver Rate: ₹ ${fmt(silver)}/g`);
+          if (gold > 0) labels.push(`Gold Rate: ₹ ${fmt(gold)}/g`);
+        }
+        return labels.length ? labels.join('  ·  ') : undefined;
+      })(),
     }, true);
   };
 
