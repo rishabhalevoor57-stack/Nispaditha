@@ -326,6 +326,21 @@ export default function Sold() {
     fetchData();
   };
 
+  const handleHide = async (row: SoldRow) => {
+    if (!confirm('Remove this row from the Sold list? The underlying invoice, stock and accounting will NOT be affected.')) return;
+    const { error } = await supabase.from('hidden_sold_entries' as any).insert({
+      source: row.source_key,
+      entry_key: row.entry_key,
+      source_ref: row.source_ref || null,
+    });
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Removed from Sold list' });
+    fetchData();
+  };
+
   return (
     <AppLayout>
       <PageHeader
