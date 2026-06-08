@@ -90,7 +90,11 @@ export default function Sold() {
     setLoading(true);
     const all: SoldRow[] = [];
 
-    // 1. Completed invoices (paid status)
+    // Load hidden entries
+    const { data: hiddenData } = await supabase.from('hidden_sold_entries' as any).select('source, entry_key');
+    const hiddenSet = new Set((hiddenData || []).map((h: any) => `${h.source}:${h.entry_key}`));
+
+    // 1. Completed invoices (paid status) — aggregate into ONE row per invoice
     const { data: invoices } = await supabase
       .from('invoices')
       .select('id, invoice_number, invoice_date, payment_status, status, client_id, clients(name)')
@@ -101,15 +105,11 @@ export default function Sold() {
     if (invoiceIds.length > 0) {
       const { data: items } = await supabase
         .from('invoice_items')
-        .select('id, invoice_id, product_name, weight_grams, quantity, total')
+        .select('id, invoice_id, product_id, product_name, weight_grams, quantity, total')
         .in('invoice_id', invoiceIds);
 
+      const productIds = (items || []).map((i: any) => i.product_id).filter(Boolean);
       const skuMap: Record<string, string> = {};
-      const itemsWithProduct = await supabase
-        .from('invoice_items')
-        .select('id, product_id')
-        .in('invoice_id', invoiceIds);
-      const productIds = (itemsWithProduct.data || []).map((i: any) => i.product_id).filter(Boolean);
       if (productIds.length) {
         const { data: prods } = await supabase
           .from('products')
@@ -117,22 +117,35 @@ export default function Sold() {
           .in('id', productIds);
         (prods || []).forEach((p: any) => { skuMap[p.id] = p.sku; });
       }
-      const itemPid: Record<string, string> = {};
-      (itemsWithProduct.data || []).forEach((i: any) => { if (i.product_id) itemPid[i.id] = i.product_id; });
 
+      const byInvoice: Record<string, any[]> = {};
       (items || []).forEach((it: any) => {
-        const inv = (invoices || []).find((i: any) => i.id === it.invoice_id);
+        (byInvoice[it.invoice_id] ||= []).push(it);
+      });
+
+      (invoices || []).forEach((inv: any) => {
+        const invItems = byInvoice[inv.id] || [];
+        if (invItems.length === 0) return;
+        const qty = invItems.reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+        const weight = invItems.reduce((s, it) => s + (Number(it.weight_grams) || 0), 0);
+        const total = invItems.reduce((s, it) => s + (Number(it.total) || 0), 0);
+        const first = invItems[0];
+        const firstName = first?.product_name || 'Item';
+        const productLabel = invItems.length > 1 ? `${firstName} (+${invItems.length - 1} more)` : firstName;
+        const firstSku = first?.product_id ? skuMap[first.product_id] || null : null;
         all.push({
-          id: `inv-${it.id}`,
-          date: inv?.invoice_date || '',
-          product_name: it.product_name,
-          sku: itemPid[it.id] ? skuMap[itemPid[it.id]] || null : null,
-          qty: it.quantity,
-          weight: Number(it.weight_grams) || 0,
-          total: Number(it.total) || 0,
+          id: `inv-${inv.id}`,
+          date: inv.invoice_date || '',
+          product_name: productLabel,
+          sku: firstSku,
+          qty,
+          weight,
+          total,
           client_name: inv?.clients?.name || null,
           source: 'invoice',
-          source_ref: inv?.invoice_number,
+          source_ref: inv.invoice_number,
+          entry_key: inv.id,
+          source_key: 'invoice',
         });
       });
     }
@@ -162,6 +175,8 @@ export default function Sold() {
           client_name: co?.client_name || null,
           source: 'custom_order',
           source_ref: co?.reference_number,
+          entry_key: it.id,
+          source_key: 'custom_order',
         });
       });
     }
@@ -183,11 +198,14 @@ export default function Sold() {
         total: Number(m.total) || 0,
         client_name: m.client_name,
         source: 'manual',
+        entry_key: m.id,
+        source_key: 'manual',
       });
     });
 
-    all.sort((a, b) => (a.date < b.date ? 1 : -1));
-    setRows(all);
+    const visible = all.filter((r) => !hiddenSet.has(`${r.source_key}:${r.entry_key}`));
+    visible.sort((a, b) => (a.date < b.date ? 1 : -1));
+    setRows(visible);
     setLoading(false);
   };
 
