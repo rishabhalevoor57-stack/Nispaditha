@@ -206,6 +206,16 @@ export default function Expenses() {
       header: 'Payment Mode',
       cell: (item: Expense) => item.payment_mode || '-'
     },
+    {
+      key: 'paid_to',
+      header: 'Paid To',
+      cell: (item: Expense) => (
+        <div className="text-sm">
+          <div>{item.paid_to_name || '-'}</div>
+          {item.paid_to_phone && <div className="text-xs text-muted-foreground">{item.paid_to_phone}</div>}
+        </div>
+      )
+    },
     { 
       key: 'notes', 
       header: 'Notes',
