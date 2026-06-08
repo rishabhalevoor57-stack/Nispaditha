@@ -45,7 +45,7 @@ export const generateServiceReceiptPdf = (sf: ServiceForm): jsPDF => {
   doc.text(`Description: ${sf.item_description}`, 14, 99);
   doc.text(`Material: ${sf.material || '-'}`, 14, 106);
   doc.text(`Weight: ${sf.weight_grams || 0} g`, 80, 106);
-  doc.text(`From our shop: ${sf.from_our_shop ? 'Yes' : 'No'}`, 130, 106);
+  doc.text(`Source: ${sf.from_our_shop ? 'From Nispaditha' : 'From Other'}`, 130, 106);
   if (sf.original_invoice_no) {
     doc.text(`Original Invoice: ${sf.original_invoice_no}`, 14, 113);
   }
