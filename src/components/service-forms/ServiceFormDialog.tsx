@@ -174,13 +174,21 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
             <CardHeader className="pb-3"><CardTitle className="text-sm">Jewellery Details</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-1"><Label>Item Name / Description *</Label><Input value={itemDescription} onChange={(e) => setItemDescription(e.target.value)} placeholder="Gold Necklace, Silver Anklet..." /></div>
-              <div className="flex items-center gap-3">
-                <Switch checked={fromOurShop} onCheckedChange={setFromOurShop} />
-                <Label>From our shop?</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Item Source</Label>
+                  <Select value={fromOurShop ? 'nispaditha' : 'other'} onValueChange={(v) => setFromOurShop(v === 'nispaditha')}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nispaditha">From Nispaditha</SelectItem>
+                      <SelectItem value="other">From Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {fromOurShop && (
+                  <div className="space-y-1"><Label>Original Invoice No</Label><Input value={originalInvoiceNo} onChange={(e) => setOriginalInvoiceNo(e.target.value)} /></div>
+                )}
               </div>
-              {fromOurShop && (
-                <div className="space-y-1"><Label>Original Invoice No</Label><Input value={originalInvoiceNo} onChange={(e) => setOriginalInvoiceNo(e.target.value)} /></div>
-              )}
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <Label>Material</Label>

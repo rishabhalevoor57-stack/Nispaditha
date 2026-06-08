@@ -22,6 +22,9 @@ export const SERVICE_TYPE_OPTIONS = [
   'Stone Setting / Stone Replacement',
   'Cleaning',
   'Rhodium Plating',
+  'Labour',
+  'Stock',
+  'Metal',
 ] as const;
 
 export interface ServiceForm {
