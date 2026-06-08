@@ -513,16 +513,28 @@ export default function Sold() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {r.source === 'manual' && isAdmin && (
+                      <div className="flex items-center gap-1">
+                        {r.source === 'manual' && isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(r.manual_id!)}
+                            className="h-8 w-8"
+                            title="Delete manual entry"
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(r.manual_id!)}
+                          onClick={() => handleHide(r)}
                           className="h-8 w-8"
+                          title="Remove from Sold list (hides only)"
                         >
-                          <Trash2 className="w-4 h-4 text-destructive" />
+                          <EyeOff className="w-4 h-4 text-muted-foreground" />
                         </Button>
-                      )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
