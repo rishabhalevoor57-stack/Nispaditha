@@ -23,7 +23,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Trash2, ShoppingBag } from 'lucide-react';
+import { Plus, Search, Trash2, ShoppingBag, EyeOff } from 'lucide-react';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 type Source = 'invoice' | 'custom_order' | 'manual';
@@ -40,6 +40,8 @@ interface SoldRow {
   source: Source;
   source_ref?: string | null;
   manual_id?: string;
+  entry_key: string; // for hidden_sold_entries
+  source_key: Source;
 }
 
 interface ProductLite {
