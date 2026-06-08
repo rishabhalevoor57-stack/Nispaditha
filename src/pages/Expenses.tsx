@@ -37,6 +37,8 @@ interface Expense {
   notes: string | null;
   bill_image_url: string | null;
   created_at: string;
+  paid_to_name: string | null;
+  paid_to_phone: string | null;
 }
 
 const expenseCategories = [
@@ -58,6 +60,8 @@ const initialExpense = {
   amount: 0,
   payment_mode: 'cash',
   notes: '',
+  paid_to_name: '',
+  paid_to_phone: '',
 };
 
 export default function Expenses() {
@@ -136,6 +140,8 @@ export default function Expenses() {
       amount: expense.amount,
       payment_mode: expense.payment_mode || 'cash',
       notes: expense.notes || '',
+      paid_to_name: expense.paid_to_name || '',
+      paid_to_phone: expense.paid_to_phone || '',
     });
     setIsDialogOpen(true);
   };
@@ -318,6 +324,27 @@ export default function Expenses() {
                         <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="paid_to_name">Paid To (Name)</Label>
+                    <Input
+                      id="paid_to_name"
+                      value={formData.paid_to_name}
+                      onChange={(e) => setFormData({ ...formData, paid_to_name: e.target.value })}
+                      placeholder="Vendor / person name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="paid_to_phone">Phone No.</Label>
+                    <Input
+                      id="paid_to_phone"
+                      value={formData.paid_to_phone}
+                      onChange={(e) => setFormData({ ...formData, paid_to_phone: e.target.value })}
+                      placeholder="Phone number"
+                    />
                   </div>
                 </div>
 
