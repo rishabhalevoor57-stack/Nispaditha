@@ -595,6 +595,8 @@ export type Database = {
           expense_date: string
           id: string
           notes: string | null
+          paid_to_name: string | null
+          paid_to_phone: string | null
           payment_mode: string | null
           updated_at: string
         }
@@ -607,6 +609,8 @@ export type Database = {
           expense_date?: string
           id?: string
           notes?: string | null
+          paid_to_name?: string | null
+          paid_to_phone?: string | null
           payment_mode?: string | null
           updated_at?: string
         }
@@ -619,6 +623,8 @@ export type Database = {
           expense_date?: string
           id?: string
           notes?: string | null
+          paid_to_name?: string | null
+          paid_to_phone?: string | null
           payment_mode?: string | null
           updated_at?: string
         }
