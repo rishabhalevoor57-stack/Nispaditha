@@ -291,12 +291,10 @@ export function InvoiceItemsTable({
                       </td>
                       <td className="px-3 py-3 text-right align-middle">
                         {isFlat ? '-' : (
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                          <BlankZeroInput
                             value={item.making_charges_per_gram}
-                            onChange={(e) => handleMcPerGramChange(index, parseFloat(e.target.value) || 0)}
+                            onValueChange={(v) => handleMcPerGramChange(index, v)}
+                            placeholder="0"
                             className="w-20 h-8 text-right"
                             title="MC per gram"
                           />
