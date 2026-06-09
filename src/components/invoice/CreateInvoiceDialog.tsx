@@ -717,6 +717,7 @@ export function CreateInvoiceDialog({
       advancePaid: effectiveAdvance,
         storeCreditsUsed: cappedCredits,
         paymentBreakdown: effectivePaymentBreakdown,
+        gstMode,
     }, true);
   };
 
