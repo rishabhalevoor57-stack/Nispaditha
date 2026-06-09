@@ -153,12 +153,10 @@ export function RecordPaymentDialog({
 
           <div className="space-y-2">
             <Label>Amount Received (₹)</Label>
-            <Input
-              type="number"
-              step="0.01"
-              min={0}
+            <BlankZeroInput
               value={amount}
-              onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+              onValueChange={setAmount}
+              placeholder="0.00"
             />
           </div>
 
