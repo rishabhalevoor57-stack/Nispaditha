@@ -1,5 +1,6 @@
 import { useState, useRef, Fragment } from 'react';
 import { Input } from '@/components/ui/input';
+import { BlankZeroInput } from '@/components/ui/blank-zero-input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
