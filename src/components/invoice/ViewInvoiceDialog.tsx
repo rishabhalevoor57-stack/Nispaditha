@@ -118,12 +118,13 @@ export function ViewInvoiceDialog({
   const [editItems, setEditItems] = useState<InvoiceItem[]>([]);
   const [editMetalRate, setEditMetalRate] = useState<MetalRateOption>('silver');
   const [editRoundOff, setEditRoundOff] = useState<number>(0);
+  const [editGstMode, setEditGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
 
   const { toast } = useToast();
   const { user, userRole } = useAuth();
   const isAdmin = userRole === 'admin';
   const { logActivity } = useActivityLogger();
-  const { totals: editTotals } = useInvoiceCalculations(editItems);
+  const { totals: editTotals } = useInvoiceCalculations(editItems, 3, editGstMode);
 
   const goldRate = businessSettings?.gold_rate_per_gram || 0;
   const silverRate = businessSettings?.silver_rate_per_gram || 95;
