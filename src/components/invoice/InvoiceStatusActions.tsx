@@ -65,7 +65,7 @@ export function InvoiceStatusActions({
           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
         >
           <Send className="w-4 h-4 mr-1" />
-          Mark as Sent
+          Convert to Invoice
         </Button>
       )}
       {currentStatus === 'sent' && (
