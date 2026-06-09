@@ -260,15 +260,14 @@ export function InvoiceItemsTable({
                               <SelectItem value="percentage">%</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Input
-                            type="number"
-                            min="0"
+                          <BlankZeroInput
                             max={isFlat
                               ? (item.discount_type === 'percentage' ? 100 : (item.selling_price || item.base_price) * item.quantity)
                               : (item.discount_type === 'percentage' ? 100 : item.making_charges)
                             }
                             value={item.discount_value}
-                            onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
+                            onValueChange={(v) => handleDiscountChange(index, v)}
+                            placeholder="0"
                             className="w-28 h-8 text-right"
                             title={isFlat ? "Discount on total amount" : "Discount applies only on MC"}
                           />
