@@ -788,6 +788,7 @@ export type Database = {
           discount_amount: number
           grand_total: number
           gst_amount: number
+          gst_mode: string
           gst_percentage: number
           id: string
           invoice_date: string
@@ -826,6 +827,7 @@ export type Database = {
           discount_amount?: number
           grand_total?: number
           gst_amount?: number
+          gst_mode?: string
           gst_percentage?: number
           id?: string
           invoice_date?: string
@@ -864,6 +866,7 @@ export type Database = {
           discount_amount?: number
           grand_total?: number
           gst_amount?: number
+          gst_mode?: string
           gst_percentage?: number
           id?: string
           invoice_date?: string
