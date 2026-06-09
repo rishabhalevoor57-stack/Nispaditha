@@ -625,6 +625,7 @@ export function CreateInvoiceDialog({
         status: 'draft',
         client_source: clientSource,
         gst_percentage: gstPct,
+        gst_mode: gstMode,
         round_off: roundOff,
       };
 
