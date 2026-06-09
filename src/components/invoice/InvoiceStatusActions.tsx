@@ -30,12 +30,24 @@ export function InvoiceStatusActions({
 
   const handleMarkAsSent = async () => {
     try {
+      const updatePayload: any = { status: 'sent', sent_at: new Date().toISOString() };
+
+      // If this is still a DRAFT-* placeholder, assign a real invoice number from the series
+      if (!invoiceNumber || invoiceNumber.startsWith('DRAFT-')) {
+        const { data: invoiceNum, error: rpcErr } = await supabase.rpc('generate_invoice_number');
+        if (rpcErr) throw rpcErr;
+        if (invoiceNum) updatePayload.invoice_number = invoiceNum;
+      }
+
       const { error } = await supabase
         .from('invoices')
-        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .update(updatePayload)
         .eq('id', invoiceId);
       if (error) throw error;
-      toast({ title: 'Invoice marked as sent' });
+      toast({
+        title: 'Invoice confirmed',
+        description: updatePayload.invoice_number ? `Number assigned: ${updatePayload.invoice_number}` : undefined,
+      });
       onStatusChange();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to update status';
