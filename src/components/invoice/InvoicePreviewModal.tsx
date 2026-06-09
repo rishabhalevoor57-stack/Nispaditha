@@ -84,8 +84,11 @@ export function InvoicePreviewModal({
   storeCreditsUsed = 0,
   paymentBreakdown = [],
   metalRateLabel,
+  gstMode = 'exclusive',
 }: InvoicePreviewModalProps) {
   if (!businessSettings) return null;
+
+  const isInclusive = gstMode === 'inclusive';
 
   const dateStr = new Date(invoiceDate).toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -95,7 +98,11 @@ export function InvoicePreviewModal({
 
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
-  const grandTotal = (totals.grandTotal || 0) + roundOff;
+  // In inclusive mode the line-totals already contain GST, so grandTotal == subtotal + roundOff.
+  // In exclusive mode GST is added on top.
+  const grandTotal = isInclusive
+    ? (totals.subtotal || 0) + roundOff
+    : (totals.grandTotal || 0) + roundOff;
   const breakdownTotal = paymentBreakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashOrUpiPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
   const paidTotal = cashOrUpiPaid + storeCreditsUsed;
