@@ -977,14 +977,12 @@ export function CreateInvoiceDialog({
                       </div>
                       <div>
                         <Label htmlFor="credits-used" className="text-xs text-muted-foreground">Credits to Use</Label>
-                        <Input
+                        <BlankZeroInput
                           id="credits-used"
-                          type="number"
-                          step="0.01"
-                          min={0}
                           max={Math.min(walletBalance, grandTotalWithRound)}
                           value={storeCreditsUsed}
-                          onChange={(e) => setStoreCreditsUsed(parseFloat(e.target.value) || 0)}
+                          onValueChange={setStoreCreditsUsed}
+                          placeholder="0"
                           className="h-8 mt-1 text-right"
                         />
                         {creditsError && (
