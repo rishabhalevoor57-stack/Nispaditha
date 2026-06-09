@@ -78,6 +78,7 @@ export function CreateInvoiceDialog({
   const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
   const [metalRate, setMetalRate] = useState<MetalRateOption>('silver');
   const [gstPct, setGstPct] = useState<number>(3);
+  const [gstMode, setGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
   const [roundOff, setRoundOff] = useState<number>(0);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [storeCreditsUsed, setStoreCreditsUsed] = useState<number>(0);
@@ -87,7 +88,7 @@ export function CreateInvoiceDialog({
 
   const { toast } = useToast();
   const { user } = useAuth();
-  const { totals } = useInvoiceCalculations(invoiceItems, gstPct);
+  const { totals } = useInvoiceCalculations(invoiceItems, gstPct, gstMode);
   const { logActivity } = useActivityLogger();
 
   const grandTotalWithRound = (totals.grandTotal || 0) + (Number(roundOff) || 0);
