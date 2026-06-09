@@ -166,11 +166,12 @@ export function ViewInvoiceDialog({
       const subtotal = Number(data.subtotal) || 0;
       const gst = Number(data.gst_amount) || 0;
       const roundOffVal = Number(data.round_off) || 0;
-      // subtotal stored in DB is already NET of discount (sum of line_totals).
-      // So grand total = subtotal + GST + round_off. Do NOT subtract discount again.
-      const computedGrand = Math.round((subtotal + gst + roundOffVal) * 100) / 100;
+      const mode = ((data as any).gst_mode === 'inclusive' ? 'inclusive' : 'exclusive') as 'exclusive' | 'inclusive';
+      // subtotal stored is post-discount sum of line_totals.
+      // Inclusive: grand = subtotal + roundOff (GST already inside).
+      // Exclusive: grand = subtotal + gst + roundOff.
+      const computedGrand = Math.round(((mode === 'inclusive' ? subtotal : subtotal + gst) + roundOffVal) * 100) / 100;
       const storedGrand = Number(data.grand_total) || 0;
-      // Auto-heal stored grand_total only if it's meaningfully off (legacy bugs).
       if (Math.abs(computedGrand - storedGrand) > 0.05) {
         data.grand_total = computedGrand;
         supabase
