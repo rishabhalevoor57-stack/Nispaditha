@@ -871,29 +871,56 @@ export function CreateInvoiceDialog({
           {/* GST + Round Off + Live Totals */}
           {invoiceItems.length > 0 && (
             <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="gst-pct">GST %</Label>
-                  <Input
+                  <BlankZeroInput
                     id="gst-pct"
-                    type="number"
-                    step="0.01"
-                    min={0}
                     value={gstPct}
-                    onChange={(e) => setGstPct(Math.max(0, parseFloat(e.target.value) || 0))}
+                    onValueChange={(v) => setGstPct(Math.max(0, v))}
+                    placeholder="0"
                   />
                   <p className="text-[11px] text-muted-foreground">
                     Split equally as CGST @ {(gstPct / 2).toFixed(2)}% + SGST @ {(gstPct / 2).toFixed(2)}%
                   </p>
                 </div>
                 <div className="space-y-2">
+                  <Label>GST Mode</Label>
+                  <div className="grid grid-cols-2 gap-1 rounded-md border p-1">
+                    <button
+                      type="button"
+                      onClick={() => setGstMode('exclusive')}
+                      className={cn(
+                        'h-8 rounded text-xs font-medium transition-colors',
+                        gstMode === 'exclusive' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                      )}
+                    >
+                      GST Exclusive
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGstMode('inclusive')}
+                      className={cn(
+                        'h-8 rounded text-xs font-medium transition-colors',
+                        gstMode === 'inclusive' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                      )}
+                    >
+                      GST Inclusive
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {gstMode === 'inclusive'
+                      ? 'GST is included in MRP — extracted, not added on top.'
+                      : 'GST is added on top of MRP − Discount.'}
+                  </p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="round-off">Round Off</Label>
-                  <Input
+                  <BlankZeroInput
                     id="round-off"
-                    type="number"
-                    step="0.01"
                     value={roundOff}
-                    onChange={(e) => setRoundOff(parseFloat(e.target.value) || 0)}
+                    onValueChange={setRoundOff}
+                    min={undefined}
                     placeholder="e.g. 0.50 or -0.30"
                   />
                 </div>
@@ -911,6 +938,12 @@ export function CreateInvoiceDialog({
                     <span className="tabular-nums">− ₹ {totals.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
+                {gstMode === 'inclusive' && totals.gstAmount > 0 && (
+                  <div className="flex justify-between text-destructive">
+                    <span>− GST Included</span>
+                    <span className="tabular-nums">− ₹ {totals.gstAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">CGST @ {(gstPct / 2).toFixed(2)}%</span>
                   <span className="tabular-nums">₹ {cgst.toFixed(2)}</span>
@@ -925,6 +958,7 @@ export function CreateInvoiceDialog({
                     <span className="tabular-nums">₹ {Math.abs(roundOff).toFixed(2)}</span>
                   </div>
                 )}
+
 
                 {/* Store Wallet Credits */}
                 {selectedClient && selectedClient !== 'walk-in' && walletBalance > 0 && (
