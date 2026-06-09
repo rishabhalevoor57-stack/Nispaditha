@@ -440,6 +440,7 @@ export function CreateInvoiceDialog({
         status: computedPaymentStatus === 'paid' ? 'paid' : 'sent',
         client_source: clientSource,
         gst_percentage: gstPct,
+        gst_mode: gstMode,
         round_off: roundOff,
       };
 
