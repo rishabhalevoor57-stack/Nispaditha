@@ -61,6 +61,7 @@ interface InvoiceDetails {
   paid_at: string | null;
   created_at: string;
   client_id: string | null;
+  gst_mode?: 'exclusive' | 'inclusive';
   clients: { name: string; phone: string | null } | null;
 }
 
