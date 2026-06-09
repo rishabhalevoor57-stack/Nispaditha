@@ -32,6 +32,7 @@ interface InvoicePreviewModalProps {
   storeCreditsUsed?: number;
   paymentBreakdown?: PaymentBreakdownEntry[];
   metalRateLabel?: string;
+  gstMode?: 'exclusive' | 'inclusive';
 }
 
 const PURPLE = '#4a2060';
@@ -83,8 +84,11 @@ export function InvoicePreviewModal({
   storeCreditsUsed = 0,
   paymentBreakdown = [],
   metalRateLabel,
+  gstMode = 'exclusive',
 }: InvoicePreviewModalProps) {
   if (!businessSettings) return null;
+
+  const isInclusive = gstMode === 'inclusive';
 
   const dateStr = new Date(invoiceDate).toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -94,7 +98,11 @@ export function InvoicePreviewModal({
 
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
-  const grandTotal = (totals.grandTotal || 0) + roundOff;
+  // In inclusive mode the line-totals already contain GST, so grandTotal == subtotal + roundOff.
+  // In exclusive mode GST is added on top.
+  const grandTotal = isInclusive
+    ? (totals.subtotal || 0) + roundOff
+    : (totals.grandTotal || 0) + roundOff;
   const breakdownTotal = paymentBreakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashOrUpiPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
   const paidTotal = cashOrUpiPaid + storeCreditsUsed;
@@ -307,6 +315,10 @@ export function InvoicePreviewModal({
             {/* TOTALS BLOCK — MRP-based (discount applied once) */}
             <div className="px-6 mt-4 flex justify-end">
               <div className="w-80 text-[11.5px] space-y-1">
+                <div className="flex justify-between text-[10px] uppercase tracking-wider text-gray-500 pb-1">
+                  <span>GST Mode</span>
+                  <span className="font-semibold text-gray-700">{isInclusive ? 'Inclusive' : 'Exclusive'}</span>
+                </div>
                 <div className="flex justify-between text-[13px] font-bold">
                   <span>MRP (Total)</span>
                   <span style={num}>{money(totals.subtotal + totals.discountAmount)}</span>
@@ -314,6 +326,11 @@ export function InvoicePreviewModal({
                 {totals.discountAmount > 0 && (
                   <div className="flex justify-between" style={{ color: '#b91c1c' }}>
                     <span>{'\u2212 Discount'}</span><span style={num}>{`\u2212 ${money(totals.discountAmount)}`}</span>
+                  </div>
+                )}
+                {isInclusive && totals.gstAmount > 0 && (
+                  <div className="flex justify-between" style={{ color: '#b91c1c' }}>
+                    <span>{'\u2212 GST Included'}</span><span style={num}>{`\u2212 ${money(totals.gstAmount)}`}</span>
                   </div>
                 )}
                 <div className="flex justify-between"><span className="text-gray-600">CGST @ {(gstPercentage / 2).toFixed(2)}%</span><span style={num}>{money(cgst)}</span></div>
@@ -329,6 +346,7 @@ export function InvoicePreviewModal({
                 )}
               </div>
             </div>
+
 
             {/* GRAND TOTAL BAND (the only place Grand Total appears) */}
             <div

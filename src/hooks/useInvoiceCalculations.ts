@@ -3,6 +3,8 @@ import type { InvoiceItem, InvoiceTotals, Product, DiscountType } from '@/types/
 
 const GST_PERCENTAGE = 3;
 
+export type GstMode = 'exclusive' | 'inclusive';
+
 function calculateDiscount(makingCharges: number, discountType: DiscountType, discountValue: number): number {
   if (discountType === 'percentage') {
     return Math.min(makingCharges, makingCharges * (discountValue / 100));
@@ -20,15 +22,32 @@ function scaleMrp(previousMrp: number, previousGross: number, nextGross: number)
   return Math.max(0, nextGross * ratio);
 }
 
-export function useInvoiceCalculations(items: InvoiceItem[], gstPct: number = GST_PERCENTAGE) {
+export function useInvoiceCalculations(
+  items: InvoiceItem[],
+  gstPct: number = GST_PERCENTAGE,
+  gstMode: GstMode = 'exclusive',
+) {
   const totals = useMemo<InvoiceTotals>(() => {
+    // subtotal = sum of line_totals = MRP - discount per item.
+    // Exclusive mode: subtotal is the taxable amount, GST is added on top.
+    // Inclusive mode: subtotal already includes GST, GST is extracted from it.
     const subtotal = items.reduce((sum, item) => sum + item.line_total, 0);
     const discountAmount = items.reduce((sum, item) => sum + item.discount, 0);
-    const gstAmount = subtotal * (gstPct / 100);
-    const grandTotal = subtotal + gstAmount;
+
+    let gstAmount: number;
+    let grandTotal: number;
+    if (gstMode === 'inclusive') {
+      const divisor = 1 + (gstPct / 100);
+      const taxable = divisor > 0 ? subtotal / divisor : subtotal;
+      gstAmount = Math.max(0, subtotal - taxable);
+      grandTotal = subtotal; // GST is already baked into the price.
+    } else {
+      gstAmount = subtotal * (gstPct / 100);
+      grandTotal = subtotal + gstAmount;
+    }
 
     return { subtotal, discountAmount, gstAmount, grandTotal };
-  }, [items, gstPct]);
+  }, [items, gstPct, gstMode]);
 
   const createInvoiceItem = useCallback((product: Product, ratePerGram: number): InvoiceItem => {
     const pricingMode = product.pricing_mode || 'weight_based';

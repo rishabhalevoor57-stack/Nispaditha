@@ -1,5 +1,6 @@
 import { useState, useRef, Fragment } from 'react';
 import { Input } from '@/components/ui/input';
+import { BlankZeroInput } from '@/components/ui/blank-zero-input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
@@ -259,15 +260,14 @@ export function InvoiceItemsTable({
                               <SelectItem value="percentage">%</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Input
-                            type="number"
-                            min="0"
+                          <BlankZeroInput
                             max={isFlat
                               ? (item.discount_type === 'percentage' ? 100 : (item.selling_price || item.base_price) * item.quantity)
                               : (item.discount_type === 'percentage' ? 100 : item.making_charges)
                             }
                             value={item.discount_value}
-                            onChange={(e) => handleDiscountChange(index, parseFloat(e.target.value) || 0)}
+                            onValueChange={(v) => handleDiscountChange(index, v)}
+                            placeholder="0"
                             className="w-28 h-8 text-right"
                             title={isFlat ? "Discount on total amount" : "Discount applies only on MC"}
                           />
@@ -275,12 +275,10 @@ export function InvoiceItemsTable({
                       </td>
                       <td className="px-3 py-3 text-right align-middle">
                         {isFlat ? '-' : (
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                          <BlankZeroInput
                             value={item.rate_per_gram}
-                            onChange={(e) => handleRateInputChange(index, parseFloat(e.target.value) || 0)}
+                            onValueChange={(v) => handleRateInputChange(index, v)}
+                            placeholder="0"
                             className="w-24 h-8 text-right"
                           />
                         )}
@@ -293,12 +291,10 @@ export function InvoiceItemsTable({
                       </td>
                       <td className="px-3 py-3 text-right align-middle">
                         {isFlat ? '-' : (
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                          <BlankZeroInput
                             value={item.making_charges_per_gram}
-                            onChange={(e) => handleMcPerGramChange(index, parseFloat(e.target.value) || 0)}
+                            onValueChange={(v) => handleMcPerGramChange(index, v)}
+                            placeholder="0"
                             className="w-20 h-8 text-right"
                             title="MC per gram"
                           />

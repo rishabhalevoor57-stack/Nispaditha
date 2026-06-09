@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { BlankZeroInput } from '@/components/ui/blank-zero-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -78,6 +79,7 @@ export function CreateInvoiceDialog({
   const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
   const [metalRate, setMetalRate] = useState<MetalRateOption>('silver');
   const [gstPct, setGstPct] = useState<number>(3);
+  const [gstMode, setGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
   const [roundOff, setRoundOff] = useState<number>(0);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [storeCreditsUsed, setStoreCreditsUsed] = useState<number>(0);
@@ -87,7 +89,7 @@ export function CreateInvoiceDialog({
 
   const { toast } = useToast();
   const { user } = useAuth();
-  const { totals } = useInvoiceCalculations(invoiceItems, gstPct);
+  const { totals } = useInvoiceCalculations(invoiceItems, gstPct, gstMode);
   const { logActivity } = useActivityLogger();
 
   const grandTotalWithRound = (totals.grandTotal || 0) + (Number(roundOff) || 0);
@@ -203,6 +205,7 @@ export function CreateInvoiceDialog({
       setNotes(inv.notes || '');
       setPaymentMode(inv.payment_mode || 'cash');
       setGstPct(Number(inv.gst_percentage) || 3);
+      setGstMode(((inv as any).gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
       setRoundOff(Number(inv.round_off) || 0);
       setStoreCreditsUsed(Number(inv.store_credits_used) || 0);
       setClientSource((inv as any).client_source || 'walk_in');
@@ -322,6 +325,7 @@ export function CreateInvoiceDialog({
     setInvoiceDate(new Date());
     setMetalRate('silver');
     setGstPct(3);
+    setGstMode('exclusive');
     setRoundOff(0);
     setWalletBalance(0);
     setStoreCreditsUsed(0);
@@ -437,6 +441,7 @@ export function CreateInvoiceDialog({
         status: computedPaymentStatus === 'paid' ? 'paid' : 'sent',
         client_source: clientSource,
         gst_percentage: gstPct,
+        gst_mode: gstMode,
         round_off: roundOff,
       };
 
@@ -539,6 +544,7 @@ export function CreateInvoiceDialog({
           advancePaid: effectiveAdvance,
           storeCreditsUsed: cappedCredits,
           metalRateLabel,
+          gstMode,
         }, true);
       }
 
@@ -621,6 +627,7 @@ export function CreateInvoiceDialog({
         status: 'draft',
         client_source: clientSource,
         gst_percentage: gstPct,
+        gst_mode: gstMode,
         round_off: roundOff,
       };
 
@@ -710,6 +717,7 @@ export function CreateInvoiceDialog({
       advancePaid: effectiveAdvance,
         storeCreditsUsed: cappedCredits,
         paymentBreakdown: effectivePaymentBreakdown,
+        gstMode,
     }, true);
   };
 
@@ -866,29 +874,56 @@ export function CreateInvoiceDialog({
           {/* GST + Round Off + Live Totals */}
           {invoiceItems.length > 0 && (
             <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="gst-pct">GST %</Label>
-                  <Input
+                  <BlankZeroInput
                     id="gst-pct"
-                    type="number"
-                    step="0.01"
-                    min={0}
                     value={gstPct}
-                    onChange={(e) => setGstPct(Math.max(0, parseFloat(e.target.value) || 0))}
+                    onValueChange={(v) => setGstPct(Math.max(0, v))}
+                    placeholder="0"
                   />
                   <p className="text-[11px] text-muted-foreground">
                     Split equally as CGST @ {(gstPct / 2).toFixed(2)}% + SGST @ {(gstPct / 2).toFixed(2)}%
                   </p>
                 </div>
                 <div className="space-y-2">
+                  <Label>GST Mode</Label>
+                  <div className="grid grid-cols-2 gap-1 rounded-md border p-1">
+                    <button
+                      type="button"
+                      onClick={() => setGstMode('exclusive')}
+                      className={cn(
+                        'h-8 rounded text-xs font-medium transition-colors',
+                        gstMode === 'exclusive' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                      )}
+                    >
+                      GST Exclusive
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGstMode('inclusive')}
+                      className={cn(
+                        'h-8 rounded text-xs font-medium transition-colors',
+                        gstMode === 'inclusive' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                      )}
+                    >
+                      GST Inclusive
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {gstMode === 'inclusive'
+                      ? 'GST is included in MRP — extracted, not added on top.'
+                      : 'GST is added on top of MRP − Discount.'}
+                  </p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="round-off">Round Off</Label>
-                  <Input
+                  <BlankZeroInput
                     id="round-off"
-                    type="number"
-                    step="0.01"
                     value={roundOff}
-                    onChange={(e) => setRoundOff(parseFloat(e.target.value) || 0)}
+                    onValueChange={setRoundOff}
+                    min={undefined}
                     placeholder="e.g. 0.50 or -0.30"
                   />
                 </div>
@@ -906,6 +941,12 @@ export function CreateInvoiceDialog({
                     <span className="tabular-nums">− ₹ {totals.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
+                {gstMode === 'inclusive' && totals.gstAmount > 0 && (
+                  <div className="flex justify-between text-destructive">
+                    <span>− GST Included</span>
+                    <span className="tabular-nums">− ₹ {totals.gstAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">CGST @ {(gstPct / 2).toFixed(2)}%</span>
                   <span className="tabular-nums">₹ {cgst.toFixed(2)}</span>
@@ -921,6 +962,7 @@ export function CreateInvoiceDialog({
                   </div>
                 )}
 
+
                 {/* Store Wallet Credits */}
                 {selectedClient && selectedClient !== 'walk-in' && walletBalance > 0 && (
                   <div className="rounded-md border border-primary/30 bg-primary/5 p-3 mt-2 space-y-2">
@@ -935,14 +977,12 @@ export function CreateInvoiceDialog({
                       </div>
                       <div>
                         <Label htmlFor="credits-used" className="text-xs text-muted-foreground">Credits to Use</Label>
-                        <Input
+                        <BlankZeroInput
                           id="credits-used"
-                          type="number"
-                          step="0.01"
-                          min={0}
                           max={Math.min(walletBalance, grandTotalWithRound)}
                           value={storeCreditsUsed}
-                          onChange={(e) => setStoreCreditsUsed(parseFloat(e.target.value) || 0)}
+                          onValueChange={setStoreCreditsUsed}
+                          placeholder="0"
                           className="h-8 mt-1 text-right"
                         />
                         {creditsError && (
@@ -1222,6 +1262,7 @@ export function CreateInvoiceDialog({
         storeCreditsUsed={cappedCredits}
         paymentBreakdown={effectivePaymentBreakdown}
         metalRateLabel={metalRateLabel}
+        gstMode={gstMode}
       />
     )}
   </>

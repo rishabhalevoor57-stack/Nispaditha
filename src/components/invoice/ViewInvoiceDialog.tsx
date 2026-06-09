@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { BlankZeroInput } from '@/components/ui/blank-zero-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -61,6 +62,7 @@ interface InvoiceDetails {
   paid_at: string | null;
   created_at: string;
   client_id: string | null;
+  gst_mode?: 'exclusive' | 'inclusive';
   clients: { name: string; phone: string | null } | null;
 }
 
@@ -117,12 +119,13 @@ export function ViewInvoiceDialog({
   const [editItems, setEditItems] = useState<InvoiceItem[]>([]);
   const [editMetalRate, setEditMetalRate] = useState<MetalRateOption>('silver');
   const [editRoundOff, setEditRoundOff] = useState<number>(0);
+  const [editGstMode, setEditGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
 
   const { toast } = useToast();
   const { user, userRole } = useAuth();
   const isAdmin = userRole === 'admin';
   const { logActivity } = useActivityLogger();
-  const { totals: editTotals } = useInvoiceCalculations(editItems);
+  const { totals: editTotals } = useInvoiceCalculations(editItems, 3, editGstMode);
 
   const goldRate = businessSettings?.gold_rate_per_gram || 0;
   const silverRate = businessSettings?.silver_rate_per_gram || 95;
@@ -164,11 +167,12 @@ export function ViewInvoiceDialog({
       const subtotal = Number(data.subtotal) || 0;
       const gst = Number(data.gst_amount) || 0;
       const roundOffVal = Number(data.round_off) || 0;
-      // subtotal stored in DB is already NET of discount (sum of line_totals).
-      // So grand total = subtotal + GST + round_off. Do NOT subtract discount again.
-      const computedGrand = Math.round((subtotal + gst + roundOffVal) * 100) / 100;
+      const mode = ((data as any).gst_mode === 'inclusive' ? 'inclusive' : 'exclusive') as 'exclusive' | 'inclusive';
+      // subtotal stored is post-discount sum of line_totals.
+      // Inclusive: grand = subtotal + roundOff (GST already inside).
+      // Exclusive: grand = subtotal + gst + roundOff.
+      const computedGrand = Math.round(((mode === 'inclusive' ? subtotal : subtotal + gst) + roundOffVal) * 100) / 100;
       const storedGrand = Number(data.grand_total) || 0;
-      // Auto-heal stored grand_total only if it's meaningfully off (legacy bugs).
       if (Math.abs(computedGrand - storedGrand) > 0.05) {
         data.grand_total = computedGrand;
         supabase
@@ -224,6 +228,7 @@ export function ViewInvoiceDialog({
     setEditNotes(invoice.notes || '');
     setEditItems(getInvoiceItems());
     setEditRoundOff(Number(invoice.round_off) || 0);
+    setEditGstMode((invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
     setIsEditing(true);
   };
 
@@ -281,6 +286,7 @@ export function ViewInvoiceDialog({
           subtotal: editTotals.subtotal,
           discount_amount: editTotals.discountAmount,
           gst_amount: editTotals.gstAmount,
+          gst_mode: editGstMode,
           round_off: newRoundOff,
           grand_total: newGrandTotal,
         } as never)
@@ -572,6 +578,7 @@ export function ViewInvoiceDialog({
       cancellationReason: inv.cancellation_reason || null,
       roundOff: Number(invoice.round_off) || 0,
       metalRateLabel: buildMetalRateLabel(),
+      gstMode: invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive',
     }, isAdmin);
   };
 
@@ -595,6 +602,7 @@ export function ViewInvoiceDialog({
       cancellationReason: inv.cancellation_reason || null,
       roundOff: Number(invoice.round_off) || 0,
       metalRateLabel: buildMetalRateLabel(),
+      gstMode: invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive',
     }, isAdmin);
   };
 
@@ -867,13 +875,21 @@ export function ViewInvoiceDialog({
                   const disc = Number(invoice.discount_amount) || 0;
                   const gst = Number(invoice.gst_amount) || 0;
                   const ro = Number(invoice.round_off) || 0;
+                  const mode = invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive';
+                  const isInclusive = mode === 'inclusive';
                   const mrpTotal = sub + disc;
                   const cgstV = gst / 2;
                   const sgstV = gst / 2;
-                  const gstPctView = sub > 0 ? (gst / sub) * 100 : 3;
-                  const grand = sub + gst + ro;
+                  // Reverse out the effective GST % from stored values.
+                  const taxableBase = isInclusive ? Math.max(0.0001, sub - gst) : sub;
+                  const gstPctView = taxableBase > 0 ? (gst / taxableBase) * 100 : 3;
+                  const grand = isInclusive ? sub + ro : sub + gst + ro;
                   return (
                     <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between items-center text-xs uppercase tracking-wide text-muted-foreground">
+                        <span>GST Mode</span>
+                        <span className="font-semibold text-foreground">{isInclusive ? 'Inclusive' : 'Exclusive'}</span>
+                      </div>
                       <div className="flex justify-between text-base font-bold">
                         <span>MRP (Total)</span>
                         <span className="tabular-nums">{formatCurrency(mrpTotal)}</span>
@@ -882,6 +898,12 @@ export function ViewInvoiceDialog({
                         <div className="flex justify-between text-destructive">
                           <span>− Discount</span>
                           <span className="tabular-nums">−{formatCurrency(disc)}</span>
+                        </div>
+                      )}
+                      {isInclusive && gst > 0 && (
+                        <div className="flex justify-between text-destructive">
+                          <span>− GST Included</span>
+                          <span className="tabular-nums">−{formatCurrency(gst)}</span>
                         </div>
                       )}
                       <div className="flex justify-between">
@@ -1016,23 +1038,49 @@ export function ViewInvoiceDialog({
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
+                        <Label>GST Mode</Label>
+                        <div className="grid grid-cols-2 gap-1 rounded-md border p-1">
+                          <button
+                            type="button"
+                            onClick={() => setEditGstMode('exclusive')}
+                            className={cn(
+                              'h-9 rounded text-xs font-medium transition-colors',
+                              editGstMode === 'exclusive' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                            )}
+                          >
+                            GST Exclusive
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditGstMode('inclusive')}
+                            className={cn(
+                              'h-9 rounded text-xs font-medium transition-colors',
+                              editGstMode === 'inclusive' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                            )}
+                          >
+                            GST Inclusive
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="edit-round-off">Round Off</Label>
-                        <Input
+                        <BlankZeroInput
                           id="edit-round-off"
-                          type="number"
-                          step="0.01"
                           value={editRoundOff}
-                          onChange={(e) => setEditRoundOff(parseFloat(e.target.value) || 0)}
+                          onValueChange={setEditRoundOff}
+                          min={undefined}
                           placeholder="e.g. -0.53"
                         />
                         <p className="text-xs text-muted-foreground">
                           Adjusts Grand Total. Use a negative value (e.g. -0.53) to round down.
                         </p>
                       </div>
-                      <div className="md:col-span-2 flex items-end">
+                      <div className="flex items-end">
                         <div className="w-full bg-muted/40 rounded-md p-3 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Taxable + CGST + SGST</span>
+                            <span className="text-muted-foreground">
+                              {editGstMode === 'inclusive' ? 'Inclusive Total' : 'Taxable + GST'}
+                            </span>
                             <span>{formatCurrency(editTotals.grandTotal)}</span>
                           </div>
                           <div className="flex justify-between">
@@ -1046,7 +1094,7 @@ export function ViewInvoiceDialog({
                         </div>
                       </div>
                     </div>
-                    <InvoiceTotalsSection totals={editTotals} isAdmin={true} roundOff={editRoundOff} />
+                    <InvoiceTotalsSection totals={editTotals} isAdmin={true} roundOff={editRoundOff} gstMode={editGstMode} />
                   </>
                 )}
 
@@ -1090,6 +1138,7 @@ export function ViewInvoiceDialog({
           roundOff={Number(invoice.round_off) || 0}
           showMakingCharges={isAdmin}
           metalRateLabel={buildMetalRateLabel()}
+          gstMode={invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'}
         />
       )}
     </>
