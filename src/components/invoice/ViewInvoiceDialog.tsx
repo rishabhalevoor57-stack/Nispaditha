@@ -1037,23 +1037,49 @@ export function ViewInvoiceDialog({
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
+                        <Label>GST Mode</Label>
+                        <div className="grid grid-cols-2 gap-1 rounded-md border p-1">
+                          <button
+                            type="button"
+                            onClick={() => setEditGstMode('exclusive')}
+                            className={cn(
+                              'h-9 rounded text-xs font-medium transition-colors',
+                              editGstMode === 'exclusive' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                            )}
+                          >
+                            GST Exclusive
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditGstMode('inclusive')}
+                            className={cn(
+                              'h-9 rounded text-xs font-medium transition-colors',
+                              editGstMode === 'inclusive' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                            )}
+                          >
+                            GST Inclusive
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="edit-round-off">Round Off</Label>
-                        <Input
+                        <BlankZeroInput
                           id="edit-round-off"
-                          type="number"
-                          step="0.01"
                           value={editRoundOff}
-                          onChange={(e) => setEditRoundOff(parseFloat(e.target.value) || 0)}
+                          onValueChange={setEditRoundOff}
+                          min={undefined}
                           placeholder="e.g. -0.53"
                         />
                         <p className="text-xs text-muted-foreground">
                           Adjusts Grand Total. Use a negative value (e.g. -0.53) to round down.
                         </p>
                       </div>
-                      <div className="md:col-span-2 flex items-end">
+                      <div className="flex items-end">
                         <div className="w-full bg-muted/40 rounded-md p-3 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Taxable + CGST + SGST</span>
+                            <span className="text-muted-foreground">
+                              {editGstMode === 'inclusive' ? 'Inclusive Total' : 'Taxable + GST'}
+                            </span>
                             <span>{formatCurrency(editTotals.grandTotal)}</span>
                           </div>
                           <div className="flex justify-between">
@@ -1067,7 +1093,7 @@ export function ViewInvoiceDialog({
                         </div>
                       </div>
                     </div>
-                    <InvoiceTotalsSection totals={editTotals} isAdmin={true} roundOff={editRoundOff} />
+                    <InvoiceTotalsSection totals={editTotals} isAdmin={true} roundOff={editRoundOff} gstMode={editGstMode} />
                   </>
                 )}
 
