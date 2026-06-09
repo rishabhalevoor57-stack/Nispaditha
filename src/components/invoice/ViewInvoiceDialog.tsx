@@ -285,6 +285,7 @@ export function ViewInvoiceDialog({
           subtotal: editTotals.subtotal,
           discount_amount: editTotals.discountAmount,
           gst_amount: editTotals.gstAmount,
+          gst_mode: editGstMode,
           round_off: newRoundOff,
           grand_total: newGrandTotal,
         } as never)
