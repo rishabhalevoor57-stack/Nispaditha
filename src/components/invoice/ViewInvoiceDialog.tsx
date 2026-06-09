@@ -601,6 +601,7 @@ export function ViewInvoiceDialog({
       cancellationReason: inv.cancellation_reason || null,
       roundOff: Number(invoice.round_off) || 0,
       metalRateLabel: buildMetalRateLabel(),
+      gstMode: invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive',
     }, isAdmin);
   };
 
