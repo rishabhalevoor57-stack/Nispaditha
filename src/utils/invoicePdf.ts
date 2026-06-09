@@ -351,9 +351,14 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const totalsX = pageWidth - margin - 75;
   const valueX = pageWidth - margin - 1;
 
+  const gstMode = data.gstMode === 'inclusive' ? 'inclusive' : 'exclusive';
+  const isInclusive = gstMode === 'inclusive';
   const cgst = (data.totals.gstAmount || 0) / 2;
   const sgst = (data.totals.gstAmount || 0) / 2;
-  const grandTotalWithRound = (data.totals.grandTotal || 0) + roundOff;
+  // Inclusive: subtotal already contains GST; do not add GST again.
+  const grandTotalWithRound = isInclusive
+    ? (data.totals.subtotal || 0) + roundOff
+    : (data.totals.grandTotal || 0) + roundOff;
   const breakdown = data.paymentBreakdown || [];
   const breakdownTotal = breakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
@@ -365,6 +370,17 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(60, 60, 60);
 
   const rowGap = 5;
+
+  // GST Mode label
+  doc.setFont(FONT, 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text('GST Mode', totalsX, yPos);
+  doc.setFont(FONT, 'bold');
+  doc.setTextColor(60, 60, 60);
+  doc.text(isInclusive ? 'Inclusive' : 'Exclusive', valueX, yPos, { align: 'right' });
+  doc.setFont(FONT, 'normal');
+  yPos += rowGap;
 
   // MRP (Total) — gross before discount; bold + slightly larger
   const mrpTotal = (data.totals.subtotal || 0) + (data.totals.discountAmount || 0);
@@ -382,6 +398,14 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.setTextColor(180, 30, 30);
     doc.text('- Discount', totalsX, yPos);
     doc.text(`- ${money(data.totals.discountAmount)}`, valueX, yPos, { align: 'right' });
+    doc.setTextColor(60, 60, 60);
+    yPos += rowGap;
+  }
+
+  if (isInclusive && data.totals.gstAmount > 0) {
+    doc.setTextColor(180, 30, 30);
+    doc.text('- GST Included', totalsX, yPos);
+    doc.text(`- ${money(data.totals.gstAmount)}`, valueX, yPos, { align: 'right' });
     doc.setTextColor(60, 60, 60);
     yPos += rowGap;
   }
