@@ -874,13 +874,21 @@ export function ViewInvoiceDialog({
                   const disc = Number(invoice.discount_amount) || 0;
                   const gst = Number(invoice.gst_amount) || 0;
                   const ro = Number(invoice.round_off) || 0;
+                  const mode = invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive';
+                  const isInclusive = mode === 'inclusive';
                   const mrpTotal = sub + disc;
                   const cgstV = gst / 2;
                   const sgstV = gst / 2;
-                  const gstPctView = sub > 0 ? (gst / sub) * 100 : 3;
-                  const grand = sub + gst + ro;
+                  // Reverse out the effective GST % from stored values.
+                  const taxableBase = isInclusive ? Math.max(0.0001, sub - gst) : sub;
+                  const gstPctView = taxableBase > 0 ? (gst / taxableBase) * 100 : 3;
+                  const grand = isInclusive ? sub + ro : sub + gst + ro;
                   return (
                     <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between items-center text-xs uppercase tracking-wide text-muted-foreground">
+                        <span>GST Mode</span>
+                        <span className="font-semibold text-foreground">{isInclusive ? 'Inclusive' : 'Exclusive'}</span>
+                      </div>
                       <div className="flex justify-between text-base font-bold">
                         <span>MRP (Total)</span>
                         <span className="tabular-nums">{formatCurrency(mrpTotal)}</span>
@@ -889,6 +897,12 @@ export function ViewInvoiceDialog({
                         <div className="flex justify-between text-destructive">
                           <span>− Discount</span>
                           <span className="tabular-nums">−{formatCurrency(disc)}</span>
+                        </div>
+                      )}
+                      {isInclusive && gst > 0 && (
+                        <div className="flex justify-between text-destructive">
+                          <span>− GST Included</span>
+                          <span className="tabular-nums">−{formatCurrency(gst)}</span>
                         </div>
                       )}
                       <div className="flex justify-between">
