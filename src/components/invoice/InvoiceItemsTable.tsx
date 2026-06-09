@@ -275,12 +275,10 @@ export function InvoiceItemsTable({
                       </td>
                       <td className="px-3 py-3 text-right align-middle">
                         {isFlat ? '-' : (
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                          <BlankZeroInput
                             value={item.rate_per_gram}
-                            onChange={(e) => handleRateInputChange(index, parseFloat(e.target.value) || 0)}
+                            onValueChange={(v) => handleRateInputChange(index, v)}
+                            placeholder="0"
                             className="w-24 h-8 text-right"
                           />
                         )}
