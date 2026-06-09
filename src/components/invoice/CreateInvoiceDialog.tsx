@@ -544,6 +544,7 @@ export function CreateInvoiceDialog({
           advancePaid: effectiveAdvance,
           storeCreditsUsed: cappedCredits,
           metalRateLabel,
+          gstMode,
         }, true);
       }
 
