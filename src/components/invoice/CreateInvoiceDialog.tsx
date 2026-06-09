@@ -204,6 +204,7 @@ export function CreateInvoiceDialog({
       setNotes(inv.notes || '');
       setPaymentMode(inv.payment_mode || 'cash');
       setGstPct(Number(inv.gst_percentage) || 3);
+      setGstMode(((inv as any).gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
       setRoundOff(Number(inv.round_off) || 0);
       setStoreCreditsUsed(Number(inv.store_credits_used) || 0);
       setClientSource((inv as any).client_source || 'walk_in');
