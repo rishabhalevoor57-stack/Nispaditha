@@ -1264,6 +1264,7 @@ export function CreateInvoiceDialog({
         storeCreditsUsed={cappedCredits}
         paymentBreakdown={effectivePaymentBreakdown}
         metalRateLabel={metalRateLabel}
+        gstMode={gstMode}
       />
     )}
   </>
