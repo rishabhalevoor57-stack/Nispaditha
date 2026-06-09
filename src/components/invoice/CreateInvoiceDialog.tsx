@@ -324,6 +324,7 @@ export function CreateInvoiceDialog({
     setInvoiceDate(new Date());
     setMetalRate('silver');
     setGstPct(3);
+    setGstMode('exclusive');
     setRoundOff(0);
     setWalletBalance(0);
     setStoreCreditsUsed(0);
