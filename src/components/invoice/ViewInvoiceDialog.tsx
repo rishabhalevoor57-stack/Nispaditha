@@ -1097,6 +1097,7 @@ export function ViewInvoiceDialog({
           roundOff={Number(invoice.round_off) || 0}
           showMakingCharges={isAdmin}
           metalRateLabel={buildMetalRateLabel()}
+          gstMode={invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'}
         />
       )}
     </>
