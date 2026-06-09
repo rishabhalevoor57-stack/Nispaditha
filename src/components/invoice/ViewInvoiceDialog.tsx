@@ -227,6 +227,7 @@ export function ViewInvoiceDialog({
     setEditNotes(invoice.notes || '');
     setEditItems(getInvoiceItems());
     setEditRoundOff(Number(invoice.round_off) || 0);
+    setEditGstMode((invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
     setIsEditing(true);
   };
 
