@@ -25,9 +25,12 @@ export function InvoiceTotalsSection({
   gstMode = 'exclusive',
 }: InvoiceTotalsSectionProps) {
   const isInclusive = gstMode === 'inclusive';
-  // For both modes, subtotal = sum of (mrp - discount).
-  // MRP (gross, before discount) for display.
-  const mrpTotal = totals.subtotal + totals.discountAmount;
+  // In inclusive mode the entered selling price already contains GST.
+  // MRP (Total) shown = taxable value (price before GST extraction).
+  // In exclusive mode MRP (Total) = gross (subtotal + discount) before GST is added on top.
+  const mrpTotal = isInclusive
+    ? Math.max(0, totals.subtotal - totals.gstAmount)
+    : totals.subtotal + totals.discountAmount;
   const cgst = totals.gstAmount / 2;
   const sgst = totals.gstAmount / 2;
   // Inclusive: GST is inside the price; grand total = subtotal + roundOff (no GST on top).
@@ -38,25 +41,14 @@ export function InvoiceTotalsSection({
 
   return (
     <div className="bg-muted/30 rounded-lg p-5 space-y-2.5 text-[15px]">
-      <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wide text-muted-foreground">
-          GST Mode: <span className="font-semibold text-foreground">{isInclusive ? 'Inclusive' : 'Exclusive'}</span>
-        </span>
-      </div>
       <div className="flex justify-between text-lg font-bold">
         <span>MRP (Total)</span>
         <span className="tabular-nums">{formatCurrency(mrpTotal)}</span>
       </div>
-      {isAdmin && totals.discountAmount > 0 && (
+      {!isInclusive && isAdmin && totals.discountAmount > 0 && (
         <div className="flex justify-between text-destructive font-medium">
           <span>− Discount</span>
           <span className="tabular-nums">−{formatCurrency(totals.discountAmount)}</span>
-        </div>
-      )}
-      {isInclusive && totals.gstAmount > 0 && (
-        <div className="flex justify-between text-destructive font-medium">
-          <span>− GST Included</span>
-          <span className="tabular-nums">−{formatCurrency(totals.gstAmount)}</span>
         </div>
       )}
       <div className="flex justify-between">
