@@ -251,7 +251,7 @@ export default function Expenses() {
       } else {
         const { error } = await supabase
           .from('expenses')
-          .insert([{ ...payload, created_by: user?.id }]);
+          .insert([{ ...(payload as Record<string, unknown>), created_by: user?.id } as never]);
         if (error) throw error;
         toast({ title: 'Expense added' });
       }
@@ -741,7 +741,7 @@ export default function Expenses() {
                   <div className="space-y-2">
                     <Label>Quantity</Label>
                     <BlankZeroInput
-                      type="number"
+                      integer
                       value={form.quantity}
                       onValueChange={(v) => setForm({ ...form, quantity: v })}
                     />
@@ -749,7 +749,6 @@ export default function Expenses() {
                   <div className="space-y-2">
                     <Label>Weight (g)</Label>
                     <BlankZeroInput
-                      type="number"
                       step="0.001"
                       value={form.weight_grams}
                       onValueChange={(v) => setForm({ ...form, weight_grams: v })}
@@ -796,7 +795,6 @@ export default function Expenses() {
               <div className="space-y-2">
                 <Label>Amount (₹) *</Label>
                 <BlankZeroInput
-                  type="number"
                   step="0.01"
                   value={form.amount}
                   onValueChange={(v) => setForm({ ...form, amount: v })}
