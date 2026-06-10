@@ -371,19 +371,10 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
 
   const rowGap = 5;
 
-  // GST Mode label
-  doc.setFont(FONT, 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
-  doc.text('GST Mode', totalsX, yPos);
-  doc.setFont(FONT, 'bold');
-  doc.setTextColor(60, 60, 60);
-  doc.text(isInclusive ? 'Inclusive' : 'Exclusive', valueX, yPos, { align: 'right' });
-  doc.setFont(FONT, 'normal');
-  yPos += rowGap;
-
-  // MRP (Total) — gross before discount; bold + slightly larger
-  const mrpTotal = (data.totals.subtotal || 0) + (data.totals.discountAmount || 0);
+  // MRP (Total) — inclusive: taxable (price before GST); exclusive: gross before discount
+  const mrpTotal = isInclusive
+    ? Math.max(0, (data.totals.subtotal || 0) - (data.totals.gstAmount || 0))
+    : (data.totals.subtotal || 0) + (data.totals.discountAmount || 0);
   doc.setFont(FONT, 'bold');
   doc.setFontSize(10);
   doc.setTextColor(20, 20, 20);
@@ -394,7 +385,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(60, 60, 60);
   yPos += rowGap;
 
-  if (data.totals.discountAmount > 0) {
+  if (!isInclusive && data.totals.discountAmount > 0) {
     doc.setTextColor(180, 30, 30);
     doc.text('- Discount', totalsX, yPos);
     doc.text(`- ${money(data.totals.discountAmount)}`, valueX, yPos, { align: 'right' });
@@ -402,13 +393,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     yPos += rowGap;
   }
 
-  if (isInclusive && data.totals.gstAmount > 0) {
-    doc.setTextColor(180, 30, 30);
-    doc.text('- GST Included', totalsX, yPos);
-    doc.text(`- ${money(data.totals.gstAmount)}`, valueX, yPos, { align: 'right' });
-    doc.setTextColor(60, 60, 60);
-    yPos += rowGap;
-  }
+
 
   doc.text(`CGST @ ${(gstPct / 2).toFixed(2)}%`, totalsX, yPos);
   doc.text(money(cgst), valueX, yPos, { align: 'right' });
