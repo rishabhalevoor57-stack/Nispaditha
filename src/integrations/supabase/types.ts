@@ -588,45 +588,78 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          attachment_url: string | null
           bill_image_url: string | null
           category: string
           created_at: string
           created_by: string | null
+          description: string | null
+          edit_reason: string | null
           expense_date: string
+          expense_type: string
           id: string
+          invoice_number: string | null
           notes: string | null
           paid_to_name: string | null
           paid_to_phone: string | null
           payment_mode: string | null
+          product_name: string | null
+          quantity: number | null
+          sku: string | null
+          supplier_name: string | null
           updated_at: string
+          updated_by: string | null
+          weight_grams: number | null
         }
         Insert: {
           amount: number
+          attachment_url?: string | null
           bill_image_url?: string | null
           category: string
           created_at?: string
           created_by?: string | null
+          description?: string | null
+          edit_reason?: string | null
           expense_date?: string
+          expense_type?: string
           id?: string
+          invoice_number?: string | null
           notes?: string | null
           paid_to_name?: string | null
           paid_to_phone?: string | null
           payment_mode?: string | null
+          product_name?: string | null
+          quantity?: number | null
+          sku?: string | null
+          supplier_name?: string | null
           updated_at?: string
+          updated_by?: string | null
+          weight_grams?: number | null
         }
         Update: {
           amount?: number
+          attachment_url?: string | null
           bill_image_url?: string | null
           category?: string
           created_at?: string
           created_by?: string | null
+          description?: string | null
+          edit_reason?: string | null
           expense_date?: string
+          expense_type?: string
           id?: string
+          invoice_number?: string | null
           notes?: string | null
           paid_to_name?: string | null
           paid_to_phone?: string | null
           payment_mode?: string | null
+          product_name?: string | null
+          quantity?: number | null
+          sku?: string | null
+          supplier_name?: string | null
           updated_at?: string
+          updated_by?: string | null
+          weight_grams?: number | null
         }
         Relationships: []
       }
