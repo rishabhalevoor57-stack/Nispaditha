@@ -244,7 +244,7 @@ export default function Expenses() {
       if (editing) {
         const { error } = await supabase
           .from('expenses')
-          .update({ ...payload, updated_by: user?.id, edit_reason: editReason.trim() })
+          .update({ ...(payload as Record<string, unknown>), updated_by: user?.id, edit_reason: editReason.trim() } as never)
           .eq('id', editing.id);
         if (error) throw error;
         toast({ title: 'Expense updated' });
