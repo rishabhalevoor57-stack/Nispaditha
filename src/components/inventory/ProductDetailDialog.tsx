@@ -4,15 +4,23 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Edit, Trash2, Package, Coins } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Edit, Trash2, Package, Coins, Wrench, History, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { Product, STATUS_OPTIONS } from '@/types/inventory';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useActivityLogger } from '@/hooks/useActivityLog';
 import { format } from 'date-fns';
 
 interface ProductDetailDialogProps {
