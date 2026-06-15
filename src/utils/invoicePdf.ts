@@ -505,7 +505,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.setTextColor(80, 80, 80);
     doc.setFont(FONT, 'normal');
     doc.setFontSize(9);
-    doc.text(isPaidFull ? 'Paid' : 'Advance Paid', rightX + 3, rightInnerY + 5.7);
+    doc.text('Paid', rightX + 3, rightInnerY + 5.7);
     doc.setFont(FONT, 'bold');
     doc.setFontSize(10);
     doc.setTextColor(...GREEN_PAID);
