@@ -15,10 +15,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Edit, Trash2, Eye, Package, Coins } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Edit, Trash2, Eye, Package, Coins, Wrench } from 'lucide-react';
 import { Product, STATUS_OPTIONS } from '@/types/inventory';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useActivityLogger } from '@/hooks/useActivityLog';
 
 interface InventoryTableProps {
   products: Product[];
