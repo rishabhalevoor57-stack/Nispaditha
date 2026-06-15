@@ -168,7 +168,7 @@ export function InvoiceItemsTable({
       <div className="space-y-2" ref={searchWrapperRef}>
         <label className="text-sm font-medium">Add Product</label>
         <ProductSearchInput
-          products={products.filter(p => p.quantity > 0)}
+          products={products}
           onSelect={handleAddProduct}
         />
         <p className="text-xs text-muted-foreground">
