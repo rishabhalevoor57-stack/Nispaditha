@@ -42,6 +42,9 @@ export function useInventory() {
     fetchProducts();
     fetchCategories();
     fetchSuppliers();
+    const handler = () => fetchProducts();
+    window.addEventListener('inventory:refresh', handler);
+    return () => window.removeEventListener('inventory:refresh', handler);
   }, []);
 
   const fetchProducts = async () => {
