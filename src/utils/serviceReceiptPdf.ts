@@ -77,7 +77,7 @@ export const generateServiceReceiptPdf = (sf: ServiceForm): jsPDF => {
   y += 4;
   doc.setFont('helvetica', 'bold');
   doc.text(`Estimated Delivery: ${sf.estimated_delivery_date ? format(new Date(sf.estimated_delivery_date), 'dd/MM/yyyy') : '-'}`, 14, y);
-  doc.text(`Estimated Cost: ₹${Number(sf.estimated_cost || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 130, y);
+  doc.text(`Estimated Cost: Rs. ${Number(sf.estimated_cost || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 130, y);
 
   y += 20;
   doc.setFont('helvetica', 'normal');
