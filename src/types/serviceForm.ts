@@ -25,6 +25,11 @@ export const SERVICE_TYPE_OPTIONS = [
   'Labour',
   'Stock',
   'Metal',
+  'Restringing',
+  'Jewellery Restringing',
+  'Pearl Restringing',
+  'Bead Restringing',
+  'Mala Restringing',
 ] as const;
 
 export interface ServiceForm {
