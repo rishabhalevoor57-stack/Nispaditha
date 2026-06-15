@@ -257,8 +257,51 @@ export function ProductDetailDialog({
 
           <Separator />
 
+          {/* Stock movement history */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <History className="w-4 h-4 text-muted-foreground" />
+              <h4 className="text-sm font-semibold">Recent Stock Movements</h4>
+            </div>
+            {history.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No movements recorded for this item.</p>
+            ) : (
+              <div className="rounded-lg border divide-y max-h-56 overflow-y-auto">
+                {history.map((h) => (
+                  <div key={h.id} className="flex items-start gap-3 p-2 text-xs">
+                    {h.quantity_change >= 0 ? (
+                      <ArrowUpCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
+                    ) : (
+                      <ArrowDownCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`font-medium ${h.quantity_change >= 0 ? 'text-success' : 'text-destructive'}`}>
+                          {h.quantity_change > 0 ? '+' : ''}{h.quantity_change}
+                        </span>
+                        <span className="text-muted-foreground">{format(new Date(h.created_at), 'dd MMM yyyy, HH:mm')}</span>
+                      </div>
+                      <p className="text-muted-foreground truncate">{h.reason || h.type}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
           {/* Actions */}
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setRepairOpen(true)}
+              disabled={!product.quantity || product.quantity <= 0}
+              className="text-warning border-warning/40 hover:bg-warning/10"
+            >
+              <Wrench className="w-4 h-4 mr-2" />
+              Send to Repair
+            </Button>
             {isAdmin && (
               <Button variant="outline" onClick={onDelete} className="text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -272,6 +315,49 @@ export function ProductDetailDialog({
           </div>
         </div>
       </DialogContent>
+
+      <Dialog open={repairOpen} onOpenChange={setRepairOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send to Repair</DialogTitle>
+            <DialogDescription>
+              Move stock from inventory to the Repair queue. Stock will be deducted and can be returned later from the Repair page.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+              <div className="font-medium">{product.name}</div>
+              <div className="text-xs text-muted-foreground font-mono">{product.sku}</div>
+              <div className="text-xs text-muted-foreground mt-1">In stock: {product.quantity}</div>
+            </div>
+            <div className="space-y-2">
+              <Label>Quantity to send</Label>
+              <Input
+                type="number"
+                min={1}
+                max={product.quantity}
+                value={repairQty}
+                onChange={(e) => setRepairQty(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Notes (optional)</Label>
+              <Textarea
+                placeholder="Reason for repair / damage details..."
+                value={repairNotes}
+                onChange={(e) => setRepairNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRepairOpen(false)} disabled={repairSubmitting}>Cancel</Button>
+            <Button onClick={submitRepair} disabled={repairSubmitting}>
+              <Wrench className="w-4 h-4 mr-2" />
+              {repairSubmitting ? 'Sending...' : 'Send to Repair'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
