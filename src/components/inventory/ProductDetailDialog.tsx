@@ -39,13 +39,22 @@ export function ProductDetailDialog({
   onDelete,
 }: ProductDetailDialogProps) {
   const isAdmin = useIsAdmin();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { logActivity } = useActivityLogger();
   const [silverRate, setSilverRate] = useState<number>(0);
+  const [history, setHistory] = useState<Array<{ id: string; created_at: string; quantity_change: number; type: string; reason: string | null }>>([]);
+  const [repairOpen, setRepairOpen] = useState(false);
+  const [repairQty, setRepairQty] = useState<number>(1);
+  const [repairNotes, setRepairNotes] = useState('');
+  const [repairSubmitting, setRepairSubmitting] = useState(false);
 
   useEffect(() => {
-    if (open) {
+    if (open && product) {
       fetchSilverRate();
+      fetchHistory(product.id);
     }
-  }, [open]);
+  }, [open, product?.id]);
 
   const fetchSilverRate = async () => {
     const { data } = await supabase
@@ -56,6 +65,71 @@ export function ProductDetailDialog({
     
     if (data) {
       setSilverRate(data.silver_rate_per_gram);
+    }
+  };
+
+  const fetchHistory = async (productId: string) => {
+    const { data } = await supabase
+      .from('stock_history')
+      .select('id, created_at, quantity_change, type, reason')
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false })
+      .limit(15);
+    setHistory(data || []);
+  };
+
+  const submitRepair = async () => {
+    if (!product) return;
+    const qty = Math.max(1, Math.floor(Number(repairQty) || 0));
+    if (qty > (product.quantity || 0)) {
+      toast({ variant: 'destructive', title: 'Invalid quantity', description: `Only ${product.quantity} in stock.` });
+      return;
+    }
+    setRepairSubmitting(true);
+    try {
+      const { error: insErr } = await supabase.from('repair_items').insert([{
+        product_id: product.id,
+        sku: product.sku,
+        product_name: product.name,
+        weight_grams: product.weight_grams,
+        quantity: qty,
+        source: 'inventory',
+        source_type: 'inventory',
+        source_ref_id: product.id,
+        status: 'in_repair',
+        date_sent: new Date().toISOString(),
+        notes: repairNotes || null,
+        created_by: user?.id,
+      }]);
+      if (insErr) throw insErr;
+      const newQty = Math.max(0, (product.quantity || 0) - qty);
+      const { error: updErr } = await supabase.from('products').update({ quantity: newQty }).eq('id', product.id);
+      if (updErr) throw updErr;
+      await supabase.from('stock_history').insert([{
+        product_id: product.id,
+        quantity_change: -qty,
+        type: 'out',
+        reason: `Sent to repair${repairNotes ? ` — ${repairNotes}` : ''}`,
+        reference_id: product.id,
+        created_by: user?.id,
+      }]);
+      logActivity({
+        module: 'inventory',
+        action: 'update',
+        recordId: product.id,
+        recordLabel: product.sku || product.name,
+        newValue: { action: 'sent_to_repair', qty, notes: repairNotes },
+      });
+      toast({ title: 'Sent to Repair', description: `${qty} × ${product.name} moved to Repair.` });
+      setRepairOpen(false);
+      setRepairQty(1);
+      setRepairNotes('');
+      window.dispatchEvent(new Event('inventory:refresh'));
+      onOpenChange(false);
+    } catch (e: unknown) {
+      toast({ variant: 'destructive', title: 'Failed', description: e instanceof Error ? e.message : 'Error' });
+    } finally {
+      setRepairSubmitting(false);
     }
   };
 
