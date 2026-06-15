@@ -15,10 +15,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Edit, Trash2, Eye, Package, Coins } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Edit, Trash2, Eye, Package, Coins, Wrench } from 'lucide-react';
 import { Product, STATUS_OPTIONS } from '@/types/inventory';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useActivityLogger } from '@/hooks/useActivityLog';
 
 interface InventoryTableProps {
   products: Product[];
@@ -36,7 +45,80 @@ export function InventoryTable({
   onDelete,
 }: InventoryTableProps) {
   const isAdmin = useIsAdmin();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { logActivity } = useActivityLogger();
   const [silverRate, setSilverRate] = useState<number>(0);
+  const [repairProduct, setRepairProduct] = useState<Product | null>(null);
+  const [repairQty, setRepairQty] = useState<number>(1);
+  const [repairNotes, setRepairNotes] = useState<string>('');
+  const [repairSubmitting, setRepairSubmitting] = useState(false);
+
+  const openRepair = (p: Product) => {
+    setRepairProduct(p);
+    setRepairQty(1);
+    setRepairNotes('');
+  };
+
+  const submitRepair = async () => {
+    if (!repairProduct) return;
+    const qty = Math.max(1, Math.floor(Number(repairQty) || 0));
+    if (qty > (repairProduct.quantity || 0)) {
+      toast({ variant: 'destructive', title: 'Invalid quantity', description: `Only ${repairProduct.quantity} in stock.` });
+      return;
+    }
+    setRepairSubmitting(true);
+    try {
+      const { error: insErr } = await supabase.from('repair_items').insert([{
+        product_id: repairProduct.id,
+        sku: repairProduct.sku,
+        product_name: repairProduct.name,
+        weight_grams: repairProduct.weight_grams,
+        quantity: qty,
+        source: 'inventory',
+        source_type: 'inventory',
+        source_ref_id: repairProduct.id,
+        status: 'in_repair',
+        date_sent: new Date().toISOString(),
+        notes: repairNotes || null,
+        created_by: user?.id,
+      }]);
+      if (insErr) throw insErr;
+
+      const newQty = Math.max(0, (repairProduct.quantity || 0) - qty);
+      const { error: updErr } = await supabase
+        .from('products')
+        .update({ quantity: newQty })
+        .eq('id', repairProduct.id);
+      if (updErr) throw updErr;
+
+      await supabase.from('stock_history').insert([{
+        product_id: repairProduct.id,
+        quantity_change: -qty,
+        type: 'out',
+        reason: `Sent to repair (${repairProduct.sku})${repairNotes ? ` — ${repairNotes}` : ''}`,
+        reference_id: repairProduct.id,
+        created_by: user?.id,
+      }]);
+
+      logActivity({
+        module: 'inventory',
+        action: 'update',
+        recordId: repairProduct.id,
+        recordLabel: repairProduct.sku || repairProduct.name,
+        newValue: { action: 'sent_to_repair', qty, notes: repairNotes },
+      });
+
+      toast({ title: 'Sent to Repair', description: `${qty} × ${repairProduct.name} moved to Repair.` });
+      setRepairProduct(null);
+      // refresh list
+      window.dispatchEvent(new Event('inventory:refresh'));
+    } catch (e: unknown) {
+      toast({ variant: 'destructive', title: 'Failed', description: e instanceof Error ? e.message : 'Error' });
+    } finally {
+      setRepairSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     fetchSilverRate();
@@ -215,6 +297,23 @@ export function InventoryTable({
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
+                      {product.quantity > 0 && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => { e.stopPropagation(); openRepair(product); }}
+                                className="text-warning hover:text-warning"
+                              >
+                                <Wrench className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Send to Repair</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       {isAdmin && (
                         <Button 
                           variant="ghost" 
@@ -233,6 +332,51 @@ export function InventoryTable({
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!repairProduct} onOpenChange={(o) => !o && setRepairProduct(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send to Repair</DialogTitle>
+            <DialogDescription>
+              Move stock from inventory to the Repair queue. Stock will be deducted and can be returned via the Repair page.
+            </DialogDescription>
+          </DialogHeader>
+          {repairProduct && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <div className="font-medium">{repairProduct.name}</div>
+                <div className="text-xs text-muted-foreground font-mono">{repairProduct.sku}</div>
+                <div className="text-xs text-muted-foreground mt-1">In stock: {repairProduct.quantity}</div>
+              </div>
+              <div className="space-y-2">
+                <Label>Quantity to send</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={repairProduct.quantity}
+                  value={repairQty}
+                  onChange={(e) => setRepairQty(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Notes (optional)</Label>
+                <Textarea
+                  placeholder="Reason for repair / damage details..."
+                  value={repairNotes}
+                  onChange={(e) => setRepairNotes(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRepairProduct(null)} disabled={repairSubmitting}>Cancel</Button>
+            <Button onClick={submitRepair} disabled={repairSubmitting}>
+              <Wrench className="w-4 h-4 mr-2" />
+              {repairSubmitting ? 'Sending...' : 'Send to Repair'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
