@@ -332,6 +332,51 @@ export function InventoryTable({
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!repairProduct} onOpenChange={(o) => !o && setRepairProduct(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send to Repair</DialogTitle>
+            <DialogDescription>
+              Move stock from inventory to the Repair queue. Stock will be deducted and can be returned via the Repair page.
+            </DialogDescription>
+          </DialogHeader>
+          {repairProduct && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <div className="font-medium">{repairProduct.name}</div>
+                <div className="text-xs text-muted-foreground font-mono">{repairProduct.sku}</div>
+                <div className="text-xs text-muted-foreground mt-1">In stock: {repairProduct.quantity}</div>
+              </div>
+              <div className="space-y-2">
+                <Label>Quantity to send</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={repairProduct.quantity}
+                  value={repairQty}
+                  onChange={(e) => setRepairQty(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Notes (optional)</Label>
+                <Textarea
+                  placeholder="Reason for repair / damage details..."
+                  value={repairNotes}
+                  onChange={(e) => setRepairNotes(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRepairProduct(null)} disabled={repairSubmitting}>Cancel</Button>
+            <Button onClick={submitRepair} disabled={repairSubmitting}>
+              <Wrench className="w-4 h-4 mr-2" />
+              {repairSubmitting ? 'Sending...' : 'Send to Repair'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
