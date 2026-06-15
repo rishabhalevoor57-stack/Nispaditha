@@ -297,6 +297,23 @@ export function InventoryTable({
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
+                      {product.quantity > 0 && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => { e.stopPropagation(); openRepair(product); }}
+                                className="text-warning hover:text-warning"
+                              >
+                                <Wrench className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Send to Repair</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       {isAdmin && (
                         <Button 
                           variant="ghost" 
