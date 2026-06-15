@@ -28,7 +28,7 @@ export const CompleteServiceDialog = ({ open, onOpenChange, serviceForm, onCompl
 
   if (!serviceForm) return null;
 
-  const gstPercent = 3;
+  const gstPercent = 5;
   const baseAmount = Number((charge / (1 + gstPercent / 100)).toFixed(2));
   const gstAmount = Number((charge - baseAmount).toFixed(2));
   const cgst = Number((gstAmount / 2).toFixed(2));
@@ -141,8 +141,8 @@ export const CompleteServiceDialog = ({ open, onOpenChange, serviceForm, onCompl
           </div>
           <div className="text-sm space-y-1 bg-muted p-3 rounded-md">
             <div>Base Amount: ₹{baseAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-            <div>CGST (1.5%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-            <div>SGST (1.5%): ₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+            <div>CGST (2.5%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+            <div>SGST (2.5%): ₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
             <div className="font-semibold pt-1 border-t">Total: ₹{charge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
           </div>
           <div className="space-y-2">
