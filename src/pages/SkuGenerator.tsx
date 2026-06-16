@@ -8,7 +8,7 @@ import { SkuGenerateForm } from '@/components/sku/SkuGenerateForm';
 import { SkuHistoryTable } from '@/components/sku/SkuHistoryTable';
 
 export default function SkuGenerator() {
-  const { rows, isLoading, refresh, generate } = useSkuRegistry();
+  const { rows, isLoading, refresh, generate, remove } = useSkuRegistry();
   const [tab, setTab] = useState('dashboard');
   const [lastGenerated, setLastGenerated] = useState<typeof rows>([]);
 
@@ -55,7 +55,7 @@ export default function SkuGenerator() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-6">
-          <SkuHistoryTable rows={rows} isLoading={isLoading} onRefresh={refresh} />
+          <SkuHistoryTable rows={rows} isLoading={isLoading} onRefresh={refresh} onDelete={remove} />
         </TabsContent>
       </Tabs>
     </AppLayout>
