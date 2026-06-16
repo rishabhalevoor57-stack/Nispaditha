@@ -25,6 +25,7 @@ import Sold from "./pages/Sold";
 import Repair from "./pages/Repair";
 import NotFound from "./pages/NotFound";
 import ServiceForms from "./pages/ServiceForms";
+import SkuGenerator from "./pages/SkuGenerator";
 
 const queryClient = new QueryClient();
 
@@ -112,6 +113,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <ServiceForms />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sku-generator"
+        element={
+          <ProtectedRoute>
+            <SkuGenerator />
           </ProtectedRoute>
         }
       />
