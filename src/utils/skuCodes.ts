@@ -13,16 +13,45 @@ export const TYPE_OF_WORK_CODE_MAP: Record<string, string> = {
 
 export const CATEGORY_CODE_MAP: Record<string, string> = {
   pendant: 'P',
+  pendants: 'P',
+  'pendent set': 'PS',
   ring: 'R',
+  rings: 'R',
+  'toe rings': 'TR',
   chain: 'C',
+  chains: 'C',
   bracelet: 'B',
+  bracelets: 'B',
   earring: 'E',
   earrings: 'E',
   necklace: 'N',
+  necklaces: 'N',
+  'necklace set': 'NS',
+  'long necklace': 'LN',
+  'short necklace': 'SN',
   anklet: 'A',
+  anklets: 'A',
   bangle: 'BG',
   bangles: 'BG',
   coin: 'CN',
+  coins: 'CN',
+  choker: 'CH',
+  jhumka: 'JH',
+  kada: 'KD',
+  studs: 'ST',
+  danglers: 'DG',
+  chandbaalis: 'CB',
+  brooch: 'BR',
+  'nose pins': 'NP',
+  'maang tikkas': 'MT',
+  'mala/haara': 'MH',
+  mangalsutra: 'MG',
+  'waist belt': 'WB',
+  'hair accessories': 'HA',
+  beads: 'BD',
+  findings: 'FD',
+  accessories: 'AC',
+  others: 'OT',
 };
 
 const clean = (s: string) => (s || '').trim().replace(/[^a-zA-Z0-9 ]/g, '');
@@ -48,8 +77,9 @@ export function deriveCategoryCode(name: string, existing?: string | null): stri
   if (existing && existing.trim()) return existing.trim().toUpperCase();
   const key = clean(name).toLowerCase();
   if (CATEGORY_CODE_MAP[key]) return CATEGORY_CODE_MAP[key];
+  // Default to a single first letter so plurals/unknowns don't drag an extra letter.
   const letters = clean(name).replace(/\s+/g, '');
-  return (letters.slice(0, Math.min(2, letters.length)) || 'X').toUpperCase();
+  return (letters.slice(0, 1) || 'X').toUpperCase();
 }
 
 export const STATUS_LABELS: Record<string, string> = {
