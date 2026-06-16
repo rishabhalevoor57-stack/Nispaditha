@@ -248,6 +248,7 @@ export type Database = {
       }
       categories: {
         Row: {
+          code: string | null
           created_at: string
           description: string | null
           id: string
@@ -256,6 +257,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          code?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -264,6 +266,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          code?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1702,6 +1705,97 @@ export type Database = {
         }
         Relationships: []
       }
+      sku_registry: {
+        Row: {
+          barcode_value: string
+          category_code: string
+          category_id: string | null
+          category_name: string | null
+          created_at: string
+          created_by: string | null
+          notes: string | null
+          prefix: string
+          product_id: string | null
+          qr_payload: Json
+          running_number: number
+          sku: string
+          status: string
+          type_of_work_code: string
+          type_of_work_id: string | null
+          type_of_work_name: string | null
+          updated_at: string
+          vendor_code: string
+          vendor_id: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          barcode_value: string
+          category_code?: string
+          category_id?: string | null
+          category_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          notes?: string | null
+          prefix: string
+          product_id?: string | null
+          qr_payload?: Json
+          running_number?: number
+          sku: string
+          status?: string
+          type_of_work_code?: string
+          type_of_work_id?: string | null
+          type_of_work_name?: string | null
+          updated_at?: string
+          vendor_code?: string
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          barcode_value?: string
+          category_code?: string
+          category_id?: string | null
+          category_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          notes?: string | null
+          prefix?: string
+          product_id?: string | null
+          qr_payload?: Json
+          running_number?: number
+          sku?: string
+          status?: string
+          type_of_work_code?: string
+          type_of_work_id?: string | null
+          type_of_work_name?: string | null
+          updated_at?: string
+          vendor_code?: string
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sku_registry_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sku_registry_type_of_work_id_fkey"
+            columns: ["type_of_work_id"]
+            isOneToOne: false
+            referencedRelation: "types_of_work"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sku_registry_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_deduction_blocks: {
         Row: {
           attempted_by: string | null
@@ -1962,18 +2056,21 @@ export type Database = {
       }
       types_of_work: {
         Row: {
+          code: string | null
           created_at: string
           id: string
           name: string
           updated_at: string
         }
         Insert: {
+          code?: string | null
           created_at?: string
           id?: string
           name: string
           updated_at?: string
         }
         Update: {
+          code?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -2114,6 +2211,45 @@ export type Database = {
         Returns: string
       }
       generate_service_receipt_number: { Args: never; Returns: string }
+      generate_skus: {
+        Args: {
+          p_category_code: string
+          p_category_id: string
+          p_quantity: number
+          p_type_of_work_code: string
+          p_type_of_work_id: string
+          p_vendor_code: string
+          p_vendor_id: string
+        }
+        Returns: {
+          barcode_value: string
+          category_code: string
+          category_id: string | null
+          category_name: string | null
+          created_at: string
+          created_by: string | null
+          notes: string | null
+          prefix: string
+          product_id: string | null
+          qr_payload: Json
+          running_number: number
+          sku: string
+          status: string
+          type_of_work_code: string
+          type_of_work_id: string | null
+          type_of_work_name: string | null
+          updated_at: string
+          vendor_code: string
+          vendor_id: string | null
+          vendor_name: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "sku_registry"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       generate_store_invoice_number: {
         Args: { p_store_id: string }
         Returns: string

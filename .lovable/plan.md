@@ -1,78 +1,113 @@
-# Plan: Custom Order Components + Service Form Rework
+## SKU Generator Module — Implementation Plan
 
-This is a large, two-part feature. Below is the implementation plan. Both changes touch DB schema, so I want your approval before running migrations.
-
----
-
-## CHANGE 1 — Custom Order: Components Section + Editable GST
-
-### Database
-New table `custom_order_components`:
-- `custom_order_id` (FK to custom_orders)
-- `component_name`, `material`, `weight_grams`, `quantity`, `unit_price`, `total`
-- standard timestamps + RLS (same pattern as `custom_order_items`)
-
-Add columns to `custom_orders`:
-- `gst_percentage` numeric default 3
-- `components_total` numeric default 0
-- `components_weight` numeric default 0
-
-### Frontend
-- `CustomOrderFormDialog.tsx`: add a "Components" section below product details
-  - Rows with: Component Name, Material, Weight, Qty, Unit Price, Total (auto = weight×rate OR qty×unit_price; if both, prefer qty×unit_price when unit_price>0)
-  - "+ Add Component" dashed purple button
-  - Per-row delete (×)
-  - Summary: Total Component Weight + Total Component Cost
-- Add GST % input field (default 3)
-- Update total calculation: `making_charges + items_total + components_total`, then GST split CGST = SGST = GST/2
-- `useCustomOrders.ts`: save/load components alongside items
-- `ViewCustomOrderDialog.tsx` + PDF: show components table + GST breakdown
+A new top-level module to generate, reserve, manage, print, export, and track SKUs before they are attached to inventory. Acts as the **single source of truth** for SKU creation.
 
 ---
 
-## CHANGE 2 — Service Form: Complete Rework
+### 1. Database (single migration)
 
-The current "Service Form" page (`OrderNotes.tsx` + `order_notes` table) is repurposed for general orders. Per your spec, the new Service Form is a distinct workflow (drop-off → receipt → completion → GST invoice). I will build it as a new module rather than break the existing Order Notes flow.
+**New table: `sku_registry`** — permanent reservation table. Once a row is inserted, it is NEVER deleted (only status changes).
 
-### Database
-New tables:
+Columns:
+- `sku` (text, PRIMARY KEY) — full code e.g. `NABSCP80`
+- `type_of_work_code`, `vendor_code`, `category_code`, `running_number`
+- `type_of_work_id`, `vendor_id` (FK suppliers), `category_id` (FK categories)
+- `status` (enum: `generated | assigned | in_inventory | sold | archived | deleted_product | used | inactive`)
+- `product_id` (FK products, nullable) — set when assigned
+- `barcode_value` (text) — same as SKU (Code128)
+- `qr_payload` (jsonb) — SKU + vendor + category + work + date + status
+- `notes`
+- `created_by`, `created_at`, `updated_at`
 
-**`service_forms`**
-- `receipt_number` (auto SVC-000001 via new RPC `generate_service_receipt_number`)
-- `client_id`, `client_name`, `client_phone`
-- `item_description`, `from_our_shop` bool, `original_invoice_no`
-- `material` (gold/silver/brass/other), `weight_grams`
-- `condition_on_receipt`, `photo_url`
-- `service_types` text[] (multi-select), `other_service_text`
-- `service_notes`, `estimated_delivery_date`, `estimated_cost`
-- `status` enum: received | in_progress | ready | completed
-- `completed_invoice_id` (FK invoices, nullable)
-- timestamps, RLS like order_notes
+**Add code columns** so codes are stable and editable:
+- `categories.code` (text, nullable, unique-when-not-null)
+- `suppliers.code` (text, nullable, unique-when-not-null)
+- `types_of_work.code` (text, nullable, unique-when-not-null)
 
-New storage bucket: `service-form-images` (public, for condition photos).
+**RPC `generate_skus(type_of_work_id, vendor_id, category_id, quantity)`** — security definer, atomic:
+1. Resolve/auto-fill codes (Type of Work from fixed map; Vendor from initials; Category from first letter or 2 letters).
+2. Compute prefix `[TW][V][C]`.
+3. Lock the registry, find `MAX(running_number)` for that prefix.
+4. Insert N new rows starting at `MAX+1`, status `generated`.
+5. Cross-check against `products.sku`, `manual_sold_items.sku`, `repair_items.sku`, `return_exchange_items.sku`, `custom_order_items.sku` — skip used numbers.
+6. Return inserted SKUs.
 
-### Frontend — New module
-- `src/pages/ServiceForms.tsx` — list view with columns + status badges + actions
-- `src/components/service-forms/ServiceFormDialog.tsx` — create/edit form with the 4 sections (client search reusing `ClientSearchBox` + new-client inline-add, jewellery details, service details)
-- `src/components/service-forms/ViewServiceFormDialog.tsx`
-- `src/components/service-forms/ServiceFormTable.tsx`
-- `src/components/service-forms/CompleteServiceDialog.tsx` — converts to GST service invoice (5% GST, CGST/SGST split, payment mode)
-- `src/utils/serviceReceiptPdf.ts` — Service Receipt PDF (purple header, SVC-xxx, signature line)
-- `src/hooks/useServiceForms.ts`
-- Sidebar: add "Service Forms" nav entry (the existing "Service Form" entry stays — it points to Order Notes / general orders)
-- Routing in `App.tsx`: add `/service-forms`
+**Trigger on `products`**: when an inventory item is created/updated/soft-deleted/sold, sync the corresponding `sku_registry.status` and `product_id`. Never delete the registry row.
 
-### Service Invoice generation (Complete & Bill)
-- Uses existing `invoices` table with GST = 5% override
-- Items: each selected service becomes an invoice line (description = service name, qty = 1, total = portion of final charge — or single line "Service: Polish, Repair" with total = final charge)
-- After invoice creation, `service_forms.status = 'completed'` and `completed_invoice_id` set
-- Reuses `InvoicePreviewModal` / existing PDF for the invoice itself
+GRANTs + RLS: authenticated full SELECT/INSERT/UPDATE, only admins can UPDATE status to `inactive`. No DELETE for anyone.
 
 ---
 
-## Scope notes
-- This is a large change (~15 new files, 2 migrations, ~1500+ LOC). I'll do it in two commits internally but one response.
-- I will NOT modify existing Order Notes / invoice / inventory logic beyond adding the new module and sidebar entry.
-- Existing memories preserved (multi-store, audit trail, billing logic, etc.).
+### 2. Frontend
 
-Approve to proceed and I'll run the migrations + write the code.
+**Sidebar**: new entry `SKU Generator` (icon: Barcode), route `/sku-generator`.
+
+**Pages / components** (under `src/pages/SkuGenerator.tsx` + `src/components/sku/`):
+
+1. **Dashboard tab** — 7 stat cards (Total / Assigned / Available / Sold / Archived / Deleted / Recently Generated list).
+2. **Generate tab** — form with: Type of Work, Vendor, Category, Quantity (with quick buttons 10/50/100/custom). Shows preview prefix + next number. Submit → calls RPC, shows generated list.
+3. **History tab** — searchable/filterable table (SKU, vendor, category, work, date, created by, status, assigned product, barcode preview, QR preview). Filters: status, vendor, category, work, date range, free-text.
+4. **Label printing** — select rows → "Print Labels" opens a print-ready sheet (jsPDF) with barcode (JsBarcode) + QR (qrcode) + SKU + vendor + category. Bulk select supported.
+5. **Export** — Excel/CSV/PDF of selected or filtered set; dedicated Barcode-only sheet and QR-only sheet.
+
+**Inventory integration** (`ProductFormDialog`):
+- New SKU input becomes an **autocomplete dropdown** of `status='generated'` SKUs from `sku_registry`. Admin toggle "Enter manually" preserved.
+- On save, validate SKU exists in registry; trigger updates status to `assigned`/`in_inventory`.
+
+---
+
+### 3. Code generation rules (frontend helpers)
+
+- `typeOfWorkCode`: fixed map (NA, CA, HM, MM, AN, PO, CU). New entries → first 2 letters uppercase, fallback to existing `code` column.
+- `vendorCode`: stored `code` if present, else initials of words (3 chars), with collision suffix.
+- `categoryCode`: fixed map (P, R, C, B, E, N, A, BG, CN), else first letter / 2 letters, with collision suffix.
+- Codes persist back into `categories.code` / `suppliers.code` / `types_of_work.code` on first generation so future generations are stable.
+
+---
+
+### 4. Libraries to install
+
+- `jsbarcode` — Code128 barcode rendering
+- `qrcode` — QR generation (canvas + dataURL)
+
+(`jspdf` + `jspdf-autotable` + `xlsx` already in project for exports.)
+
+---
+
+### 5. Permanence guarantees
+
+- Registry rows never deleted (no DELETE policy).
+- Soft-deleting a product, selling, archiving, invoice deletion → only mutate `status`.
+- Cross-check on generation against all other SKU-bearing tables to avoid historical collisions.
+- DB unique constraint on `sku_registry.sku` ensures 100k+ scale.
+
+---
+
+### Files to add / edit
+
+**Add**
+- `supabase` migration (table + columns + RPC + triggers + RLS + GRANTs)
+- `src/pages/SkuGenerator.tsx`
+- `src/components/sku/SkuDashboard.tsx`
+- `src/components/sku/SkuGenerateForm.tsx`
+- `src/components/sku/SkuHistoryTable.tsx`
+- `src/components/sku/SkuLabelPrint.tsx`
+- `src/components/sku/SkuPicker.tsx` (autocomplete for inventory)
+- `src/hooks/useSkuRegistry.ts`
+- `src/utils/skuCodes.ts` (code mapping helpers)
+- `src/utils/skuLabelPdf.ts`
+
+**Edit**
+- `src/components/layout/Sidebar.tsx` — add nav entry
+- `src/App.tsx` — add route
+- `src/components/inventory/ProductFormDialog.tsx` — integrate `SkuPicker`
+- `package.json` — add `jsbarcode`, `qrcode`
+
+---
+
+### Confirm before I build
+
+1. **Auto-codes for new vendors/categories**: I'll auto-derive (initials / first letters) and let admin edit the code later in Settings. OK?
+2. **Manual SKU entry in Inventory**: keep as an **admin-only** override (per rule 20). OK?
+3. **Existing inventory items**: I'll **backfill** `sku_registry` from current `products.sku` on migration so nothing collides. OK?
+4. **Label size**: default to **50mm x 25mm** jewellery tag layout (SKU + barcode + QR + vendor/category). OK or different size?

@@ -21,7 +21,8 @@ import {
   Trash2,
   IndianRupee,
   ShoppingBag,
-  Wrench
+  Wrench,
+  Barcode
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[
   { icon: ShoppingBag, label: 'Sold', path: '/sold' },
   { icon: Wrench, label: 'Repair', path: '/repair' },
   { icon: Wrench, label: 'Service Forms', path: '/service-forms' },
+  { icon: Barcode, label: 'SKU Generator', path: '/sku-generator' },
   { icon: IndianRupee, label: 'Pending Payments', path: '/pending-payments' },
   { icon: Hammer, label: 'Custom Orders', path: '/custom-orders' },
   { icon: Users, label: 'Clients', path: '/clients' },
