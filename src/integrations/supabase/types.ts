@@ -2211,45 +2211,86 @@ export type Database = {
         Returns: string
       }
       generate_service_receipt_number: { Args: never; Returns: string }
-      generate_skus: {
-        Args: {
-          p_category_code: string
-          p_category_id: string
-          p_quantity: number
-          p_type_of_work_code: string
-          p_type_of_work_id: string
-          p_vendor_code: string
-          p_vendor_id: string
-        }
-        Returns: {
-          barcode_value: string
-          category_code: string
-          category_id: string | null
-          category_name: string | null
-          created_at: string
-          created_by: string | null
-          notes: string | null
-          prefix: string
-          product_id: string | null
-          qr_payload: Json
-          running_number: number
-          sku: string
-          status: string
-          type_of_work_code: string
-          type_of_work_id: string | null
-          type_of_work_name: string | null
-          updated_at: string
-          vendor_code: string
-          vendor_id: string | null
-          vendor_name: string | null
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "sku_registry"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
+      generate_skus:
+        | {
+            Args: {
+              p_category_code: string
+              p_category_id: string
+              p_quantity: number
+              p_type_of_work_code: string
+              p_type_of_work_id: string
+              p_vendor_code: string
+              p_vendor_id: string
+            }
+            Returns: {
+              barcode_value: string
+              category_code: string
+              category_id: string | null
+              category_name: string | null
+              created_at: string
+              created_by: string | null
+              notes: string | null
+              prefix: string
+              product_id: string | null
+              qr_payload: Json
+              running_number: number
+              sku: string
+              status: string
+              type_of_work_code: string
+              type_of_work_id: string | null
+              type_of_work_name: string | null
+              updated_at: string
+              vendor_code: string
+              vendor_id: string | null
+              vendor_name: string | null
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "sku_registry"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
+        | {
+            Args: {
+              p_category_code: string
+              p_category_id: string
+              p_quantity: number
+              p_start_number?: number
+              p_type_of_work_code: string
+              p_type_of_work_id: string
+              p_vendor_code: string
+              p_vendor_id: string
+            }
+            Returns: {
+              barcode_value: string
+              category_code: string
+              category_id: string | null
+              category_name: string | null
+              created_at: string
+              created_by: string | null
+              notes: string | null
+              prefix: string
+              product_id: string | null
+              qr_payload: Json
+              running_number: number
+              sku: string
+              status: string
+              type_of_work_code: string
+              type_of_work_id: string | null
+              type_of_work_name: string | null
+              updated_at: string
+              vendor_code: string
+              vendor_id: string | null
+              vendor_name: string | null
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "sku_registry"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
       generate_store_invoice_number: {
         Args: { p_store_id: string }
         Returns: string
