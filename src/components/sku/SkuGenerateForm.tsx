@@ -23,6 +23,7 @@ interface Props {
     vendor_code: string;
     category_code: string;
     quantity: number;
+    start_number?: number | null;
   }) => Promise<SkuRegistryRow[]>;
   lastGenerated: SkuRegistryRow[];
 }
@@ -36,6 +37,7 @@ export function SkuGenerateForm({ onGenerate, lastGenerated }: Props) {
   const [vendorId, setVendorId] = useState<string>('');
   const [catId, setCatId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
+  const [startNumber, setStartNumber] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [nextNumber, setNextNumber] = useState<number | null>(null);
 
