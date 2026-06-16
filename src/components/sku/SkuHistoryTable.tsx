@@ -6,10 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, Download, RefreshCw, Search, FileSpreadsheet } from 'lucide-react';
+import { Printer, Download, RefreshCw, Search, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { STATUS_COLORS, STATUS_LABELS } from '@/utils/skuCodes';
 import { printSkuLabels } from '@/utils/skuLabelPdf';
 import { exportToExcel, exportToPDF } from '@/utils/reportExport';
+import { useToast } from '@/hooks/use-toast';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import type { SkuRegistryRow } from '@/hooks/useSkuRegistry';
 import { format } from 'date-fns';
 
@@ -17,9 +19,12 @@ interface Props {
   rows: SkuRegistryRow[];
   isLoading: boolean;
   onRefresh: () => void;
+  onDelete: (skus: string[]) => Promise<void>;
 }
 
-export function SkuHistoryTable({ rows, isLoading, onRefresh }: Props) {
+export function SkuHistoryTable({ rows, isLoading, onRefresh, onDelete }: Props) {
+  const { toast } = useToast();
+  const isAdmin = useIsAdmin();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
