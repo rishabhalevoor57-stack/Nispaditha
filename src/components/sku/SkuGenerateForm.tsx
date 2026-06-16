@@ -166,15 +166,18 @@ export function SkuGenerateForm({ onGenerate, lastGenerated }: Props) {
               <Label>Preview</Label>
               <div className="h-10 rounded-md border bg-muted/30 flex items-center px-3 font-mono text-sm">
                 {codes.prefix ? (
-                  <>
-                    <span className="font-bold">{codes.prefix}</span>
-                    <span className="text-muted-foreground ml-1">
-                      {(startNumber.trim() ? parseInt(startNumber) : nextNumber) ?? '…'}
-                      {quantity > 1
-                        ? ` … ${codes.prefix}${((startNumber.trim() ? parseInt(startNumber) : nextNumber) || 1) + quantity - 1}`
-                        : ''}
-                    </span>
-                  </>
+                  (() => {
+                    const start = (startNumber.trim() ? parseInt(startNumber) : nextNumber) ?? null;
+                    const end = start !== null ? start + quantity - 1 : null;
+                    return (
+                      <span>
+                        <span className="font-bold">{codes.prefix}{start ?? '…'}</span>
+                        {quantity > 1 && end !== null && (
+                          <span className="text-muted-foreground"> … {codes.prefix}{end}</span>
+                        )}
+                      </span>
+                    );
+                  })()
                 ) : (
                   <span className="text-muted-foreground">Pick work, vendor, category</span>
                 )}
