@@ -69,6 +69,7 @@ export function useSkuRegistry() {
       vendor_code: string;
       category_code: string;
       quantity: number;
+      start_number?: number | null;
     }) => {
       const { data, error } = await supabase.rpc('generate_skus' as any, {
         p_type_of_work_id: args.type_of_work_id,
@@ -78,6 +79,7 @@ export function useSkuRegistry() {
         p_type_of_work_code: args.type_of_work_code,
         p_vendor_code: args.vendor_code,
         p_category_code: args.category_code,
+        p_start_number: args.start_number ?? null,
       } as any);
       if (error) throw error;
       await fetchAll();
@@ -86,5 +88,15 @@ export function useSkuRegistry() {
     [fetchAll]
   );
 
-  return { rows, isLoading, refresh: fetchAll, generate };
+  const remove = useCallback(
+    async (skus: string[]) => {
+      if (!skus.length) return;
+      const { error } = await supabase.from('sku_registry' as any).delete().in('sku', skus);
+      if (error) throw error;
+      await fetchAll();
+    },
+    [fetchAll]
+  );
+
+  return { rows, isLoading, refresh: fetchAll, generate, remove };
 }

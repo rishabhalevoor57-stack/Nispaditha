@@ -6,10 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, Download, RefreshCw, Search, FileSpreadsheet } from 'lucide-react';
+import { Printer, Download, RefreshCw, Search, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { STATUS_COLORS, STATUS_LABELS } from '@/utils/skuCodes';
 import { printSkuLabels } from '@/utils/skuLabelPdf';
 import { exportToExcel, exportToPDF } from '@/utils/reportExport';
+import { useToast } from '@/hooks/use-toast';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import type { SkuRegistryRow } from '@/hooks/useSkuRegistry';
 import { format } from 'date-fns';
 
@@ -17,9 +19,12 @@ interface Props {
   rows: SkuRegistryRow[];
   isLoading: boolean;
   onRefresh: () => void;
+  onDelete: (skus: string[]) => Promise<void>;
 }
 
-export function SkuHistoryTable({ rows, isLoading, onRefresh }: Props) {
+export function SkuHistoryTable({ rows, isLoading, onRefresh, onDelete }: Props) {
+  const { toast } = useToast();
+  const isAdmin = useIsAdmin();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -108,6 +113,23 @@ export function SkuHistoryTable({ rows, isLoading, onRefresh }: Props) {
           <Button variant="outline" onClick={exportPDF} disabled={!targetRows.length}>
             <Download className="w-4 h-4 mr-1" /> PDF
           </Button>
+          {isAdmin && selectedRows.length > 0 && (
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!confirm(`Delete ${selectedRows.length} SKU(s) permanently? This frees the numbers for future generation.`)) return;
+                try {
+                  await onDelete(selectedRows.map((r) => r.sku));
+                  setSelected(new Set());
+                  toast({ title: `Deleted ${selectedRows.length} SKU(s)` });
+                } catch (e: any) {
+                  toast({ variant: 'destructive', title: 'Delete failed', description: e.message });
+                }
+              }}
+            >
+              <Trash2 className="w-4 h-4 mr-1" /> Delete ({selectedRows.length})
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -124,13 +146,14 @@ export function SkuHistoryTable({ rows, isLoading, onRefresh }: Props) {
               <TableHead>Type of Work</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
+              {isAdmin && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No SKUs found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8 text-muted-foreground">No SKUs found.</TableCell></TableRow>
             ) : (
               filtered.slice(0, 500).map((r) => (
                 <TableRow key={r.sku}>
@@ -145,6 +168,26 @@ export function SkuHistoryTable({ rows, isLoading, onRefresh }: Props) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{format(new Date(r.created_at), 'dd MMM yyyy HH:mm')}</TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          if (!confirm(`Delete ${r.sku}?`)) return;
+                          try {
+                            await onDelete([r.sku]);
+                            toast({ title: `Deleted ${r.sku}` });
+                          } catch (e: any) {
+                            toast({ variant: 'destructive', title: 'Delete failed', description: e.message });
+                          }
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
