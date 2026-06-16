@@ -89,6 +89,7 @@ export function SkuGenerateForm({ onGenerate, lastGenerated }: Props) {
         type_of_work_id: workId, vendor_id: vendorId, category_id: catId,
         type_of_work_code: codes.tw, vendor_code: codes.vc, category_code: codes.cc,
         quantity,
+        start_number: startNumber.trim() ? Math.max(1, parseInt(startNumber)) : null,
       });
       toast({ title: `Generated ${created.length} SKU${created.length === 1 ? '' : 's'}` });
     } catch (e: any) {
@@ -135,7 +136,7 @@ export function SkuGenerateForm({ onGenerate, lastGenerated }: Props) {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
             <div>
               <Label>Quantity to Generate *</Label>
               <Input type="number" min={1} max={1000} value={quantity}
@@ -149,13 +150,29 @@ export function SkuGenerateForm({ onGenerate, lastGenerated }: Props) {
               </div>
             </div>
             <div>
+              <Label>Starting Number</Label>
+              <Input
+                type="number"
+                min={1}
+                value={startNumber}
+                placeholder={nextNumber ? `Auto: ${nextNumber}` : 'Auto'}
+                onChange={(e) => setStartNumber(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Leave blank to auto-continue. Already-used numbers are skipped.
+              </p>
+            </div>
+            <div>
               <Label>Preview</Label>
               <div className="h-10 rounded-md border bg-muted/30 flex items-center px-3 font-mono text-sm">
                 {codes.prefix ? (
                   <>
                     <span className="font-bold">{codes.prefix}</span>
                     <span className="text-muted-foreground ml-1">
-                      {nextNumber ?? '…'}{quantity > 1 ? ` … ${codes.prefix}${(nextNumber || 1) + quantity - 1}` : ''}
+                      {(startNumber.trim() ? parseInt(startNumber) : nextNumber) ?? '…'}
+                      {quantity > 1
+                        ? ` … ${codes.prefix}${((startNumber.trim() ? parseInt(startNumber) : nextNumber) || 1) + quantity - 1}`
+                        : ''}
                     </span>
                   </>
                 ) : (
