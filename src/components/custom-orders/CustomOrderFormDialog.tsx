@@ -508,9 +508,6 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                 {gstPercentage > 0 && (
                   <>
                     <div className="text-sm text-muted-foreground">CGST ({(gstPercentage / 2).toFixed(2)}%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                {gstPercentage > 0 && (
-                  <>
-                    <div className="text-sm text-muted-foreground">CGST ({(gstPercentage / 2).toFixed(2)}%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                     <div className="text-sm text-muted-foreground">SGST ({(gstPercentage / 2).toFixed(2)}%): ₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                   </>
                 )}
