@@ -862,6 +862,36 @@ export function CreateInvoiceDialog({
             silverRate={silverRate}
           />
 
+          {editingDraftId && invoiceItems.some(it => it.pricing_mode !== 'flat_price') && (
+            <div className="flex items-center justify-between rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-sm">
+              <span>
+                Dashboard rate is now <strong>₹{defaultRate.toLocaleString('en-IN', { maximumFractionDigits: 2 })}/g</strong>. Refresh items to today's rate?
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setInvoiceItems(prev => prev.map(it => {
+                    if (it.pricing_mode === 'flat_price' || !it.weight_grams) return it;
+                    const basePrice = it.weight_grams * defaultRate * it.quantity;
+                    const grossMrp = Math.max(0, basePrice + it.making_charges);
+                    return {
+                      ...it,
+                      rate_per_gram: defaultRate,
+                      base_price: basePrice,
+                      mrp: grossMrp,
+                      line_total: Math.max(0, grossMrp - it.discount),
+                    };
+                  }));
+                  toast({ title: 'Rates refreshed', description: `All items updated to ₹${defaultRate}/g` });
+                }}
+              >
+                Refresh to current rate
+              </Button>
+            </div>
+          )}
+
 
           {/* Product Items Table */}
           <InvoiceItemsTable
