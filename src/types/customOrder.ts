@@ -36,6 +36,18 @@ export interface CustomOrderComponent {
   created_at?: string;
 }
 
+export interface CustomerSuppliedMaterial {
+  name: string;
+  description?: string;
+  quantity?: number;
+  weight_grams?: number;
+}
+
+export interface ExtraCharge {
+  label: string;
+  amount: number;
+}
+
 export interface CustomOrder {
   id: string;
   reference_number: string;
@@ -50,6 +62,13 @@ export interface CustomOrder {
   flat_discount: number;
   total_amount: number;
   gst_percentage?: number;
+  gst_mode?: 'exclusive' | 'inclusive';
+  making_charges?: number;
+  labour_charges?: number;
+  polishing_charges?: number;
+  repair_charges?: number;
+  extra_charges?: ExtraCharge[];
+  customer_materials?: CustomerSuppliedMaterial[];
   components_total?: number;
   components_weight?: number;
   notes: string | null;
