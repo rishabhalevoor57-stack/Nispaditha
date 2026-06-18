@@ -521,15 +521,22 @@ export type Database = {
           converted_to_invoice_id: string | null
           created_at: string
           created_by: string | null
+          customer_materials: Json
           design_charges: number
           expected_delivery_date: string | null
+          extra_charges: Json
           flat_discount: number
+          gst_mode: string
           gst_percentage: number
           id: string
+          labour_charges: number
+          making_charges: number
           notes: string | null
           order_date: string
           phone_number: string | null
+          polishing_charges: number
           reference_number: string
+          repair_charges: number
           status: string
           total_amount: number
           updated_at: string
@@ -543,15 +550,22 @@ export type Database = {
           converted_to_invoice_id?: string | null
           created_at?: string
           created_by?: string | null
+          customer_materials?: Json
           design_charges?: number
           expected_delivery_date?: string | null
+          extra_charges?: Json
           flat_discount?: number
+          gst_mode?: string
           gst_percentage?: number
           id?: string
+          labour_charges?: number
+          making_charges?: number
           notes?: string | null
           order_date?: string
           phone_number?: string | null
+          polishing_charges?: number
           reference_number: string
+          repair_charges?: number
           status?: string
           total_amount?: number
           updated_at?: string
@@ -565,15 +579,22 @@ export type Database = {
           converted_to_invoice_id?: string | null
           created_at?: string
           created_by?: string | null
+          customer_materials?: Json
           design_charges?: number
           expected_delivery_date?: string | null
+          extra_charges?: Json
           flat_discount?: number
+          gst_mode?: string
           gst_percentage?: number
           id?: string
+          labour_charges?: number
+          making_charges?: number
           notes?: string | null
           order_date?: string
           phone_number?: string | null
+          polishing_charges?: number
           reference_number?: string
+          repair_charges?: number
           status?: string
           total_amount?: number
           updated_at?: string
