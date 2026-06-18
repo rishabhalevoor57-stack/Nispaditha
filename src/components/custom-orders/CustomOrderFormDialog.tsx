@@ -377,35 +377,137 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
             </CardContent>
           </Card>
 
+          {/* Customer Supplied Materials */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Customer Supplied Materials</CardTitle>
+              <p className="text-xs text-muted-foreground">Beads, pearls, thread, stones, chain etc. — appears on invoice as "Customer Material Supplied", does NOT affect inventory.</p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {customerMaterials.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-3">No customer materials added.</p>
+              )}
+              {customerMaterials.map((m, idx) => (
+                <div key={idx} className="grid grid-cols-12 gap-2 items-end border rounded-md p-2 bg-muted/20">
+                  <div className="col-span-12 md:col-span-4 space-y-1">
+                    <Label className="text-xs">Material *</Label>
+                    <Input className="h-9" placeholder="Beads, Pearls, Thread..." value={m.name} onChange={(e) => {
+                      const next = [...customerMaterials]; next[idx] = { ...m, name: e.target.value }; setCustomerMaterials(next);
+                    }} />
+                  </div>
+                  <div className="col-span-6 md:col-span-2 space-y-1">
+                    <Label className="text-xs">Qty</Label>
+                    <Input className="h-9" type="number" min="0" value={m.quantity || ''} onChange={(e) => {
+                      const next = [...customerMaterials]; next[idx] = { ...m, quantity: parseFloat(e.target.value) || 0 }; setCustomerMaterials(next);
+                    }} />
+                  </div>
+                  <div className="col-span-6 md:col-span-2 space-y-1">
+                    <Label className="text-xs">Wt (g)</Label>
+                    <Input className="h-9" type="number" min="0" step="0.001" value={m.weight_grams || ''} onChange={(e) => {
+                      const next = [...customerMaterials]; next[idx] = { ...m, weight_grams: parseFloat(e.target.value) || 0 }; setCustomerMaterials(next);
+                    }} />
+                  </div>
+                  <div className="col-span-10 md:col-span-3 space-y-1">
+                    <Label className="text-xs">Notes</Label>
+                    <Input className="h-9" placeholder="Optional" value={m.description || ''} onChange={(e) => {
+                      const next = [...customerMaterials]; next[idx] = { ...m, description: e.target.value }; setCustomerMaterials(next);
+                    }} />
+                  </div>
+                  <div className="col-span-2 md:col-span-1 flex justify-end">
+                    <Button type="button" variant="ghost" size="icon" className="text-destructive h-9 w-9" onClick={() => setCustomerMaterials(customerMaterials.filter((_, i) => i !== idx))}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <Button type="button" variant="outline" className="w-full border-dashed" onClick={() => setCustomerMaterials([...customerMaterials, { name: '', quantity: 1, weight_grams: 0 }])}>
+                <Plus className="h-4 w-4 mr-2" /> Add Customer Material
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Charges & Totals */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Additional Charges & Total</CardTitle>
+              <CardTitle className="text-sm font-medium">Charges, Discount & GST</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
-                <div className="space-y-2">
-                  <Label>Design Charges</Label>
-                  <Input type="number" min="0" value={designCharges || ''} onChange={(e) => setDesignCharges(parseFloat(e.target.value) || 0)} placeholder="0" />
-                </div>
-                <div className="space-y-2">
-                  <Label>{additionalChargeLabel}</Label>
-                  <Input type="number" min="0" value={additionalCharge || ''} onChange={(e) => setAdditionalCharge(parseFloat(e.target.value) || 0)} placeholder="0" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Flat Discount</Label>
-                  <Input type="number" min="0" value={flatDiscount || ''} onChange={(e) => setFlatDiscount(parseFloat(e.target.value) || 0)} placeholder="0" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Custom Label</Label>
-                  <Input value={additionalChargeLabel} onChange={(e) => setAdditionalChargeLabel(e.target.value)} placeholder="Additional Charge" />
-                </div>
-                <div className="space-y-2">
-                  <Label>GST %</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="space-y-1"><Label className="text-xs">Making Charges</Label>
+                  <Input type="number" min="0" value={makingCharges || ''} onChange={(e) => setMakingCharges(parseFloat(e.target.value) || 0)} placeholder="0" /></div>
+                <div className="space-y-1"><Label className="text-xs">Design Charges</Label>
+                  <Input type="number" min="0" value={designCharges || ''} onChange={(e) => setDesignCharges(parseFloat(e.target.value) || 0)} placeholder="0" /></div>
+                <div className="space-y-1"><Label className="text-xs">Labour Charges</Label>
+                  <Input type="number" min="0" value={labourCharges || ''} onChange={(e) => setLabourCharges(parseFloat(e.target.value) || 0)} placeholder="0" /></div>
+                <div className="space-y-1"><Label className="text-xs">Polishing Charges</Label>
+                  <Input type="number" min="0" value={polishingCharges || ''} onChange={(e) => setPolishingCharges(parseFloat(e.target.value) || 0)} placeholder="0" /></div>
+                <div className="space-y-1"><Label className="text-xs">Repair Charges</Label>
+                  <Input type="number" min="0" value={repairCharges || ''} onChange={(e) => setRepairCharges(parseFloat(e.target.value) || 0)} placeholder="0" /></div>
+                <div className="space-y-1"><Label className="text-xs">{additionalChargeLabel}</Label>
+                  <Input type="number" min="0" value={additionalCharge || ''} onChange={(e) => setAdditionalCharge(parseFloat(e.target.value) || 0)} placeholder="0" /></div>
+                <div className="space-y-1"><Label className="text-xs">Custom Label</Label>
+                  <Input value={additionalChargeLabel} onChange={(e) => setAdditionalChargeLabel(e.target.value)} placeholder="Additional Charge" /></div>
+                <div className="space-y-1"><Label className="text-xs">Flat Discount</Label>
+                  <Input type="number" min="0" value={flatDiscount || ''} onChange={(e) => setFlatDiscount(parseFloat(e.target.value) || 0)} placeholder="0" /></div>
+              </div>
+
+              {/* Other / Custom labelled charges */}
+              <div className="space-y-2 mb-4">
+                <Label className="text-xs">Other Charges (custom labels)</Label>
+                {extraCharges.map((c, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2 items-end">
+                    <Input className="col-span-7 h-9" placeholder="Label (e.g. Stone Setting)" value={c.label} onChange={(e) => {
+                      const next = [...extraCharges]; next[idx] = { ...c, label: e.target.value }; setExtraCharges(next);
+                    }} />
+                    <Input className="col-span-4 h-9" type="number" min="0" placeholder="Amount" value={c.amount || ''} onChange={(e) => {
+                      const next = [...extraCharges]; next[idx] = { ...c, amount: parseFloat(e.target.value) || 0 }; setExtraCharges(next);
+                    }} />
+                    <Button type="button" variant="ghost" size="icon" className="col-span-1 text-destructive h-9 w-9" onClick={() => setExtraCharges(extraCharges.filter((_, i) => i !== idx))}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" className="border-dashed" onClick={() => setExtraCharges([...extraCharges, { label: '', amount: 0 }])}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Add Other Charge
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">GST %</Label>
                   <Input type="number" min="0" max="100" step="0.01" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} placeholder="3" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">GST Mode</Label>
+                  <Select value={gstMode} onValueChange={(v) => setGstMode(v as 'exclusive' | 'inclusive')}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="exclusive">Exclusive (added on top)</SelectItem>
+                      <SelectItem value="inclusive">Inclusive (already in price)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <Separator className="my-4" />
+              <div className="space-y-1.5 text-right">
+                <div className="text-sm text-muted-foreground">Items Total: ₹{itemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                {componentsTotal > 0 && <div className="text-sm text-muted-foreground">Components Cost: ₹{componentsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
+                {makingCharges > 0 && <div className="text-sm text-muted-foreground">Making Charges: ₹{makingCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
+                {designCharges > 0 && <div className="text-sm text-muted-foreground">Design Charges: ₹{designCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
+                {labourCharges > 0 && <div className="text-sm text-muted-foreground">Labour Charges: ₹{labourCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
+                {polishingCharges > 0 && <div className="text-sm text-muted-foreground">Polishing Charges: ₹{polishingCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
+                {repairCharges > 0 && <div className="text-sm text-muted-foreground">Repair Charges: ₹{repairCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
+                {additionalCharge > 0 && <div className="text-sm text-muted-foreground">{additionalChargeLabel}: ₹{additionalCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
+                {extraCharges.filter(c => c.label.trim() && Number(c.amount) > 0).map((c, i) => (
+                  <div key={i} className="text-sm text-muted-foreground">{c.label}: ₹{Number(c.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                ))}
+                {flatDiscount > 0 && (
+                  <div className="text-sm text-destructive">Flat Discount: -₹{flatDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                )}
+                <div className="text-sm text-muted-foreground border-t pt-1 mt-1">Subtotal {gstMode === 'inclusive' ? '(GST incl.)' : ''}: ₹{Math.max(0, subTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                {gstPercentage > 0 && (
+                  <>
+                    <div className="text-sm text-muted-foreground">CGST ({(gstPercentage / 2).toFixed(2)}%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
               <div className="space-y-1.5 text-right">
                 <div className="text-sm text-muted-foreground">Items Total: ₹{itemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                 {componentsTotal > 0 && <div className="text-sm text-muted-foreground">Components Cost: ₹{componentsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
