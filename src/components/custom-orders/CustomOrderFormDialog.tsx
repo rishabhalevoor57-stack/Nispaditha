@@ -51,6 +51,13 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const [items, setItems] = useState<CustomOrderItem[]>([]);
   const [components, setComponents] = useState<CustomOrderComponent[]>([]);
   const [gstPercentage, setGstPercentage] = useState<number>(3);
+  const [gstMode, setGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
+  const [makingCharges, setMakingCharges] = useState(0);
+  const [labourCharges, setLabourCharges] = useState(0);
+  const [polishingCharges, setPolishingCharges] = useState(0);
+  const [repairCharges, setRepairCharges] = useState(0);
+  const [extraCharges, setExtraCharges] = useState<ExtraCharge[]>([]);
+  const [customerMaterials, setCustomerMaterials] = useState<CustomerSuppliedMaterial[]>([]);
 
   // Client search
   const [clientSearch, setClientSearch] = useState('');
