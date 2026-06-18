@@ -69,11 +69,25 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const itemsTotal = items.reduce((sum, item) => sum + item.item_total, 0);
   const componentsTotal = components.reduce((sum, c) => sum + (Number(c.total) || 0), 0);
   const componentsWeight = components.reduce((sum, c) => sum + (Number(c.weight_grams) || 0) * (Number(c.quantity) || 0), 0);
-  const subTotal = itemsTotal + componentsTotal + designCharges + additionalCharge - flatDiscount;
-  const gstAmount = Math.max(0, subTotal) * (gstPercentage / 100);
+  const extraChargesTotal = extraCharges.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+  const allChargesTotal = (Number(makingCharges) || 0) + (Number(labourCharges) || 0)
+    + (Number(polishingCharges) || 0) + (Number(repairCharges) || 0)
+    + (Number(designCharges) || 0) + (Number(additionalCharge) || 0) + extraChargesTotal;
+  const subTotal = itemsTotal + componentsTotal + allChargesTotal - flatDiscount;
+  const taxableBase = Math.max(0, subTotal);
+  let gstAmount: number;
+  let totalAmount: number;
+  if (gstMode === 'inclusive') {
+    const divisor = 1 + (gstPercentage / 100);
+    const taxable = divisor > 0 ? taxableBase / divisor : taxableBase;
+    gstAmount = Math.max(0, taxableBase - taxable);
+    totalAmount = taxableBase;
+  } else {
+    gstAmount = taxableBase * (gstPercentage / 100);
+    totalAmount = taxableBase + gstAmount;
+  }
   const cgst = gstAmount / 2;
   const sgst = gstAmount / 2;
-  const totalAmount = Math.max(0, subTotal) + gstAmount;
 
   // Fetch clients for search
   useEffect(() => {
