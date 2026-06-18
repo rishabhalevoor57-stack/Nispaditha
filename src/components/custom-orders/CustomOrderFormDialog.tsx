@@ -132,6 +132,13 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setAdditionalChargeLabel(full.additional_charge_label || 'Additional Charge');
         setFlatDiscount(full.flat_discount || 0);
         setGstPercentage(Number((full as any).gst_percentage) || 3);
+        setGstMode(((full as any).gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
+        setMakingCharges(Number((full as any).making_charges) || 0);
+        setLabourCharges(Number((full as any).labour_charges) || 0);
+        setPolishingCharges(Number((full as any).polishing_charges) || 0);
+        setRepairCharges(Number((full as any).repair_charges) || 0);
+        setExtraCharges(Array.isArray((full as any).extra_charges) ? (full as any).extra_charges : []);
+        setCustomerMaterials(Array.isArray((full as any).customer_materials) ? (full as any).customer_materials : []);
         setNotes(full.notes || '');
         setItems(full.items || []);
         setComponents((full as any).components || []);
@@ -148,6 +155,13 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setAdditionalChargeLabel('Additional Charge');
         setFlatDiscount(0);
         setGstPercentage(3);
+        setGstMode('exclusive');
+        setMakingCharges(0);
+        setLabourCharges(0);
+        setPolishingCharges(0);
+        setRepairCharges(0);
+        setExtraCharges([]);
+        setCustomerMaterials([]);
         setNotes('');
         setItems([]);
         setComponents([]);
