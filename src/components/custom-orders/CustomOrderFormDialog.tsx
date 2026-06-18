@@ -508,15 +508,6 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                 {gstPercentage > 0 && (
                   <>
                     <div className="text-sm text-muted-foreground">CGST ({(gstPercentage / 2).toFixed(2)}%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-              <div className="space-y-1.5 text-right">
-                <div className="text-sm text-muted-foreground">Items Total: ₹{itemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                {componentsTotal > 0 && <div className="text-sm text-muted-foreground">Components Cost: ₹{componentsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
-                {designCharges > 0 && <div className="text-sm text-muted-foreground">Design Charges: ₹{designCharges.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
-                {additionalCharge > 0 && <div className="text-sm text-muted-foreground">{additionalChargeLabel}: ₹{additionalCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>}
-                {flatDiscount > 0 && (
-                  <div className="text-sm text-destructive">Flat Discount: -₹{flatDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                )}
-                <div className="text-sm text-muted-foreground border-t pt-1 mt-1">Subtotal: ₹{Math.max(0, subTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                 {gstPercentage > 0 && (
                   <>
                     <div className="text-sm text-muted-foreground">CGST ({(gstPercentage / 2).toFixed(2)}%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
