@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
@@ -31,11 +32,24 @@ export default function Invoices() {
   const [buybackInvoiceNum, setBuybackInvoiceNum] = useState<string | null>(null);
   const { toast } = useToast();
   const isAdmin = useIsAdmin();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchInvoices();
     fetchBusinessSettings();
   }, []);
+
+  // If navigated from Custom Orders with editDraftId, open the draft for editing
+  useEffect(() => {
+    const state = location.state as { editDraftId?: string } | null;
+    if (state?.editDraftId) {
+      setEditingDraftId(state.editDraftId);
+      setIsCreateDialogOpen(true);
+      // Clear state to avoid reopening on remount
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   const fetchInvoices = async () => {
     try {

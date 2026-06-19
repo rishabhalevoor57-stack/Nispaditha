@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { CustomOrderItemsTable } from './CustomOrderItemsTable';
+
 import { CustomOrderComponentsTable } from './CustomOrderComponentsTable';
 import { CustomOrder, CustomOrderItem, CustomOrderComponent, CustomOrderStatus, CUSTOM_ORDER_STATUS_LABELS, CustomerSuppliedMaterial, ExtraCharge } from '@/types/customOrder';
 import { Plus, X } from 'lucide-react';
@@ -355,43 +355,21 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
             </CardContent>
           </Card>
 
-          {/* Items */}
+          {/* Customer Items Supplied */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Order Items</CardTitle>
-              <p className="text-xs text-muted-foreground">Live Silver Rate: ₹{silverRate}/g • Search by SKU to auto-fill from inventory</p>
-            </CardHeader>
-            <CardContent>
-              <CustomOrderItemsTable items={items} onChange={setItems} silverRate={silverRate} orderId={order?.id} />
-            </CardContent>
-          </Card>
-
-          {/* Components */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Components</CardTitle>
-              <p className="text-xs text-muted-foreground">Individual parts (hooks, clasps, chains, stones, beads, findings)</p>
-            </CardHeader>
-            <CardContent>
-              <CustomOrderComponentsTable components={components} onChange={setComponents} />
-            </CardContent>
-          </Card>
-
-          {/* Customer Supplied Materials */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Customer Supplied Materials</CardTitle>
-              <p className="text-xs text-muted-foreground">Beads, pearls, thread, stones, chain etc. — appears on invoice as "Customer Material Supplied", does NOT affect inventory.</p>
+              <CardTitle className="text-sm font-medium">Customer Items Supplied</CardTitle>
+              <p className="text-xs text-muted-foreground">Materials brought by the customer (pearls, beads, old chain, stones, thread). Descriptive only — does not affect inventory or totals.</p>
             </CardHeader>
             <CardContent className="space-y-2">
               {customerMaterials.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-3">No customer materials added.</p>
+                <p className="text-xs text-muted-foreground text-center py-3">No customer items added yet.</p>
               )}
               {customerMaterials.map((m, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-2 items-end border rounded-md p-2 bg-muted/20">
                   <div className="col-span-12 md:col-span-4 space-y-1">
-                    <Label className="text-xs">Material *</Label>
-                    <Input className="h-9" placeholder="Beads, Pearls, Thread..." value={m.name} onChange={(e) => {
+                    <Label className="text-xs">Item *</Label>
+                    <Input className="h-9" placeholder="Pearls, Beads, Old Chain..." value={m.name} onChange={(e) => {
                       const next = [...customerMaterials]; next[idx] = { ...m, name: e.target.value }; setCustomerMaterials(next);
                     }} />
                   </div>
@@ -421,10 +399,22 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                 </div>
               ))}
               <Button type="button" variant="outline" className="w-full border-dashed" onClick={() => setCustomerMaterials([...customerMaterials, { name: '', quantity: 1, weight_grams: 0 }])}>
-                <Plus className="h-4 w-4 mr-2" /> Add Customer Material
+                <Plus className="h-4 w-4 mr-2" /> Add Customer Item
               </Button>
             </CardContent>
           </Card>
+
+          {/* Nispaditha Components */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Nispaditha Components</CardTitle>
+              <p className="text-xs text-muted-foreground">Items added by your business (pendant, hooks, lock, spacers, chain extension, findings, silver parts). These appear as priced lines on the invoice.</p>
+            </CardHeader>
+            <CardContent>
+              <CustomOrderComponentsTable components={components} onChange={setComponents} />
+            </CardContent>
+          </Card>
+
 
           {/* Charges & Totals */}
           <Card>
