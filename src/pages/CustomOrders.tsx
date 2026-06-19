@@ -227,7 +227,7 @@ const CustomOrders = () => {
       </div>
 
       <CustomOrderFormDialog open={formOpen} onOpenChange={setFormOpen} order={selected} />
-      <ViewCustomOrderDialog open={viewOpen} onOpenChange={setViewOpen} order={selected} onConvertToInvoice={handleConvertToInvoice} onSendToInvoicePage={handleSendToInvoicePage} />
+      <ViewCustomOrderDialog open={viewOpen} onOpenChange={setViewOpen} order={selected} onConvertToInvoice={handleConvertToInvoice} onSendToInvoicePage={handleSendToInvoicePage} onBillNow={handleBillNow} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
