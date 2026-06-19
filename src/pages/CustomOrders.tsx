@@ -15,13 +15,13 @@ import { CustomOrderTable } from '@/components/custom-orders/CustomOrderTable';
 import { CustomOrderFormDialog } from '@/components/custom-orders/CustomOrderFormDialog';
 import { ViewCustomOrderDialog } from '@/components/custom-orders/ViewCustomOrderDialog';
 import { useCustomOrders } from '@/hooks/useCustomOrders';
-import { CustomOrder, CustomOrderItem, CustomOrderStatus, CUSTOM_ORDER_STATUS_LABELS } from '@/types/customOrder';
+import { CustomOrder, CustomOrderItem, CustomOrderComponent, CustomOrderStatus, CUSTOM_ORDER_STATUS_LABELS } from '@/types/customOrder';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
+import { convertCustomOrderToInvoice } from '@/utils/customOrderToInvoice';
 
 const CustomOrders = () => {
   const { customOrders, isLoading, updateStatus, deleteOrder, getOrderWithItems } = useCustomOrders();
