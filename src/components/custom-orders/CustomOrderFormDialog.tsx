@@ -415,54 +415,6 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
             </CardContent>
           </Card>
 
-          {/* Customer Supplied Materials */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Customer Supplied Materials</CardTitle>
-              <p className="text-xs text-muted-foreground">Beads, pearls, thread, stones, chain etc. — appears on invoice as "Customer Material Supplied", does NOT affect inventory.</p>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {customerMaterials.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-3">No customer materials added.</p>
-              )}
-              {customerMaterials.map((m, idx) => (
-                <div key={idx} className="grid grid-cols-12 gap-2 items-end border rounded-md p-2 bg-muted/20">
-                  <div className="col-span-12 md:col-span-4 space-y-1">
-                    <Label className="text-xs">Material *</Label>
-                    <Input className="h-9" placeholder="Beads, Pearls, Thread..." value={m.name} onChange={(e) => {
-                      const next = [...customerMaterials]; next[idx] = { ...m, name: e.target.value }; setCustomerMaterials(next);
-                    }} />
-                  </div>
-                  <div className="col-span-6 md:col-span-2 space-y-1">
-                    <Label className="text-xs">Qty</Label>
-                    <Input className="h-9" type="number" min="0" value={m.quantity || ''} onChange={(e) => {
-                      const next = [...customerMaterials]; next[idx] = { ...m, quantity: parseFloat(e.target.value) || 0 }; setCustomerMaterials(next);
-                    }} />
-                  </div>
-                  <div className="col-span-6 md:col-span-2 space-y-1">
-                    <Label className="text-xs">Wt (g)</Label>
-                    <Input className="h-9" type="number" min="0" step="0.001" value={m.weight_grams || ''} onChange={(e) => {
-                      const next = [...customerMaterials]; next[idx] = { ...m, weight_grams: parseFloat(e.target.value) || 0 }; setCustomerMaterials(next);
-                    }} />
-                  </div>
-                  <div className="col-span-10 md:col-span-3 space-y-1">
-                    <Label className="text-xs">Notes</Label>
-                    <Input className="h-9" placeholder="Optional" value={m.description || ''} onChange={(e) => {
-                      const next = [...customerMaterials]; next[idx] = { ...m, description: e.target.value }; setCustomerMaterials(next);
-                    }} />
-                  </div>
-                  <div className="col-span-2 md:col-span-1 flex justify-end">
-                    <Button type="button" variant="ghost" size="icon" className="text-destructive h-9 w-9" onClick={() => setCustomerMaterials(customerMaterials.filter((_, i) => i !== idx))}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              <Button type="button" variant="outline" className="w-full border-dashed" onClick={() => setCustomerMaterials([...customerMaterials, { name: '', quantity: 1, weight_grams: 0 }])}>
-                <Plus className="h-4 w-4 mr-2" /> Add Customer Material
-              </Button>
-            </CardContent>
-          </Card>
 
           {/* Charges & Totals */}
           <Card>
