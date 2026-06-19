@@ -78,69 +78,22 @@ const CustomOrders = () => {
     });
   };
 
-  const handleConvertToInvoice = async (order: CustomOrder, items: CustomOrderItem[]) => {
+  const handleConvertToInvoice = async (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => {
     try {
-      const { data: invoiceNumber, error: numError } = await supabase.rpc('generate_invoice_number');
-      if (numError) throw numError;
-
-      const { data: invoice, error: invError } = await supabase
-        .from('invoices')
-        .insert({
-          invoice_number: invoiceNumber,
-          invoice_date: new Date().toISOString().split('T')[0],
-          status: 'draft',
-          payment_status: 'pending',
-          subtotal: order.total_amount,
-          gst_amount: 0,
-          discount_amount: 0,
-          grand_total: order.total_amount,
-          notes: `Converted from Custom Order ${order.reference_number}`,
-          created_by: user?.id || null,
-        })
-        .select()
-        .single();
-
-      if (invError) throw invError;
-
-      if (items.length > 0) {
-        const invoiceItems = items.map(item => ({
-          invoice_id: invoice.id,
-          product_name: item.item_description,
-          quantity: item.quantity,
-          weight_grams: item.expected_weight || 0,
-          rate_per_gram: item.rate_per_gram || 0,
-          gold_value: item.base_price || 0,
-          making_charges: item.mc_amount || 0,
-          discount: item.discount_on_mc || 0,
-          discounted_making: item.mc_amount || 0,
-          subtotal: item.item_total,
-          gst_percentage: 0,
-          gst_amount: 0,
-          total: item.item_total,
-          mrp: item.pricing_mode === 'flat_price' ? item.flat_price : 0,
-          category: item.category || 'Custom Order',
-        }));
-
-        await supabase.from('invoice_items').insert(invoiceItems);
-      }
-
-      await supabase
-        .from('custom_orders')
-        .update({ converted_to_invoice_id: invoice.id })
-        .eq('id', order.id);
-
+      const result = await convertCustomOrderToInvoice(order, items, components, {
+        finalize: false,
+        createdBy: user?.id || null,
+      });
       queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-
       logActivity({
         module: 'Custom Orders',
         action: 'Convert to Invoice',
         recordId: order.id,
         recordLabel: order.reference_number,
-        newValue: { invoice_number: invoiceNumber },
+        newValue: { invoice_number: result.invoiceNumber },
       });
-
-      toast({ title: 'Converted to invoice', description: `Invoice ${invoiceNumber} created successfully.` });
+      toast({ title: 'Invoice created', description: `Draft invoice ${result.invoiceNumber} ready for review.` });
       setViewOpen(false);
       navigate('/invoices');
     } catch (error: any) {
@@ -148,37 +101,42 @@ const CustomOrders = () => {
     }
   };
 
-  const handleSendToInvoicePage = (order: CustomOrder, items: CustomOrderItem[]) => {
-    // Store custom order data in sessionStorage for the invoice page to pick up
-    const invoiceData = {
-      fromCustomOrder: true,
-      customOrderId: order.id,
-      referenceNumber: order.reference_number,
-      clientName: order.client_name,
-      phoneNumber: order.phone_number,
-      notes: `From Custom Order ${order.reference_number}${order.notes ? '\n' + order.notes : ''}`,
-      items: items.map(item => ({
-        product_name: item.item_description,
-        product_id: item.product_id,
-        sku: item.sku,
-        quantity: item.quantity,
-        weight_grams: item.expected_weight || 0,
-        rate_per_gram: item.rate_per_gram || 0,
-        making_charges: item.mc_per_gram || 0,
-        discount: item.discount_on_mc || 0,
-        mrp: item.pricing_mode === 'flat_price' ? item.flat_price : 0,
-        category: item.category || 'Custom Order',
-        total: item.item_total,
-      })),
-      designCharges: order.design_charges,
-      additionalCharge: order.additional_charge,
-      flatDiscount: order.flat_discount,
-      totalAmount: order.total_amount,
-    };
-    sessionStorage.setItem('customOrderToInvoice', JSON.stringify(invoiceData));
-    setViewOpen(false);
-    toast({ title: 'Sent to Invoice Page', description: 'Open the invoice page to review and finalize.' });
-    navigate('/invoices');
+  const handleSendToInvoicePage = async (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => {
+    try {
+      const result = await convertCustomOrderToInvoice(order, items, components, {
+        finalize: false,
+        createdBy: user?.id || null,
+      });
+      queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      setViewOpen(false);
+      toast({ title: 'Sent to Invoice Page', description: `Opening draft ${result.invoiceNumber} for editing.` });
+      navigate('/invoices', { state: { editDraftId: result.invoiceId } });
+    } catch (error: any) {
+      toast({ title: 'Send failed', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleBillNow = async (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => {
+    try {
+      const result = await convertCustomOrderToInvoice(order, items, components, {
+        finalize: true,
+        createdBy: user?.id || null,
+      });
+      queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      logActivity({
+        module: 'Custom Orders',
+        action: 'Bill Now',
+        recordId: order.id,
+        recordLabel: order.reference_number,
+        newValue: { invoice_number: result.invoiceNumber },
+      });
+      toast({ title: 'Invoice billed', description: `Invoice ${result.invoiceNumber} created — collect payment from Invoices.` });
+      setViewOpen(false);
+    } catch (error: any) {
+      toast({ title: 'Bill failed', description: error.message, variant: 'destructive' });
+    }
   };
 
   const handleNew = () => { setSelected(null); setFormOpen(true); };
