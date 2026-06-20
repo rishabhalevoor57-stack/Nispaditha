@@ -230,6 +230,7 @@ export function ViewInvoiceDialog({
     setEditItems(getInvoiceItems());
     setEditRoundOff(Number(invoice.round_off) || 0);
     setEditGstMode((invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
+    setEditPaidAmount(Number(invoice.advance_paid) || 0);
     setIsEditing(true);
   };
 
