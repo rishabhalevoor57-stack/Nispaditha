@@ -120,6 +120,7 @@ export function ViewInvoiceDialog({
   const [editMetalRate, setEditMetalRate] = useState<MetalRateOption>('silver');
   const [editRoundOff, setEditRoundOff] = useState<number>(0);
   const [editGstMode, setEditGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
+  const [editPaidAmount, setEditPaidAmount] = useState<number>(0);
 
   const { toast } = useToast();
   const { user, userRole } = useAuth();
@@ -229,6 +230,7 @@ export function ViewInvoiceDialog({
     setEditItems(getInvoiceItems());
     setEditRoundOff(Number(invoice.round_off) || 0);
     setEditGstMode((invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
+    setEditPaidAmount(Number(invoice.advance_paid) || 0);
     setIsEditing(true);
   };
 
@@ -261,6 +263,7 @@ export function ViewInvoiceDialog({
       // Recompute payment_status from REAL payments vs new grand_total
       // (Discount/Adjusted amounts must NOT influence status.)
       let computedStatus: string;
+      let finalAdvancePaid = Number(invoice.advance_paid) || 0;
       if (isDraft) {
         computedStatus = 'pending';
       } else {
@@ -269,12 +272,32 @@ export function ViewInvoiceDialog({
           .select('amount')
           .eq('invoice_id', invoice.id);
         const credits = Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0;
-        const paidSum = (payRows || []).reduce((s, r: any) => s + Number(r.amount || 0), 0) + credits;
-        const diff = Math.round((newGrandTotal - paidSum) * 100) / 100;
-        if (paidSum <= 0) computedStatus = 'pending';
+        const currentPaidSum = (payRows || []).reduce((s, r: any) => s + Number(r.amount || 0), 0) + credits;
+
+        // If user changed Paid Amount, log an adjustment payment row for the delta
+        const desiredPaid = Math.max(0, Number(editPaidAmount) || 0);
+        const delta = Math.round((desiredPaid - currentPaidSum) * 100) / 100;
+        if (Math.abs(delta) >= 0.01) {
+          const { data: receiptData } = await supabase.rpc('generate_receipt_number');
+          await supabase.from('invoice_payments').insert([{
+            invoice_id: invoice.id,
+            amount: delta,
+            payment_mode: editPaymentMode || 'cash',
+            payment_date: format(editInvoiceDate, 'yyyy-MM-dd'),
+            receipt_number: (receiptData as string) || `RCP-ADJ-${Date.now()}`,
+            notes: `Adjustment via invoice edit (${delta > 0 ? '+' : ''}${delta.toFixed(2)})`,
+            created_by: user?.id || null,
+          } as never]);
+        }
+
+        finalAdvancePaid = desiredPaid;
+        const diff = Math.round((newGrandTotal - desiredPaid) * 100) / 100;
+        if (desiredPaid <= 0) computedStatus = 'pending';
         else if (diff <= 0.05) computedStatus = 'paid';
         else computedStatus = 'partial';
       }
+
+      const balanceDue = Math.max(0, Math.round((newGrandTotal - finalAdvancePaid) * 100) / 100);
 
       const { error: updErr } = await supabase
         .from('invoices')
@@ -282,6 +305,7 @@ export function ViewInvoiceDialog({
           invoice_date: format(editInvoiceDate, 'yyyy-MM-dd'),
           payment_mode: editPaymentMode,
           payment_status: computedStatus,
+          status: computedStatus === 'paid' ? 'paid' : (isDraft ? 'draft' : 'sent'),
           notes: editNotes || null,
           subtotal: editTotals.subtotal,
           discount_amount: editTotals.discountAmount,
@@ -289,6 +313,8 @@ export function ViewInvoiceDialog({
           gst_mode: editGstMode,
           round_off: newRoundOff,
           grand_total: newGrandTotal,
+          advance_paid: finalAdvancePaid,
+          balance_due: balanceDue,
         } as never)
         .eq('id', invoice.id);
       if (updErr) throw updErr;
@@ -1094,6 +1120,41 @@ export function ViewInvoiceDialog({
                         </div>
                       </div>
                     </div>
+                    {invoice && invoice.status !== 'draft' && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-paid-amount">Paid Amount (override)</Label>
+                          <BlankZeroInput
+                            id="edit-paid-amount"
+                            value={editPaidAmount}
+                            onValueChange={setEditPaidAmount}
+                            min={0}
+                            placeholder="0.00"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Logs an adjustment payment for the difference and recomputes status.
+                          </p>
+                        </div>
+                        <div className="md:col-span-2 flex items-end">
+                          {(() => {
+                            const gt = (editTotals.grandTotal || 0) + (Number(editRoundOff) || 0);
+                            const paid = Number(editPaidAmount) || 0;
+                            const bal = Math.max(0, gt - paid);
+                            const excess = Math.max(0, paid - gt);
+                            const status = paid <= 0 ? 'PENDING' : (gt - paid <= 0.05 ? 'PAID' : 'PARTIAL');
+                            return (
+                              <div className="w-full bg-muted/40 rounded-md p-3 text-sm space-y-1">
+                                <div className="flex justify-between"><span className="text-muted-foreground">Balance Due</span><span className="text-amber-600 font-semibold">{formatCurrency(bal)}</span></div>
+                                {excess > 0 && (
+                                  <div className="flex justify-between"><span className="text-muted-foreground">Excess</span><span className="text-green-600 font-semibold">{formatCurrency(excess)}</span></div>
+                                )}
+                                <div className="flex justify-between"><span className="text-muted-foreground">New Status</span><span className="font-semibold">{status}</span></div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
                     <InvoiceTotalsSection totals={editTotals} isAdmin={true} roundOff={editRoundOff} gstMode={editGstMode} />
                   </>
                 )}
