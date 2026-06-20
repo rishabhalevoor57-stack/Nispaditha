@@ -1120,6 +1120,41 @@ export function ViewInvoiceDialog({
                         </div>
                       </div>
                     </div>
+                    {invoice && invoice.status !== 'draft' && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-paid-amount">Paid Amount (override)</Label>
+                          <BlankZeroInput
+                            id="edit-paid-amount"
+                            value={editPaidAmount}
+                            onValueChange={setEditPaidAmount}
+                            min={0}
+                            placeholder="0.00"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Logs an adjustment payment for the difference and recomputes status.
+                          </p>
+                        </div>
+                        <div className="md:col-span-2 flex items-end">
+                          {(() => {
+                            const gt = (editTotals.grandTotal || 0) + (Number(editRoundOff) || 0);
+                            const paid = Number(editPaidAmount) || 0;
+                            const bal = Math.max(0, gt - paid);
+                            const excess = Math.max(0, paid - gt);
+                            const status = paid <= 0 ? 'PENDING' : (gt - paid <= 0.05 ? 'PAID' : 'PARTIAL');
+                            return (
+                              <div className="w-full bg-muted/40 rounded-md p-3 text-sm space-y-1">
+                                <div className="flex justify-between"><span className="text-muted-foreground">Balance Due</span><span className="text-amber-600 font-semibold">{formatCurrency(bal)}</span></div>
+                                {excess > 0 && (
+                                  <div className="flex justify-between"><span className="text-muted-foreground">Excess</span><span className="text-green-600 font-semibold">{formatCurrency(excess)}</span></div>
+                                )}
+                                <div className="flex justify-between"><span className="text-muted-foreground">New Status</span><span className="font-semibold">{status}</span></div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
                     <InvoiceTotalsSection totals={editTotals} isAdmin={true} roundOff={editRoundOff} gstMode={editGstMode} />
                   </>
                 )}
