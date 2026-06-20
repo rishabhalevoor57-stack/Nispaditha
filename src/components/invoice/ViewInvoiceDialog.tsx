@@ -120,6 +120,7 @@ export function ViewInvoiceDialog({
   const [editMetalRate, setEditMetalRate] = useState<MetalRateOption>('silver');
   const [editRoundOff, setEditRoundOff] = useState<number>(0);
   const [editGstMode, setEditGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
+  const [editPaidAmount, setEditPaidAmount] = useState<number>(0);
 
   const { toast } = useToast();
   const { user, userRole } = useAuth();
