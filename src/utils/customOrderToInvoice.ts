@@ -264,8 +264,16 @@ export async function convertCustomOrderToInvoice(
     description: l.description,
   }));
 
-  const { error: itemsErr } = await supabase.from('invoice_items').insert(itemsPayload);
-  if (itemsErr) throw itemsErr;
+  const { data: insertedItems, error: itemsErr } = await supabase
+    .from('invoice_items')
+    .insert(itemsPayload)
+    .select('id');
+  if (itemsErr || !insertedItems || insertedItems.length === 0) {
+    // Rollback the orphan invoice so the user can retry cleanly
+    await supabase.from('invoices').delete().eq('id', (invoice as { id: string }).id);
+    console.error('[convertCustomOrderToInvoice] items insert failed', itemsErr, { count: itemsPayload.length, sample: itemsPayload[0] });
+    throw itemsErr || new Error('Could not save invoice line items — invoice rolled back. Please try again.');
+  }
 
   // 8. Mark the custom order as converted
   await supabase
