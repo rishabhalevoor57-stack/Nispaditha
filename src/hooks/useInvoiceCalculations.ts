@@ -86,8 +86,10 @@ export function useInvoiceCalculations(
     const makingCharges = makingChargesPerGram * product.weight_grams * 1;
     const discount = 0;
     const discountedMaking = makingCharges - discount;
+    // Weight-based: ALWAYS compute MRP from current dashboard rate (weight × live rate + MC).
+    // Stored product.mrp is ignored for weight-based items so billing tracks live silver/gold rate.
     const grossMrp = calculateGrossMrp(basePrice, makingCharges);
-    const mrp = product.mrp > 0 ? product.mrp : grossMrp;
+    const mrp = grossMrp;
     const lineTotal = Math.max(0, mrp - discount);
 
     return {
