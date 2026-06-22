@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
 import { CustomOrderComponentsTable } from './CustomOrderComponentsTable';
+import { CustomOrderItemsTable } from './CustomOrderItemsTable';
 import { CustomOrder, CustomOrderItem, CustomOrderComponent, CustomOrderStatus, CUSTOM_ORDER_STATUS_LABELS, CustomerSuppliedMaterial, ExtraCharge } from '@/types/customOrder';
 import { Plus, X } from 'lucide-react';
 import { useCustomOrders } from '@/hooks/useCustomOrders';
