@@ -356,6 +356,17 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
             </CardContent>
           </Card>
 
+          {/* Order Items — finished jewellery pieces being made */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Order Items</CardTitle>
+              <p className="text-xs text-muted-foreground">Finished pieces being made for this order (Necklace, Bracelet, Mala, Pendant Set, etc.).</p>
+            </CardHeader>
+            <CardContent>
+              <CustomOrderItemsTable items={items} onChange={setItems} silverRate={silverRate} orderId={order?.id} />
+            </CardContent>
+          </Card>
+
           {/* Customer Items Supplied */}
           <Card>
             <CardHeader className="pb-3">
