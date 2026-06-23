@@ -111,6 +111,40 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToIn
 
           <Separator />
 
+          {/* Order Items — finished jewellery pieces being made */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Order Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p className="text-muted-foreground text-center py-3 text-sm">Loading...</p>
+              ) : items.length === 0 ? (
+                <p className="text-muted-foreground text-center py-3 text-sm">None</p>
+              ) : (
+                <div className="space-y-2 text-sm">
+                  {items.map((it, i) => (
+                    <div key={i} className="flex justify-between items-start border-b pb-1.5 last:border-0">
+                      <div className="flex-1 pr-3">
+                        <p className="font-medium">{it.item_description || 'Custom Item'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {it.sku ? `${it.sku} • ` : ''}
+                          {it.pricing_mode === 'flat_price'
+                            ? `Flat • Qty ${it.quantity || 1}`
+                            : `${it.expected_weight || 0}g × Qty ${it.quantity || 1}${it.rate_per_gram ? ` @ ₹${it.rate_per_gram}/g` : ''}${it.mc_per_gram ? ` + MC ₹${it.mc_per_gram}/g` : ''}`}
+                        </p>
+                        {it.customization_notes ? (
+                          <p className="text-xs text-muted-foreground italic mt-0.5">{it.customization_notes}</p>
+                        ) : null}
+                      </div>
+                      <span className="font-semibold whitespace-nowrap">₹{(Number(it.item_total) || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Customer Supplied Materials (descriptive) */}
           <Card>
             <CardHeader className="pb-3">
