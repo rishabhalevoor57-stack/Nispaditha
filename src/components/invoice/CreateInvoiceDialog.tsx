@@ -417,12 +417,11 @@ export function CreateInvoiceDialog({
         paymentStatusUI === 'PAID' ? 'paid' : paymentStatusUI === 'PARTIAL' ? 'partial' : 'pending';
       const primaryPayMode = combinedPaymentLabel;
 
-      const existingPayloadIndex = editingDraftId && typeof (await supabase.from('invoices').select('notes').eq('id', editingDraftId).maybeSingle()).data?.notes === 'string'
-        ? ((await supabase.from('invoices').select('notes').eq('id', editingDraftId).maybeSingle()).data as { notes?: string })?.notes?.indexOf('CUSTOM_ORDER_DETAILS_JSON:') ?? -1
-        : -1;
-      const existingNotes = editingDraftId
-        ? ((await supabase.from('invoices').select('notes').eq('id', editingDraftId).maybeSingle()).data as { notes?: string } | null)?.notes || ''
-        : '';
+      const { data: existingDraft } = editingDraftId
+        ? await supabase.from('invoices').select('notes').eq('id', editingDraftId).maybeSingle()
+        : { data: null };
+      const existingNotes = ((existingDraft as { notes?: string } | null)?.notes || '');
+      const existingPayloadIndex = existingNotes.indexOf('CUSTOM_ORDER_DETAILS_JSON:');
       const preservedPayload = existingPayloadIndex >= 0 ? `\n\n${existingNotes.slice(existingPayloadIndex)}` : '';
 
       const invoicePayload = {
