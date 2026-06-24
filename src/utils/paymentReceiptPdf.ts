@@ -190,7 +190,7 @@ export async function downloadPaymentReceipt(data: ReceiptPdfData) {
   if (data.notes) {
     y += 3;
     doc.setTextColor(90, 90, 90);
-    doc.setFont(FONT, 'italic');
+    doc.setFont(FONT, 'normal');
     doc.setFontSize(8);
     doc.text(`Note: ${data.notes}`, margin, y, { maxWidth: pageW - margin * 2 });
   }
