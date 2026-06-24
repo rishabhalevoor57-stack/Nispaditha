@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CustomOrder, CustomOrderItem, CustomOrderComponent, CustomOrderStatus } from '@/types/customOrder';
 import { toast } from '@/hooks/use-toast';
 import { ensureClient } from '@/utils/ensureClient';
+import { syncCustomOrderInvoice } from '@/utils/customOrderToInvoice';
 
 export const useCustomOrders = () => {
   const queryClient = useQueryClient();
@@ -190,9 +191,16 @@ export const useCustomOrders = () => {
       if (data.order.status !== 'released') {
         await lockSkus(data.items, data.id);
       }
+
+      const convertedInvoiceId = (data.order as CustomOrder).converted_to_invoice_id;
+      if (convertedInvoiceId) {
+        const full = await getOrderWithItems(data.id);
+        await syncCustomOrderInvoice(full, full.items, full.components);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast({ title: 'Custom order updated successfully' });
     },
     onError: (error: Error) => {
