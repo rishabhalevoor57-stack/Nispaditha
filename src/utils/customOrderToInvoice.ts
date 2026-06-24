@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { CustomOrder, CustomOrderItem, CustomOrderComponent } from '@/types/customOrder';
+import type { InvoiceCustomOrderDetails } from '@/types/invoice';
 
 export interface ConvertOptions {
   finalize?: boolean; // true = sent/paid, false = draft
@@ -27,6 +28,112 @@ interface LineItemInput {
   mrp: number;
   description: string | null;
 }
+
+const money = (amount: number): string =>
+  `₹${new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount) || 0)}`;
+
+const buildCustomOrderDetails = (
+  order: CustomOrder,
+  items: CustomOrderItem[],
+  components: CustomOrderComponent[],
+  charges: Array<{ label: string; amount: number }>,
+): InvoiceCustomOrderDetails => ({
+  referenceNumber: order.reference_number,
+  orderDate: order.order_date,
+  expectedDeliveryDate: order.expected_delivery_date,
+  gstMode: order.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive',
+  gstPercentage: Number(order.gst_percentage) || 0,
+  notes: order.notes || null,
+  orderItems: items
+    .filter((it) => (it.item_description || '').trim())
+    .map((it) => ({
+      name: it.item_description || 'Custom Jewellery Piece',
+      sku: it.sku || null,
+      category: it.category || null,
+      quantity: Number(it.quantity) || 1,
+      weight_grams: Number(it.expected_weight) || 0,
+      pricing_mode: it.pricing_mode === 'flat_price' ? 'flat_price' : 'weight_based',
+      rate_per_gram: Number(it.rate_per_gram) || 0,
+      making_charges: Number(it.mc_amount) || 0,
+      discount: Number(it.discount) || 0,
+      line_total: Number(it.item_total) || 0,
+      description: it.customization_notes || null,
+      reference_image_url: it.reference_image_url || null,
+    })),
+  customerMaterials: (order.customer_materials || [])
+    .filter((m) => (m.name || '').trim())
+    .map((m) => ({
+      name: m.name,
+      description: m.description || undefined,
+      quantity: Number(m.quantity) || undefined,
+      weight_grams: Number(m.weight_grams) || undefined,
+    })),
+  components: components
+    .filter((c) => (c.component_name || '').trim())
+    .map((c) => ({
+      name: c.component_name,
+      material: c.material || null,
+      quantity: Number(c.quantity) || 1,
+      weight_grams: Number(c.weight_grams) || 0,
+      unit_price: Number(c.unit_price) || 0,
+      rate_per_gram: Number(c.rate_per_gram) || 0,
+      total: Number(c.total) || 0,
+    })),
+  charges,
+});
+
+const buildCustomOrderNotes = (order: CustomOrder, details: InvoiceCustomOrderDetails): string => {
+  const notesParts: string[] = [`Converted from Custom Order ${order.reference_number}`];
+
+  if (details.orderItems.length) {
+    notesParts.push('\nORDER ITEMS:');
+    details.orderItems.forEach((item) => {
+      const meta: string[] = [];
+      if (item.sku) meta.push(item.sku);
+      if (item.pricing_mode === 'weight_based' && item.weight_grams) meta.push(`${item.weight_grams}g`);
+      if (item.quantity) meta.push(`Qty: ${item.quantity}`);
+      if (item.line_total) meta.push(money(item.line_total));
+      notesParts.push(`• ${item.name}${meta.length ? ` — ${meta.join(' — ')}` : ''}`);
+      if (item.description) notesParts.push(`  ${item.description}`);
+    });
+  }
+
+  if (details.customerMaterials.length) {
+    notesParts.push('\nCUSTOMER SUPPLIED ITEMS:');
+    details.customerMaterials.forEach((m) => {
+      const meta: string[] = [];
+      if (m.quantity) meta.push(`Qty: ${m.quantity}`);
+      if (m.weight_grams) meta.push(`${m.weight_grams}g`);
+      if (m.description) meta.push(m.description);
+      notesParts.push(`• ${m.name}${meta.length ? ` — ${meta.join(' — ')}` : ''}`);
+    });
+  }
+
+  if (details.components.length) {
+    notesParts.push('\nNISPADITHA COMPONENTS USED:');
+    details.components.forEach((c) => {
+      const name = c.material ? `${c.name} (${c.material})` : c.name;
+      const meta: string[] = [`Qty: ${c.quantity}`];
+      if (c.weight_grams) meta.push(`${c.weight_grams}g`);
+      if (c.total) meta.push(money(c.total));
+      notesParts.push(`• ${name} — ${meta.join(' — ')}`);
+    });
+  }
+
+  if (details.charges.length) {
+    notesParts.push('\nCHARGES:');
+    details.charges.forEach((charge) => notesParts.push(`• ${charge.label}: ${money(charge.amount)}`));
+  }
+
+  if (order.notes && order.notes.trim()) {
+    notesParts.push('\nNOTES:');
+    notesParts.push(order.notes.trim());
+  }
+
+  notesParts.push('\nCUSTOM_ORDER_DETAILS_JSON:' + JSON.stringify(details));
+
+  return notesParts.join('\n');
+};
 
 /**
  * Resolve or create a client by phone/name. Returns client id (or null).
@@ -133,6 +240,8 @@ export async function convertCustomOrderToInvoice(
     ...((order.extra_charges || []).map(c => ({ label: c.label, amount: Number(c.amount) || 0 }))),
   ].filter(c => c.amount > 0 && c.label);
 
+  const customOrderDetails = buildCustomOrderDetails(order, items, components, chargeLines);
+
   for (const ch of chargeLines) {
     lines.push({
       product_id: null,
@@ -191,27 +300,8 @@ export async function convertCustomOrderToInvoice(
     subtotalForInvoice = linesSubtotal;
   }
 
-  // 5. Build customer-materials descriptive note
-  const materialsNote = (order.customer_materials || [])
-    .filter(m => (m.name || '').trim())
-    .map(m => {
-      const parts = [m.name];
-      if (m.quantity) parts.push(`Qty: ${m.quantity}`);
-      if (m.weight_grams) parts.push(`${m.weight_grams}g`);
-      if (m.description) parts.push(m.description);
-      return `• ${parts.join(' — ')}`;
-    });
-
-  const notesParts: string[] = [];
-  notesParts.push(`Converted from Custom Order ${order.reference_number}`);
-  if (materialsNote.length) {
-    notesParts.push('\nCustomer Materials Supplied:');
-    notesParts.push(...materialsNote);
-  }
-  if (order.notes && order.notes.trim()) {
-    notesParts.push('\n' + order.notes.trim());
-  }
-  const combinedNotes = notesParts.join('\n');
+  // 5. Build full custom-order note payload for invoice preview/PDF/history/edit reloads
+  const combinedNotes = buildCustomOrderNotes(order, customOrderDetails);
 
   // 6. Insert invoice
   const invoicePayload = {
@@ -234,6 +324,7 @@ export async function convertCustomOrderToInvoice(
     gst_mode: gstMode,
     round_off: 0,
     created_by: opts.createdBy || null,
+    client_source: 'custom_order',
   };
 
   const { data: invoice, error: invErr } = await supabase
