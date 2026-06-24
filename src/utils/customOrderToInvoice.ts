@@ -32,6 +32,16 @@ interface LineItemInput {
 const money = (amount: number): string =>
   `₹${new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount) || 0)}`;
 
+const buildChargeLines = (order: CustomOrder): Array<{ label: string; amount: number }> => [
+  { label: 'Making Charges', amount: Number(order.making_charges) || 0 },
+  { label: 'Design Charges', amount: Number(order.design_charges) || 0 },
+  { label: 'Labour Charges', amount: Number(order.labour_charges) || 0 },
+  { label: 'Polishing Charges', amount: Number(order.polishing_charges) || 0 },
+  { label: 'Repair Charges', amount: Number(order.repair_charges) || 0 },
+  { label: order.additional_charge_label || 'Additional Charge', amount: Number(order.additional_charge) || 0 },
+  ...((order.extra_charges || []).map(c => ({ label: c.label, amount: Number(c.amount) || 0 }))),
+].filter(c => c.amount > 0 && c.label);
+
 const buildCustomOrderDetails = (
   order: CustomOrder,
   items: CustomOrderItem[],
@@ -84,47 +94,6 @@ const buildCustomOrderDetails = (
 
 const buildCustomOrderNotes = (order: CustomOrder, details: InvoiceCustomOrderDetails): string => {
   const notesParts: string[] = [`Converted from Custom Order ${order.reference_number}`];
-
-  if (details.orderItems.length) {
-    notesParts.push('\nORDER ITEMS:');
-    details.orderItems.forEach((item) => {
-      const meta: string[] = [];
-      if (item.sku) meta.push(item.sku);
-      if (item.pricing_mode === 'weight_based' && item.weight_grams) meta.push(`${item.weight_grams}g`);
-      if (item.quantity) meta.push(`Qty: ${item.quantity}`);
-      if (item.line_total) meta.push(money(item.line_total));
-      notesParts.push(`• ${item.name}${meta.length ? ` — ${meta.join(' — ')}` : ''}`);
-      if (item.description) notesParts.push(`  ${item.description}`);
-    });
-  }
-
-  if (details.customerMaterials.length) {
-    notesParts.push('\nCUSTOMER SUPPLIED ITEMS:');
-    details.customerMaterials.forEach((m) => {
-      const meta: string[] = [];
-      if (m.quantity) meta.push(`Qty: ${m.quantity}`);
-      if (m.weight_grams) meta.push(`${m.weight_grams}g`);
-      if (m.description) meta.push(m.description);
-      notesParts.push(`• ${m.name}${meta.length ? ` — ${meta.join(' — ')}` : ''}`);
-    });
-  }
-
-  if (details.components.length) {
-    notesParts.push('\nNISPADITHA COMPONENTS USED:');
-    details.components.forEach((c) => {
-      const name = c.material ? `${c.name} (${c.material})` : c.name;
-      const meta: string[] = [`Qty: ${c.quantity}`];
-      if (c.weight_grams) meta.push(`${c.weight_grams}g`);
-      if (c.total) meta.push(money(c.total));
-      notesParts.push(`• ${name} — ${meta.join(' — ')}`);
-    });
-  }
-
-  if (details.charges.length) {
-    notesParts.push('\nCHARGES:');
-    details.charges.forEach((charge) => notesParts.push(`• ${charge.label}: ${money(charge.amount)}`));
-  }
-
   if (order.notes && order.notes.trim()) {
     notesParts.push('\nNOTES:');
     notesParts.push(order.notes.trim());
@@ -134,6 +103,154 @@ const buildCustomOrderNotes = (order: CustomOrder, details: InvoiceCustomOrderDe
 
   return notesParts.join('\n');
 };
+
+const buildInvoiceLines = (
+  order: CustomOrder,
+  items: CustomOrderItem[],
+  components: CustomOrderComponent[],
+  chargeLines: Array<{ label: string; amount: number }>,
+): LineItemInput[] => {
+  const lines: LineItemInput[] = [];
+
+  for (const it of items) {
+    const lineTotal = Number(it.item_total) || 0;
+    const isFlat = it.pricing_mode === 'flat_price';
+    const mrp = isFlat
+      ? ((Number(it.flat_price) || lineTotal) * (Number(it.quantity) || 1))
+      : (Number(it.base_price) || 0) + (Number(it.mc_amount) || 0);
+    lines.push({
+      product_id: it.product_id || null,
+      product_name: it.item_description || 'Custom Item',
+      category: it.category || 'Custom Order',
+      quantity: it.quantity || 1,
+      weight_grams: isFlat ? 0 : (Number(it.expected_weight) || 0),
+      rate_per_gram: isFlat ? 0 : (Number(it.rate_per_gram) || 0),
+      gold_value: Number(it.base_price) || 0,
+      making_charges: isFlat ? 0 : (Number(it.mc_amount) || 0),
+      discount: Number(it.discount) || 0,
+      discounted_making: isFlat ? 0 : Math.max(0, (Number(it.mc_amount) || 0) - (Number(it.discount) || 0)),
+      subtotal: lineTotal,
+      mrp: Math.max(0, mrp || lineTotal),
+      description: it.customization_notes || null,
+    });
+  }
+
+  for (const c of components) {
+    const lineTotal = Number(c.total) || 0;
+    const wt = Number(c.weight_grams) || 0;
+    const qty = Number(c.quantity) || 1;
+    const isWeightBased = (Number(c.rate_per_gram) || 0) > 0 && wt > 0;
+    lines.push({
+      product_id: null,
+      product_name: c.component_name + (c.material ? ` (${c.material})` : ''),
+      category: 'Component',
+      quantity: qty,
+      weight_grams: isWeightBased ? wt : 0,
+      rate_per_gram: isWeightBased ? (Number(c.rate_per_gram) || 0) : 0,
+      gold_value: isWeightBased ? wt * (Number(c.rate_per_gram) || 0) * qty : 0,
+      making_charges: 0,
+      discount: 0,
+      discounted_making: 0,
+      subtotal: lineTotal,
+      mrp: lineTotal,
+      description: null,
+    });
+  }
+
+  for (const ch of chargeLines) {
+    lines.push({
+      product_id: null,
+      product_name: ch.label,
+      category: 'Service Charge',
+      quantity: 1,
+      weight_grams: 0,
+      rate_per_gram: 0,
+      gold_value: 0,
+      making_charges: 0,
+      discount: 0,
+      discounted_making: 0,
+      subtotal: ch.amount,
+      mrp: ch.amount,
+      description: null,
+    });
+  }
+
+  if (lines.length === 0) {
+    lines.push({
+      product_id: null,
+      product_name: `Custom Order ${order.reference_number}`,
+      category: 'Custom Order',
+      quantity: 1,
+      weight_grams: 0,
+      rate_per_gram: 0,
+      gold_value: 0,
+      making_charges: 0,
+      discount: 0,
+      discounted_making: 0,
+      subtotal: Number(order.total_amount) || 0,
+      mrp: Number(order.total_amount) || 0,
+      description: null,
+    });
+  }
+
+  return lines;
+};
+
+const buildInvoiceData = (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => {
+  const chargeLines = buildChargeLines(order);
+  const details = buildCustomOrderDetails(order, items, components, chargeLines);
+  const lines = buildInvoiceLines(order, items, components, chargeLines);
+  const linesSubtotal = lines.reduce((s, l) => s + l.subtotal, 0);
+  const discount = Number(order.flat_discount) || 0;
+  const taxableBase = Math.max(0, linesSubtotal - discount);
+  const pct = Number(order.gst_percentage) || 0;
+  const gstMode = order.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive';
+  let gstAmount = 0;
+  let grandTotal = 0;
+  let subtotalForInvoice = taxableBase;
+  if (gstMode === 'inclusive') {
+    const divisor = 1 + pct / 100;
+    const taxable = divisor > 0 ? taxableBase / divisor : taxableBase;
+    gstAmount = Math.max(0, taxableBase - taxable);
+    grandTotal = taxableBase;
+    subtotalForInvoice = taxable + discount;
+  } else {
+    gstAmount = taxableBase * (pct / 100);
+    grandTotal = taxableBase + gstAmount;
+    subtotalForInvoice = linesSubtotal;
+  }
+  return {
+    lines,
+    details,
+    notes: buildCustomOrderNotes(order, details),
+    subtotalForInvoice,
+    discount,
+    gstAmount,
+    grandTotal,
+    pct,
+    gstMode,
+  };
+};
+
+const buildItemsPayload = (invoiceId: string, lines: LineItemInput[]) => lines.map(l => ({
+  invoice_id: invoiceId,
+  product_id: l.product_id,
+  product_name: l.product_name,
+  category: l.category,
+  quantity: l.quantity,
+  weight_grams: l.weight_grams,
+  rate_per_gram: l.rate_per_gram,
+  gold_value: l.gold_value,
+  making_charges: l.making_charges,
+  discount: l.discount,
+  discounted_making: l.discounted_making,
+  subtotal: l.subtotal,
+  gst_percentage: 0,
+  gst_amount: 0,
+  total: l.subtotal,
+  mrp: l.mrp,
+  description: l.description,
+}));
 
 /**
  * Resolve or create a client by phone/name. Returns client id (or null).
