@@ -7,6 +7,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText } from 'lucide-react';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
+import { getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
 
 interface PaymentBreakdownEntry {
   mode: string;
@@ -20,6 +21,8 @@ interface InvoicePreviewModalProps {
   invoiceDate: string;
   clientName: string;
   clientPhone: string;
+  clientAddress?: string;
+  clientGstNumber?: string;
   paymentMode: string;
   items: InvoiceItem[];
   totals: InvoiceTotals;
@@ -73,6 +76,8 @@ export function InvoicePreviewModal({
   invoiceDate,
   clientName,
   clientPhone,
+  clientAddress,
+  clientGstNumber,
   paymentMode,
   items,
   totals,
@@ -89,6 +94,9 @@ export function InvoicePreviewModal({
   if (!businessSettings) return null;
 
   const isInclusive = gstMode === 'inclusive';
+  const customOrderDetails = getCustomOrderDetailsFromNotes(notes);
+  const showCustomOrderDetails = hasCustomOrderDetails(customOrderDetails);
+  const cleanNotes = stripCustomOrderPayload(notes);
 
   const dateStr = new Date(invoiceDate).toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -228,6 +236,12 @@ export function InvoicePreviewModal({
                 {clientPhone && (
                   <div className="text-[11px] text-gray-500 mt-0.5">{clientPhone}</div>
                 )}
+                {clientAddress && (
+                  <div className="text-[10px] text-gray-500 mt-0.5 max-w-[340px]">{clientAddress}</div>
+                )}
+                {clientGstNumber && (
+                  <div className="text-[10px] text-gray-500 mt-0.5">GSTIN: {clientGstNumber}</div>
+                )}
               </div>
               {metalRateLabel && (
                 <div
@@ -238,6 +252,79 @@ export function InvoicePreviewModal({
                 </div>
               )}
             </div>
+
+            {showCustomOrderDetails && customOrderDetails && (
+              <div className="px-6 pb-3 space-y-2 text-[10.5px]">
+                {customOrderDetails.referenceNumber && (
+                  <div className="font-bold" style={{ color: PURPLE }}>
+                    Custom Order: {customOrderDetails.referenceNumber}
+                  </div>
+                )}
+
+                {customOrderDetails.orderItems.length > 0 && (
+                  <div className="border rounded overflow-hidden" style={{ borderColor: '#e5e0ee' }}>
+                    <div className="px-3 py-1 font-bold uppercase tracking-wider" style={{ background: PURPLE_LIGHT, color: PURPLE }}>Order Items</div>
+                    <div className="divide-y" style={{ borderColor: '#eee' }}>
+                      {customOrderDetails.orderItems.map((item, idx) => (
+                        <div key={idx} className="px-3 py-1.5 flex justify-between gap-3">
+                          <div>
+                            <span className="font-semibold">• {item.name}</span>
+                            <span className="text-gray-500"> {item.sku ? `— ${item.sku}` : ''}{item.weight_grams ? ` — ${item.weight_grams}g` : ''}{item.quantity ? ` — Qty ${item.quantity}` : ''}</span>
+                            {item.description && <div className="text-gray-500 italic ml-3">{item.description}</div>}
+                          </div>
+                          <span style={num}>{money(item.line_total)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {customOrderDetails.customerMaterials.length > 0 && (
+                  <div className="border rounded overflow-hidden" style={{ borderColor: '#e5e0ee' }}>
+                    <div className="px-3 py-1 font-bold uppercase tracking-wider" style={{ background: PURPLE_LIGHT, color: PURPLE }}>Customer Supplied Items</div>
+                    <div className="px-3 py-1.5 grid grid-cols-1 gap-1">
+                      {customOrderDetails.customerMaterials.map((item, idx) => (
+                        <div key={idx}>
+                          <span className="font-semibold">• {item.name}</span>
+                          <span className="text-gray-500">{item.quantity ? ` — Qty ${item.quantity}` : ''}{item.weight_grams ? ` — ${item.weight_grams}g` : ''}{item.description ? ` — ${item.description}` : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {customOrderDetails.components.length > 0 && (
+                  <div className="border rounded overflow-hidden" style={{ borderColor: '#e5e0ee' }}>
+                    <div className="px-3 py-1 font-bold uppercase tracking-wider" style={{ background: PURPLE_LIGHT, color: PURPLE }}>Nispaditha Components Used</div>
+                    <div className="divide-y" style={{ borderColor: '#eee' }}>
+                      {customOrderDetails.components.map((item, idx) => (
+                        <div key={idx} className="px-3 py-1.5 flex justify-between gap-3">
+                          <div>
+                            <span className="font-semibold">• {item.name}{item.material ? ` (${item.material})` : ''}</span>
+                            <span className="text-gray-500"> — Qty {item.quantity}{item.weight_grams ? ` — ${item.weight_grams}g` : ''}</span>
+                          </div>
+                          <span style={num}>{money(item.total)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {customOrderDetails.charges.length > 0 && (
+                  <div className="border rounded overflow-hidden" style={{ borderColor: '#e5e0ee' }}>
+                    <div className="px-3 py-1 font-bold uppercase tracking-wider" style={{ background: PURPLE_LIGHT, color: PURPLE }}>Charges</div>
+                    <div className="divide-y" style={{ borderColor: '#eee' }}>
+                      {customOrderDetails.charges.map((charge, idx) => (
+                        <div key={idx} className="px-3 py-1.5 flex justify-between gap-3">
+                          <span>• {charge.label}</span>
+                          <span style={num}>{money(charge.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* PRODUCT TABLE */}
             <div className="px-6">
@@ -481,8 +568,8 @@ export function InvoicePreviewModal({
             </div>
 
 
-            {notes && (
-              <div className="px-6 mt-4 text-[10px] italic text-gray-500">Note: {notes}</div>
+            {cleanNotes && (
+              <div className="px-6 mt-4 text-[10px] italic text-gray-500">Note: {cleanNotes}</div>
             )}
 
             {/* SIGNATURE — Authorized only (right) */}
