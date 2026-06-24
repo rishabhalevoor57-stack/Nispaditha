@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { InvoiceItem, InvoiceTotals, BusinessSettings } from '@/types/invoice';
 import { ensureNotoLoaded, registerNotoFont } from './pdfFont';
+import { getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from './invoiceCustomOrderDetails';
 
 interface PaymentBreakdownEntry {
   mode: string;
@@ -13,6 +14,8 @@ interface InvoicePdfData {
   invoiceDate: string;
   clientName: string;
   clientPhone: string;
+  clientAddress?: string;
+  clientGstNumber?: string;
   paymentMode: string;
   items: InvoiceItem[];
   totals: InvoiceTotals;
@@ -142,6 +145,9 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const roundOff = data.roundOff ?? 0;
   const advancePaid = data.advancePaid ?? 0;
   const storeCreditsUsed = data.storeCreditsUsed ?? 0;
+  const customOrderDetails = getCustomOrderDetailsFromNotes(data.notes);
+  const showCustomOrderDetails = hasCustomOrderDetails(customOrderDetails);
+  const cleanNotes = stripCustomOrderPayload(data.notes);
 
   // ================== HEADER (white with bold purple bottom border) ==================
   const headerHeight = 22;
@@ -255,6 +261,22 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.setTextColor(110, 110, 110);
     doc.text(data.clientPhone, margin, yPos + 10);
   }
+  let billToExtraY = yPos + 15;
+  if (data.clientAddress) {
+    doc.setFont(FONT, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(110, 110, 110);
+    const wrappedAddress = doc.splitTextToSize(data.clientAddress, contentWidth / 2) as string[];
+    doc.text(wrappedAddress, margin, billToExtraY);
+    billToExtraY += wrappedAddress.length * 3.2;
+  }
+  if (data.clientGstNumber) {
+    doc.setFont(FONT, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(110, 110, 110);
+    doc.text(`Customer GSTIN: ${data.clientGstNumber}`, margin, billToExtraY);
+    billToExtraY += 3.5;
+  }
   // Metal rate badge on the right side
   if (data.metalRateLabel) {
     const pageW = doc.internal.pageSize.getWidth();
@@ -274,8 +296,52 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.setTextColor(...PURPLE);
     doc.text(label, boxX + padX, boxY + 4.2);
   }
-  yPos += 14;
+  yPos = Math.max(yPos + 14, billToExtraY + 1);
   doc.setTextColor(0, 0, 0);
+
+  if (showCustomOrderDetails && customOrderDetails) {
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...PURPLE);
+    doc.text(`Custom Order: ${customOrderDetails.referenceNumber}`, margin, yPos);
+    yPos += 4;
+
+    const drawDetailTable = (title: string, rows: Array<[string, string]>) => {
+      if (rows.length === 0) return;
+      autoTable(doc, {
+        body: rows.map(([label, value]) => ({ label, value })),
+        columns: [
+          { header: title, dataKey: 'label' },
+          { header: 'Amount / Details', dataKey: 'value' },
+        ],
+        startY: yPos,
+        margin: { left: margin, right: margin },
+        tableWidth: contentWidth,
+        styles: { font: FONT, fontSize: 7.5, cellPadding: 1.6, lineWidth: 0.1, lineColor: [225, 220, 235], overflow: 'linebreak' },
+        headStyles: { font: FONT, fillColor: PURPLE_LIGHT, textColor: PURPLE, fontStyle: 'bold', fontSize: 7.5, cellPadding: 1.7 },
+        columnStyles: { 0: { cellWidth: contentWidth * 0.66 }, 1: { cellWidth: contentWidth * 0.34, halign: 'right' } },
+      });
+      yPos = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 2;
+    };
+
+    drawDetailTable('ORDER ITEMS', customOrderDetails.orderItems.map((item) => {
+      const meta = [item.sku, item.weight_grams ? `${item.weight_grams}g` : '', `Qty ${item.quantity}`].filter(Boolean).join(' · ');
+      return [`• ${item.name}${meta ? ` — ${meta}` : ''}${item.description ? `\n${item.description}` : ''}`, money(item.line_total)];
+    }));
+
+    drawDetailTable('CUSTOMER SUPPLIED ITEMS', customOrderDetails.customerMaterials.map((item) => {
+      const meta = [item.quantity ? `Qty ${item.quantity}` : '', item.weight_grams ? `${item.weight_grams}g` : '', item.description || ''].filter(Boolean).join(' · ');
+      return [`• ${item.name}${meta ? ` — ${meta}` : ''}`, 'Reference only'];
+    }));
+
+    drawDetailTable('NISPADITHA COMPONENTS USED', customOrderDetails.components.map((item) => {
+      const name = `${item.name}${item.material ? ` (${item.material})` : ''}`;
+      const meta = [`Qty ${item.quantity}`, item.weight_grams ? `${item.weight_grams}g` : ''].filter(Boolean).join(' · ');
+      return [`• ${name} — ${meta}`, money(item.total)];
+    }));
+
+    drawDetailTable('CHARGES', customOrderDetails.charges.map((charge) => [`• ${charge.label}`, money(charge.amount)]));
+  }
 
   // ================== PRODUCT TABLE ==================
   const tableColumns = [
@@ -616,11 +682,11 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(0, 0, 0);
   doc.setLineWidth(0.1);
 
-  if (data.notes) {
+  if (cleanNotes) {
     doc.setFont(FONT, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(90, 90, 90);
-    doc.text(`Note: ${data.notes}`, margin, yPos, { maxWidth: contentWidth });
+    doc.text(`Note: ${cleanNotes}`, margin, yPos, { maxWidth: contentWidth });
     yPos += 6;
   }
 
