@@ -561,15 +561,18 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.setLineWidth(0.1);
   }
   if (isOverpaid) {
+    doc.setFillColor(...ORANGE_BG);
+    doc.setDrawColor(...ORANGE);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(rightX, rightInnerY, rightW, boxH, 1, 1, 'FD');
     doc.setTextColor(...ORANGE);
-    doc.setFont(FONT, 'normal');
-    doc.setFontSize(8);
-    doc.text(
-      `Excess: ${money(paidTotal - grandTotalWithRound)} (to be adjusted)`,
-      rightX + 3,
-      rightInnerY + 3,
-    );
-    rightInnerY += 5;
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(9);
+    doc.text('Excess Received', rightX + 3, rightInnerY + 5.7);
+    doc.setFontSize(10);
+    doc.text(money(paidTotal - grandTotalWithRound), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+    rightInnerY += boxH + 1.5;
+    doc.setLineWidth(0.1);
   }
 
 
