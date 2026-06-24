@@ -23,6 +23,56 @@ export interface Client {
   gst_number: string | null;
 }
 
+export interface InvoiceCustomOrderItemDetail {
+  name: string;
+  sku?: string | null;
+  category?: string | null;
+  quantity: number;
+  weight_grams: number;
+  pricing_mode: PricingMode;
+  rate_per_gram: number;
+  making_charges: number;
+  discount: number;
+  line_total: number;
+  description?: string | null;
+  reference_image_url?: string | null;
+}
+
+export interface InvoiceCustomerMaterialDetail {
+  name: string;
+  description?: string;
+  quantity?: number;
+  weight_grams?: number;
+}
+
+export interface InvoiceCustomOrderComponentDetail {
+  name: string;
+  material?: string | null;
+  quantity: number;
+  weight_grams: number;
+  unit_price: number;
+  rate_per_gram: number;
+  total: number;
+}
+
+export interface InvoiceChargeDetail {
+  label: string;
+  amount: number;
+}
+
+export interface InvoiceCustomOrderDetails {
+  referenceNumber: string;
+  orderDate?: string | null;
+  expectedDeliveryDate?: string | null;
+  gstMode?: 'exclusive' | 'inclusive';
+  gstPercentage?: number;
+  notes?: string | null;
+  orderItems: InvoiceCustomOrderItemDetail[];
+  customerMaterials: InvoiceCustomerMaterialDetail[];
+  components: InvoiceCustomOrderComponentDetail[];
+  charges: InvoiceChargeDetail[];
+}
+
 export interface BusinessSettings {
   id: string;
   business_name: string;
@@ -51,7 +101,7 @@ export interface Invoice {
   notes: string | null;
   created_at: string;
   client_id: string | null;
-  clients?: { name: string; phone: string | null } | null;
+  clients?: { name: string; phone: string | null; address?: string | null; gst_number?: string | null } | null;
   status: InvoiceStatus;
   sent_at: string | null;
   paid_at: string | null;

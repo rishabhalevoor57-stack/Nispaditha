@@ -55,7 +55,7 @@ export default function Invoices() {
     try {
       const { data, error } = await supabase
         .from('invoices')
-        .select('*, clients(name, phone)')
+        .select('*, clients(name, phone, address, gst_number)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -151,6 +151,8 @@ export default function Invoices() {
       invoiceDate: invoice.invoice_date,
       clientName: invoice.clients?.name || 'Walk-in Customer',
       clientPhone: invoice.clients?.phone || '',
+      clientAddress: invoice.clients?.address || '',
+      clientGstNumber: invoice.clients?.gst_number || '',
       paymentMode: invoice.payment_mode || 'cash',
       items: invoiceItems,
       totals,

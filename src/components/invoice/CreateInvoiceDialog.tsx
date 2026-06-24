@@ -36,6 +36,7 @@ import { useActivityLogger } from '@/hooks/useActivityLog';
 import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import { adjustWallet, getWalletBalance } from '@/hooks/useStoreWallet';
 import { Wallet } from 'lucide-react';
+import { stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
 
 
@@ -202,7 +203,7 @@ export function CreateInvoiceDialog({
 
       setSelectedClient(inv.client_id || 'walk-in');
       setInvoiceDate(new Date(inv.invoice_date));
-      setNotes(inv.notes || '');
+      setNotes(stripCustomOrderPayload(inv.notes));
       setPaymentMode(inv.payment_mode || 'cash');
       setGstPct(Number(inv.gst_percentage) || 3);
       setGstMode(((inv as any).gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
@@ -416,6 +417,13 @@ export function CreateInvoiceDialog({
         paymentStatusUI === 'PAID' ? 'paid' : paymentStatusUI === 'PARTIAL' ? 'partial' : 'pending';
       const primaryPayMode = combinedPaymentLabel;
 
+      const { data: existingDraft } = editingDraftId
+        ? await supabase.from('invoices').select('notes').eq('id', editingDraftId).maybeSingle()
+        : { data: null };
+      const existingNotes = ((existingDraft as { notes?: string } | null)?.notes || '');
+      const existingPayloadIndex = existingNotes.indexOf('CUSTOM_ORDER_DETAILS_JSON:');
+      const preservedPayload = existingPayloadIndex >= 0 ? `\n\n${existingNotes.slice(existingPayloadIndex)}` : '';
+
       const invoicePayload = {
         invoice_number: invoiceNum,
         client_id: finalClientId,
@@ -437,7 +445,7 @@ export function CreateInvoiceDialog({
         combined_payment_label: combinedPaymentLabel,
         amount_after_credits: remainingAfterCredits,
         amount_paid_via_mode: effectiveAdvance,
-        notes: notes || null,
+        notes: `${notes || ''}${preservedPayload}`.trim() || null,
         status: computedPaymentStatus === 'paid' ? 'paid' : 'sent',
         client_source: clientSource,
         gst_percentage: gstPct,
@@ -603,6 +611,12 @@ export function CreateInvoiceDialog({
       const draftNumber = editingDraftId ? undefined : 'DRAFT-' + Date.now().toString(36).toUpperCase();
       const paymentOne = effectivePaymentBreakdown[0];
       const paymentTwo = effectivePaymentBreakdown[1];
+      const existingNotes = editingDraftId
+        ? ((await supabase.from('invoices').select('notes').eq('id', editingDraftId).maybeSingle()).data as { notes?: string } | null)?.notes || ''
+        : '';
+      const payloadIndex = existingNotes.indexOf('CUSTOM_ORDER_DETAILS_JSON:');
+      const preservedPayload = payloadIndex >= 0 ? `\n\n${existingNotes.slice(payloadIndex)}` : '';
+
       const draftPayload: any = {
         client_id: finalClientId,
         invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
@@ -623,7 +637,7 @@ export function CreateInvoiceDialog({
         combined_payment_label: combinedPaymentLabel,
         amount_after_credits: remainingAfterCredits,
         amount_paid_via_mode: 0,
-        notes: notes || null,
+        notes: `${notes || ''}${preservedPayload}`.trim() || null,
         status: 'draft',
         client_source: clientSource,
         gst_percentage: gstPct,
