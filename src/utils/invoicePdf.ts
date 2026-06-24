@@ -403,12 +403,11 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   yPos += rowGap;
 
   if (roundOff !== 0) {
-    doc.setFont(FONT, 'italic');
+    doc.setFont(FONT, 'normal');
     doc.setTextColor(120, 120, 120);
     const roLabel = roundOff >= 0 ? 'Round Off' : '- Round Off';
     doc.text(roLabel, totalsX, yPos);
     doc.text(money(Math.abs(roundOff)), valueX, yPos, { align: 'right' });
-    doc.setFont(FONT, 'normal');
     doc.setTextColor(60, 60, 60);
     yPos += rowGap;
   }
@@ -562,15 +561,18 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.setLineWidth(0.1);
   }
   if (isOverpaid) {
+    doc.setFillColor(...ORANGE_BG);
+    doc.setDrawColor(...ORANGE);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(rightX, rightInnerY, rightW, boxH, 1, 1, 'FD');
     doc.setTextColor(...ORANGE);
-    doc.setFont(FONT, 'normal');
-    doc.setFontSize(8);
-    doc.text(
-      `Excess: ${money(paidTotal - grandTotalWithRound)} (to be adjusted)`,
-      rightX + 3,
-      rightInnerY + 3,
-    );
-    rightInnerY += 5;
+    doc.setFont(FONT, 'bold');
+    doc.setFontSize(9);
+    doc.text('Excess Received', rightX + 3, rightInnerY + 5.7);
+    doc.setFontSize(10);
+    doc.text(money(paidTotal - grandTotalWithRound), rightX + rightW - 3, rightInnerY + 5.7, { align: 'right' });
+    rightInnerY += boxH + 1.5;
+    doc.setLineWidth(0.1);
   }
 
 
@@ -615,7 +617,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setLineWidth(0.1);
 
   if (data.notes) {
-    doc.setFont(FONT, 'italic');
+    doc.setFont(FONT, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(90, 90, 90);
     doc.text(`Note: ${data.notes}`, margin, yPos, { maxWidth: contentWidth });
