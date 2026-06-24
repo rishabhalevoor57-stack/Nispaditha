@@ -227,7 +227,7 @@ export function ViewInvoiceDialog({
     // Parse as local date to avoid UTC shift (yyyy-MM-dd -> midnight local)
     const [y, m, d] = (invoice.invoice_date || '').split('-').map(Number);
     setEditInvoiceDate(y && m && d ? new Date(y, m - 1, d) : new Date(invoice.invoice_date));
-    setEditNotes(invoice.notes || '');
+    setEditNotes(stripCustomOrderPayload(invoice.notes));
     setEditItems(getInvoiceItems());
     setEditRoundOff(Number(invoice.round_off) || 0);
     setEditGstMode((invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
@@ -300,6 +300,9 @@ export function ViewInvoiceDialog({
 
       const balanceDue = Math.max(0, Math.round((newGrandTotal - finalAdvancePaid) * 100) / 100);
 
+      const existingPayloadIndex = invoice.notes?.indexOf('CUSTOM_ORDER_DETAILS_JSON:') ?? -1;
+      const preservedPayload = existingPayloadIndex >= 0 ? `\n\n${invoice.notes?.slice(existingPayloadIndex)}` : '';
+
       const { error: updErr } = await supabase
         .from('invoices')
         .update({
@@ -307,7 +310,7 @@ export function ViewInvoiceDialog({
           payment_mode: editPaymentMode,
           payment_status: computedStatus,
           status: computedStatus === 'paid' ? 'paid' : (isDraft ? 'draft' : 'sent'),
-          notes: editNotes || null,
+          notes: `${editNotes || ''}${preservedPayload}`.trim() || null,
           subtotal: editTotals.subtotal,
           discount_amount: editTotals.discountAmount,
           gst_amount: editTotals.gstAmount,
