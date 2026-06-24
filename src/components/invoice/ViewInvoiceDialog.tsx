@@ -34,6 +34,7 @@ import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { adjustWallet } from '@/hooks/useStoreWallet';
 import { cn } from '@/lib/utils';
+import { stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals, InvoiceStatus, Product } from '@/types/invoice';
 import { format } from 'date-fns';
 
@@ -63,7 +64,7 @@ interface InvoiceDetails {
   created_at: string;
   client_id: string | null;
   gst_mode?: 'exclusive' | 'inclusive';
-  clients: { name: string; phone: string | null } | null;
+  clients: { name: string; phone: string | null; address?: string | null; gst_number?: string | null } | null;
 }
 
 interface InvoiceItemRow {
@@ -153,7 +154,7 @@ export function ViewInvoiceDialog({
     const [invoiceResult, itemsResult] = await Promise.all([
       supabase
         .from('invoices')
-        .select('*, clients(name, phone)')
+        .select('*, clients(name, phone, address, gst_number)')
         .eq('id', invoiceId)
         .single(),
       supabase
@@ -592,6 +593,8 @@ export function ViewInvoiceDialog({
       invoiceDate: invoice.invoice_date,
       clientName: invoice.clients?.name || 'Walk-in Customer',
       clientPhone: invoice.clients?.phone || '',
+        clientAddress: invoice.clients?.address || '',
+        clientGstNumber: invoice.clients?.gst_number || '',
       paymentMode: invoice.payment_mode || 'cash',
       items: getInvoiceItems(),
       totals: getTotals(),
@@ -616,6 +619,8 @@ export function ViewInvoiceDialog({
       invoiceDate: invoice.invoice_date,
       clientName: invoice.clients?.name || 'Walk-in Customer',
       clientPhone: invoice.clients?.phone || '',
+        clientAddress: invoice.clients?.address || '',
+        clientGstNumber: invoice.clients?.gst_number || '',
       paymentMode: invoice.payment_mode || 'cash',
       items: getInvoiceItems(),
       totals: getTotals(),
@@ -970,7 +975,7 @@ export function ViewInvoiceDialog({
                 {invoice.notes && (
                   <div className="text-sm">
                     <p className="text-muted-foreground">Notes:</p>
-                    <p className="italic">{invoice.notes}</p>
+                    <p className="italic whitespace-pre-wrap">{stripCustomOrderPayload(invoice.notes)}</p>
                   </div>
                 )}
 
@@ -1189,6 +1194,8 @@ export function ViewInvoiceDialog({
           invoiceDate={invoice.invoice_date}
           clientName={invoice.clients?.name || 'Walk-in Customer'}
           clientPhone={invoice.clients?.phone || ''}
+          clientAddress={invoice.clients?.address || ''}
+          clientGstNumber={invoice.clients?.gst_number || ''}
           paymentMode={invoice.payment_mode || 'cash'}
           items={getInvoiceItems()}
           totals={getTotals()}
