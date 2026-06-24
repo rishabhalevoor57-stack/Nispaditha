@@ -403,12 +403,11 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   yPos += rowGap;
 
   if (roundOff !== 0) {
-    doc.setFont(FONT, 'italic');
+    doc.setFont(FONT, 'normal');
     doc.setTextColor(120, 120, 120);
     const roLabel = roundOff >= 0 ? 'Round Off' : '- Round Off';
     doc.text(roLabel, totalsX, yPos);
     doc.text(money(Math.abs(roundOff)), valueX, yPos, { align: 'right' });
-    doc.setFont(FONT, 'normal');
     doc.setTextColor(60, 60, 60);
     yPos += rowGap;
   }
