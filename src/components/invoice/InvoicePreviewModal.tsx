@@ -467,8 +467,14 @@ export function InvoicePreviewModal({
                   </div>
                 ) : null}
                 {isOverpaid && (
-                  <div className="text-[10px] px-1" style={{ color: ORANGE }}>
-                    {`Excess: ${money(paidTotal - grandTotal)} (to be adjusted)`}
+                  <div
+                    className="rounded px-3 py-2 flex items-center justify-between"
+                    style={{ background: ORANGE_BG, border: `1px solid ${ORANGE}`, color: ORANGE }}
+                  >
+                    <span className="text-[10.5px] uppercase tracking-wider font-semibold">Excess Received</span>
+                    <span className="font-bold" style={{ ...num, fontSize: 13, minWidth: 90, textAlign: 'right' }}>
+                      {money(paidTotal - grandTotal)}
+                    </span>
                   </div>
                 )}
               </div>
