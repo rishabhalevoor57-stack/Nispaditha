@@ -252,6 +252,44 @@ const buildItemsPayload = (invoiceId: string, lines: LineItemInput[]) => lines.m
   description: l.description,
 }));
 
+export async function syncCustomOrderInvoice(
+  order: CustomOrder,
+  items: CustomOrderItem[],
+  components: CustomOrderComponent[],
+): Promise<void> {
+  if (!order.converted_to_invoice_id) return;
+
+  const invoiceId = order.converted_to_invoice_id;
+  const invoiceData = buildInvoiceData(order, items, components);
+
+  const { error: updateErr } = await supabase
+    .from('invoices')
+    .update({
+      subtotal: invoiceData.subtotalForInvoice,
+      discount_amount: invoiceData.discount,
+      gst_amount: invoiceData.gstAmount,
+      grand_total: invoiceData.grandTotal,
+      balance_due: invoiceData.grandTotal,
+      notes: invoiceData.notes,
+      gst_percentage: invoiceData.pct,
+      gst_mode: invoiceData.gstMode,
+      client_source: 'custom_order',
+    } as never)
+    .eq('id', invoiceId);
+  if (updateErr) throw updateErr;
+
+  const { error: deleteErr } = await supabase
+    .from('invoice_items')
+    .delete()
+    .eq('invoice_id', invoiceId);
+  if (deleteErr) throw deleteErr;
+
+  const { error: insertErr } = await supabase
+    .from('invoice_items')
+    .insert(buildItemsPayload(invoiceId, invoiceData.lines));
+  if (insertErr) throw insertErr;
+}
+
 /**
  * Resolve or create a client by phone/name. Returns client id (or null).
  */
