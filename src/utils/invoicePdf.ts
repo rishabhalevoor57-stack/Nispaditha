@@ -614,7 +614,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setLineWidth(0.1);
 
   if (data.notes) {
-    doc.setFont(FONT, 'italic');
+    doc.setFont(FONT, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(90, 90, 90);
     doc.text(`Note: ${data.notes}`, margin, yPos, { maxWidth: contentWidth });
