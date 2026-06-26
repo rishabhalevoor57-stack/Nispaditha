@@ -2342,6 +2342,8 @@ export type Database = {
         }
         Returns: Json
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       transfer_stock: {
         Args: {
           p_from_store_id: string
