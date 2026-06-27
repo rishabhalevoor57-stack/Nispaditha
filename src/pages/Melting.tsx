@@ -28,13 +28,14 @@ export default function Melting() {
   const prefill = (location.state as { prefill?: Partial<MeltingEntry> } | null)?.prefill;
   const [autoPrefill, setAutoPrefill] = useState<Partial<MeltingEntry> | undefined>();
 
-  useMemo(() => {
+  useEffect(() => {
     if (prefill) {
       setAutoPrefill(prefill);
       setOpen(true);
       window.history.replaceState({}, '');
     }
-  }, [prefill]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const stats = useMemo(() => {
     const totalGross = entries.reduce((s, e) => s + Number(e.gross_weight || 0), 0);
