@@ -128,6 +128,38 @@ export default function ReturnsExchanges() {
           >
             <Eye className="w-4 h-4" />
           </Button>
+          {(item.type === 'buyback' || item.type === 'exchange') && (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Send to Melting"
+              onClick={(e) => {
+                e.stopPropagation();
+                const it = item as ReturnExchange & { metal_type?: string | null; total_weight?: number | null };
+                navigate('/melting', {
+                  state: {
+                    prefill: {
+                      source_type: item.type === 'buyback' ? 'buyback' : 'exchange',
+                      source_reference_id: item.id,
+                      source_reference_label: item.reference_number,
+                      customer_name: item.client_name,
+                      metal_type: it.metal_type || 'silver',
+                      description: `From ${item.type} ${item.reference_number}`,
+                      items: [{
+                        description: `${item.type} items`,
+                        quantity: 1,
+                        gross_weight: Number(it.total_weight) || 0,
+                        purity: 92.5,
+                        remarks: '',
+                      }],
+                    },
+                  },
+                });
+              }}
+            >
+              <Flame className="w-4 h-4" />
+            </Button>
+          )}
           {isAdmin && (
             <Button
               variant="ghost"
