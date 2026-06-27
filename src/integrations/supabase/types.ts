@@ -1008,6 +1008,156 @@ export type Database = {
         }
         Relationships: []
       }
+      melting_entries: {
+        Row: {
+          avg_purity: number
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_name: string | null
+          description: string | null
+          documents: Json
+          entry_date: string
+          fine_weight: number
+          gross_weight: number
+          id: string
+          inventory_product_id: string | null
+          inventory_sku: string | null
+          melting_loss_percent: number
+          melting_number: string
+          metal_type: string
+          notes: string | null
+          recovered_weight: number
+          source_reference_id: string | null
+          source_reference_label: string | null
+          source_type: string
+          status: string
+          updated_at: string
+          vendor_id: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          avg_purity?: number
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string | null
+          description?: string | null
+          documents?: Json
+          entry_date?: string
+          fine_weight?: number
+          gross_weight?: number
+          id?: string
+          inventory_product_id?: string | null
+          inventory_sku?: string | null
+          melting_loss_percent?: number
+          melting_number: string
+          metal_type?: string
+          notes?: string | null
+          recovered_weight?: number
+          source_reference_id?: string | null
+          source_reference_label?: string | null
+          source_type?: string
+          status?: string
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          avg_purity?: number
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string | null
+          description?: string | null
+          documents?: Json
+          entry_date?: string
+          fine_weight?: number
+          gross_weight?: number
+          id?: string
+          inventory_product_id?: string | null
+          inventory_sku?: string | null
+          melting_loss_percent?: number
+          melting_number?: string
+          metal_type?: string
+          notes?: string | null
+          recovered_weight?: number
+          source_reference_id?: string | null
+          source_reference_label?: string | null
+          source_type?: string
+          status?: string
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "melting_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "melting_entries_inventory_product_id_fkey"
+            columns: ["inventory_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "melting_entries_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      melting_items: {
+        Row: {
+          created_at: string
+          description: string
+          fine_weight: number
+          gross_weight: number
+          id: string
+          melting_id: string
+          purity: number
+          quantity: number
+          remarks: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          fine_weight?: number
+          gross_weight?: number
+          id?: string
+          melting_id: string
+          purity?: number
+          quantity?: number
+          remarks?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          fine_weight?: number
+          gross_weight?: number
+          id?: string
+          melting_id?: string
+          purity?: number
+          quantity?: number
+          remarks?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "melting_items_melting_id_fkey"
+            columns: ["melting_id"]
+            isOneToOne: false
+            referencedRelation: "melting_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_note_items: {
         Row: {
           created_at: string
@@ -2225,6 +2375,7 @@ export type Database = {
       }
       generate_custom_order_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
+      generate_melting_number: { Args: never; Returns: string }
       generate_order_reference: { Args: never; Returns: string }
       generate_receipt_number: { Args: never; Returns: string }
       generate_return_exchange_reference: {
@@ -2341,6 +2492,15 @@ export type Database = {
           p_weight?: number
         }
         Returns: Json
+      }
+      send_melting_to_inventory: {
+        Args: {
+          p_making_charges?: number
+          p_melting_id: string
+          p_price_per_gram?: number
+          p_product_name?: string
+        }
+        Returns: string
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
