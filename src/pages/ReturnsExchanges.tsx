@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, Eye, Trash2, Coins } from 'lucide-react';
+import { Plus, Search, Eye, Trash2, Coins, Flame } from 'lucide-react';
 import { format } from 'date-fns';
 import { useReturnsExchanges } from '@/hooks/useReturnsExchanges';
 import { ReturnExchangeDialog } from '@/components/returns/ReturnExchangeDialog';
