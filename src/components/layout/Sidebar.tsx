@@ -22,8 +22,9 @@ import {
   IndianRupee,
   ShoppingBag,
   Wrench,
-  Barcode
-} from 'lucide-react';
+  Barcode,
+  Flame
+
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
