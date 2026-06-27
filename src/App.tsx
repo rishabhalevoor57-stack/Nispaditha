@@ -26,6 +26,7 @@ import Repair from "./pages/Repair";
 import NotFound from "./pages/NotFound";
 import ServiceForms from "./pages/ServiceForms";
 import SkuGenerator from "./pages/SkuGenerator";
+import Melting from "./pages/Melting";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +106,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Repair />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/melting"
+        element={
+          <ProtectedRoute>
+            <Melting />
           </ProtectedRoute>
         }
       />

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Wrench, Search, ArrowRightCircle, Trash2 } from 'lucide-react';
+import { Wrench, Search, ArrowRightCircle, Trash2, Flame } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +48,7 @@ export default function Repair() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { logActivity } = useActivityLogger();
+  const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
@@ -213,6 +215,34 @@ export default function Repair() {
             >
               <ArrowRightCircle className="w-3 h-3 mr-1" />
               To Inventory
+            </Button>
+          )}
+          {i.status === 'in_repair' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate('/melting', {
+                state: {
+                  prefill: {
+                    source_type: 'repair',
+                    source_reference_id: i.id,
+                    source_reference_label: i.sku || i.product_name,
+                    customer_name: i.client_name,
+                    description: `From repair: ${i.product_name}${i.sku ? ` (${i.sku})` : ''}`,
+                    items: [{
+                      description: i.product_name,
+                      quantity: i.quantity || 1,
+                      gross_weight: Number(i.weight_grams) || 0,
+                      purity: 92.5,
+                      remarks: i.notes || '',
+                    }],
+                  },
+                },
+              })}
+              title="Send to Melting"
+            >
+              <Flame className="w-3 h-3 mr-1" />
+              Melt
             </Button>
           )}
           {isAdmin && (

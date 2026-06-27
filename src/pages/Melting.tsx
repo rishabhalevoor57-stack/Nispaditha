@@ -1,0 +1,162 @@
+import { useEffect, useMemo, useState } from 'react';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { PageHeader } from '@/components/ui/page-header';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { DataTable } from '@/components/ui/data-table';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, Search, Flame, ArrowRightCircle, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { useLocation } from 'react-router-dom';
+import { useMelting, type MeltingEntry } from '@/hooks/useMelting';
+import { MeltingFormDialog } from '@/components/melting/MeltingFormDialog';
+import { SendToInventoryDialog } from '@/components/melting/SendToInventoryDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
+
+const STATUSES = ['pending', 'sent_to_refiner', 'received', 'added_to_inventory', 'completed'];
+
+export default function Melting() {
+  const { entries, loading, create, updateStatus, remove, sendToInventory } = useMelting();
+  const [open, setOpen] = useState(false);
+  const [sendDlg, setSendDlg] = useState<MeltingEntry | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const isAdmin = useIsAdmin();
+  const location = useLocation();
+  const prefill = (location.state as { prefill?: Partial<MeltingEntry> } | null)?.prefill;
+  const [autoPrefill, setAutoPrefill] = useState<Partial<MeltingEntry> | undefined>();
+
+  useEffect(() => {
+    if (prefill) {
+      setAutoPrefill(prefill);
+      setOpen(true);
+      window.history.replaceState({}, '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const stats = useMemo(() => {
+    const totalGross = entries.reduce((s, e) => s + Number(e.gross_weight || 0), 0);
+    const totalFine = entries.reduce((s, e) => s + Number(e.fine_weight || 0), 0);
+    const totalRecovered = entries.reduce((s, e) => s + Number(e.recovered_weight || 0), 0);
+    const totalLoss = totalFine - totalRecovered;
+    return { totalGross, totalFine, totalRecovered, totalLoss, count: entries.length };
+  }, [entries]);
+
+  const filtered = entries.filter((e) => {
+    if (statusFilter !== 'all' && e.status !== statusFilter) return false;
+    const q = search.toLowerCase();
+    if (!q) return true;
+    return [e.melting_number, e.vendor_name, e.customer_name, e.description, e.inventory_sku]
+      .some((v) => (v || '').toLowerCase().includes(q));
+  });
+
+  const columns = [
+    { key: 'melting_number', header: 'ID', cell: (e: MeltingEntry) => <span className="font-mono text-xs">{e.melting_number}</span> },
+    { key: 'entry_date', header: 'Date', cell: (e: MeltingEntry) => format(new Date(e.entry_date), 'dd MMM yyyy') },
+    { key: 'source_type', header: 'Source', cell: (e: MeltingEntry) => <Badge variant="outline" className="capitalize">{e.source_type.replace('_', ' ')}</Badge> },
+    { key: 'metal_type', header: 'Metal', cell: (e: MeltingEntry) => <span className="capitalize">{e.metal_type}</span> },
+    { key: 'vendor_name', header: 'Vendor', cell: (e: MeltingEntry) => e.vendor_name || '-' },
+    { key: 'customer_name', header: 'Customer', cell: (e: MeltingEntry) => e.customer_name || '-' },
+    { key: 'gross_weight', header: 'Gross (g)', cell: (e: MeltingEntry) => Number(e.gross_weight).toFixed(3) },
+    { key: 'avg_purity', header: 'Purity %', cell: (e: MeltingEntry) => Number(e.avg_purity).toFixed(2) },
+    { key: 'recovered_weight', header: 'Recovered (g)', cell: (e: MeltingEntry) => <span className="font-semibold">{Number(e.recovered_weight).toFixed(3)}</span> },
+    { key: 'inventory_sku', header: 'SKU', cell: (e: MeltingEntry) => e.inventory_sku ? <span className="font-mono text-xs text-primary">{e.inventory_sku}</span> : '-' },
+    {
+      key: 'status', header: 'Status', cell: (e: MeltingEntry) => (
+        <Select value={e.status} onValueChange={(v) => updateStatus(e.id, v)}>
+          <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, ' ')}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      ),
+    },
+    {
+      key: 'actions', header: 'Actions', cell: (e: MeltingEntry) => (
+        <div className="flex gap-1">
+          {!e.inventory_product_id && e.recovered_weight > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setSendDlg(e)}>
+              <ArrowRightCircle className="w-3 h-3 mr-1" /> To Inventory
+            </Button>
+          )}
+          {isAdmin && (
+            <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => { if (confirm('Delete entry?')) remove(e.id); }}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <AppLayout>
+      <PageHeader
+        title="Melting"
+        description="Track jewellery, scrap, buyback & exchange items sent for melting → refine → back to inventory."
+        actions={
+          <Button onClick={() => { setAutoPrefill(undefined); setOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" /> New Melting Entry
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <StatCard label="Total Entries" value={stats.count.toString()} />
+        <StatCard label="Gross Sent" value={`${stats.totalGross.toFixed(2)} g`} />
+        <StatCard label="Fine Metal" value={`${stats.totalFine.toFixed(2)} g`} />
+        <StatCard label="Loss" value={`${stats.totalLoss.toFixed(2)} g`} />
+        <StatCard label="Recovered" value={`${stats.totalRecovered.toFixed(2)} g`} highlight />
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Search ID, vendor, customer, SKU..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, ' ')}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <DataTable data={filtered} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+
+      <MeltingFormDialog
+        open={open}
+        onOpenChange={setOpen}
+        prefill={autoPrefill}
+        onSubmit={async (entry, items) => { await create(entry, items); }}
+      />
+
+      {sendDlg && (
+        <SendToInventoryDialog
+          open={!!sendDlg}
+          onOpenChange={(o) => !o && setSendDlg(null)}
+          defaultName={`Refined ${sendDlg.metal_type.charAt(0).toUpperCase() + sendDlg.metal_type.slice(1)}`}
+          recoveredWeight={Number(sendDlg.recovered_weight)}
+          onSubmit={async (name, ppg, mc) => { await sendToInventory(sendDlg.id, name, ppg, mc); setSendDlg(null); }}
+        />
+      )}
+    </AppLayout>
+  );
+}
+
+function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="text-xs text-muted-foreground flex items-center gap-1">
+          {highlight && <Flame className="w-3 h-3 text-primary" />} {label}
+        </div>
+        <div className={`text-xl font-bold ${highlight ? 'text-primary' : ''}`}>{value}</div>
+      </CardContent>
+    </Card>
+  );
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
@@ -15,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, Eye, Trash2, Coins } from 'lucide-react';
+import { Plus, Search, Eye, Trash2, Coins, Flame } from 'lucide-react';
 import { format } from 'date-fns';
 import { useReturnsExchanges } from '@/hooks/useReturnsExchanges';
 import { ReturnExchangeDialog } from '@/components/returns/ReturnExchangeDialog';
@@ -41,6 +42,7 @@ export default function ReturnsExchanges() {
   } = useReturnsExchanges();
 
   const isAdmin = useIsAdmin();
+  const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isBuybackOpen, setIsBuybackOpen] = useState(false);
   const [viewRecordId, setViewRecordId] = useState<string | null>(null);
@@ -126,6 +128,38 @@ export default function ReturnsExchanges() {
           >
             <Eye className="w-4 h-4" />
           </Button>
+          {(item.type === 'buyback' || item.type === 'exchange') && (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Send to Melting"
+              onClick={(e) => {
+                e.stopPropagation();
+                const it = item as ReturnExchange & { metal_type?: string | null; total_weight?: number | null };
+                navigate('/melting', {
+                  state: {
+                    prefill: {
+                      source_type: item.type === 'buyback' ? 'buyback' : 'exchange',
+                      source_reference_id: item.id,
+                      source_reference_label: item.reference_number,
+                      customer_name: item.client_name,
+                      metal_type: it.metal_type || 'silver',
+                      description: `From ${item.type} ${item.reference_number}`,
+                      items: [{
+                        description: `${item.type} items`,
+                        quantity: 1,
+                        gross_weight: Number(it.total_weight) || 0,
+                        purity: 92.5,
+                        remarks: '',
+                      }],
+                    },
+                  },
+                });
+              }}
+            >
+              <Flame className="w-4 h-4" />
+            </Button>
+          )}
           {isAdmin && (
             <Button
               variant="ghost"
