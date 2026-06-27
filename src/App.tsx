@@ -110,6 +110,14 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/melting"
+        element={
+          <ProtectedRoute>
+            <Melting />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/service-forms"
         element={
           <ProtectedRoute>
