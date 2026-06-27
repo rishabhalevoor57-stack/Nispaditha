@@ -23,7 +23,9 @@ import {
   ShoppingBag,
   Wrench,
   Barcode,
-  Flame
+  Flame,
+} from 'lucide-react';
+
 
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
