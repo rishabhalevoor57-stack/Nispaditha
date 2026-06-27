@@ -42,6 +42,7 @@ export default function ReturnsExchanges() {
   } = useReturnsExchanges();
 
   const isAdmin = useIsAdmin();
+  const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isBuybackOpen, setIsBuybackOpen] = useState(false);
   const [viewRecordId, setViewRecordId] = useState<string | null>(null);
