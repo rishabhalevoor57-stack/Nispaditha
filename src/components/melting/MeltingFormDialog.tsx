@@ -174,7 +174,7 @@ export function MeltingFormDialog({ open, onOpenChange, onSubmit, prefill }: Pro
                       <td className="p-1"><Input type="number" value={it.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} /></td>
                       <td className="p-1"><Input type="number" step="0.01" value={it.gross_weight} onChange={(e) => updateItem(idx, { gross_weight: Number(e.target.value) })} /></td>
                       <td className="p-1"><Input type="number" step="0.01" value={it.purity} onChange={(e) => updateItem(idx, { purity: Number(e.target.value) })} /></td>
-                      <td className="p-2 text-muted-foreground">{fine.toFixed(3)}</td>
+                      <td className="p-2 text-muted-foreground">{fine.toFixed(2)}</td>
                       <td className="p-1"><Input value={it.remarks || ''} onChange={(e) => updateItem(idx, { remarks: e.target.value })} /></td>
                       <td className="p-1">
                         <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => setItems((a) => a.filter((_, i) => i !== idx))}>
