@@ -142,6 +142,7 @@ export function useMelting() {
       if (error) throw error;
       toast({ title: 'Sent to inventory', description: 'New SKU created.' });
       load();
+      window.dispatchEvent(new CustomEvent('inventory:refresh'));
       return data as unknown as string;
     } catch (e) {
       toast({ variant: 'destructive', title: 'Failed', description: e instanceof Error ? e.message : 'Error' });
