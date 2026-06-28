@@ -169,7 +169,7 @@ export default function Repair() {
     {
       key: 'weight_grams',
       header: 'Weight (g)',
-      cell: (i: RepairItem) => Number(i.weight_grams).toFixed(3),
+      cell: (i: RepairItem) => Number(i.weight_grams).toFixed(2),
     },
     {
       key: 'quantity',

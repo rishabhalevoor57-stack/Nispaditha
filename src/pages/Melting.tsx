@@ -60,9 +60,9 @@ export default function Melting() {
     { key: 'metal_type', header: 'Metal', cell: (e: MeltingEntry) => <span className="capitalize">{e.metal_type}</span> },
     { key: 'vendor_name', header: 'Vendor', cell: (e: MeltingEntry) => e.vendor_name || '-' },
     { key: 'customer_name', header: 'Customer', cell: (e: MeltingEntry) => e.customer_name || '-' },
-    { key: 'gross_weight', header: 'Gross (g)', cell: (e: MeltingEntry) => Number(e.gross_weight).toFixed(3) },
+    { key: 'gross_weight', header: 'Gross (g)', cell: (e: MeltingEntry) => Number(e.gross_weight).toFixed(2) },
     { key: 'avg_purity', header: 'Purity %', cell: (e: MeltingEntry) => Number(e.avg_purity).toFixed(2) },
-    { key: 'recovered_weight', header: 'Recovered (g)', cell: (e: MeltingEntry) => <span className="font-semibold">{Number(e.recovered_weight).toFixed(3)}</span> },
+    { key: 'recovered_weight', header: 'Recovered (g)', cell: (e: MeltingEntry) => <span className="font-semibold">{Number(e.recovered_weight).toFixed(2)}</span> },
     { key: 'inventory_sku', header: 'SKU', cell: (e: MeltingEntry) => e.inventory_sku ? <span className="font-mono text-xs text-primary">{e.inventory_sku}</span> : '-' },
     {
       key: 'status', header: 'Status', cell: (e: MeltingEntry) => (

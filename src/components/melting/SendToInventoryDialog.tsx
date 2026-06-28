@@ -30,7 +30,7 @@ export function SendToInventoryDialog({ open, onOpenChange, defaultName, recover
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Recovered Weight (g)</Label>
-              <Input value={recoveredWeight.toFixed(3)} disabled />
+              <Input value={recoveredWeight.toFixed(2)} disabled />
             </div>
             <div>
               <Label>Price / gram (₹)</Label>

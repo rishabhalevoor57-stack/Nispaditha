@@ -172,9 +172,9 @@ export function MeltingFormDialog({ open, onOpenChange, onSubmit, prefill }: Pro
                     <tr key={idx} className="border-t">
                       <td className="p-1"><Input value={it.description} onChange={(e) => updateItem(idx, { description: e.target.value })} placeholder="Broken chain..." /></td>
                       <td className="p-1"><Input type="number" value={it.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} /></td>
-                      <td className="p-1"><Input type="number" step="0.001" value={it.gross_weight} onChange={(e) => updateItem(idx, { gross_weight: Number(e.target.value) })} /></td>
+                      <td className="p-1"><Input type="number" step="0.01" value={it.gross_weight} onChange={(e) => updateItem(idx, { gross_weight: Number(e.target.value) })} /></td>
                       <td className="p-1"><Input type="number" step="0.01" value={it.purity} onChange={(e) => updateItem(idx, { purity: Number(e.target.value) })} /></td>
-                      <td className="p-2 text-muted-foreground">{fine.toFixed(3)}</td>
+                      <td className="p-2 text-muted-foreground">{fine.toFixed(2)}</td>
                       <td className="p-1"><Input value={it.remarks || ''} onChange={(e) => updateItem(idx, { remarks: e.target.value })} /></td>
                       <td className="p-1">
                         <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => setItems((a) => a.filter((_, i) => i !== idx))}>
@@ -190,11 +190,11 @@ export function MeltingFormDialog({ open, onOpenChange, onSubmit, prefill }: Pro
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 bg-muted/40 rounded-md">
-          <Stat label="Gross Weight" value={`${totals.gross.toFixed(3)} g`} />
+          <Stat label="Gross Weight" value={`${totals.gross.toFixed(2)} g`} />
           <Stat label="Avg Purity" value={`${totals.avgPurity.toFixed(2)} %`} />
-          <Stat label="Fine Metal" value={`${totals.fine.toFixed(3)} g`} />
-          <Stat label="Melting Loss" value={`${totals.loss.toFixed(3)} g`} />
-          <Stat label="Recovered" value={`${totals.recovered.toFixed(3)} g`} highlight />
+          <Stat label="Fine Metal" value={`${totals.fine.toFixed(2)} g`} />
+          <Stat label="Melting Loss" value={`${totals.loss.toFixed(2)} g`} />
+          <Stat label="Recovered" value={`${totals.recovered.toFixed(2)} g`} highlight />
         </div>
 
         <DialogFooter>
