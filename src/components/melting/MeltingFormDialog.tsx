@@ -190,11 +190,11 @@ export function MeltingFormDialog({ open, onOpenChange, onSubmit, prefill }: Pro
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 bg-muted/40 rounded-md">
-          <Stat label="Gross Weight" value={`${totals.gross.toFixed(3)} g`} />
+          <Stat label="Gross Weight" value={`${totals.gross.toFixed(2)} g`} />
           <Stat label="Avg Purity" value={`${totals.avgPurity.toFixed(2)} %`} />
-          <Stat label="Fine Metal" value={`${totals.fine.toFixed(3)} g`} />
-          <Stat label="Melting Loss" value={`${totals.loss.toFixed(3)} g`} />
-          <Stat label="Recovered" value={`${totals.recovered.toFixed(3)} g`} highlight />
+          <Stat label="Fine Metal" value={`${totals.fine.toFixed(2)} g`} />
+          <Stat label="Melting Loss" value={`${totals.loss.toFixed(2)} g`} />
+          <Stat label="Recovered" value={`${totals.recovered.toFixed(2)} g`} highlight />
         </div>
 
         <DialogFooter>
