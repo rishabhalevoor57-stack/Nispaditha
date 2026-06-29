@@ -343,6 +343,13 @@ export default function Repair() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RepairMeltingDialog
+        open={!!meltingItem}
+        onOpenChange={(o) => !o && setMeltingItem(null)}
+        item={meltingItem}
+        onSaved={load}
+      />
     </AppLayout>
   );
 }
