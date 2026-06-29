@@ -56,6 +56,7 @@ export default function Repair() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'in_repair' | 'sent_to_inventory'>('in_repair');
   const [confirmSend, setConfirmSend] = useState<RepairItem | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<RepairItem | null>(null);
+  const [meltingItem, setMeltingItem] = useState<RepairItem | null>(null);
   const isAdmin = useIsAdmin();
   const { user } = useAuth();
   const { toast } = useToast();
