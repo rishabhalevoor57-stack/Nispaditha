@@ -83,18 +83,18 @@ export function RepairMeltingDialog({ open, onOpenChange, item, onSaved }: Props
   const handleSave = async () => {
     setSaving(true);
     try {
-      const patch: Record<string, unknown> = {
-        repair_outcome: outcome,
-        add_to_inventory: addToInventory,
-      };
-      if (isMelting) {
-        patch.melting_purity = purity;
-        patch.melting_loss_percent = loss;
-        patch.recovered_weight = recovered;
-        patch.melting_description = description;
-        patch.melting_remarks = remarks;
-        patch.melting_status = 'sent_to_melting';
-      }
+      const patch = isMelting
+        ? {
+            repair_outcome: outcome,
+            add_to_inventory: addToInventory,
+            melting_purity: purity,
+            melting_loss_percent: loss,
+            recovered_weight: recovered,
+            melting_description: description,
+            melting_remarks: remarks,
+            melting_status: 'sent_to_melting',
+          }
+        : { repair_outcome: outcome, add_to_inventory: addToInventory };
       const { error } = await supabase.from('repair_items').update(patch).eq('id', item.id);
       if (error) throw error;
 
