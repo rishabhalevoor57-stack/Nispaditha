@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
@@ -17,6 +17,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { RepairMeltingDialog } from '@/components/repair/RepairMeltingDialog';
+
 
 interface RepairItem {
   id: string;
@@ -27,6 +29,7 @@ interface RepairItem {
   quantity: number;
   original_invoice_id: string | null;
   original_invoice_number: string | null;
+  client_id: string | null;
   client_name: string | null;
   client_phone: string | null;
   source: string;
@@ -35,6 +38,15 @@ interface RepairItem {
   date_sent: string;
   date_resolved: string | null;
   notes: string | null;
+  metal_type: string | null;
+  repair_outcome: string | null;
+  melting_status: string | null;
+  melting_purity: number | null;
+  melting_loss_percent: number | null;
+  recovered_weight: number | null;
+  melting_description: string | null;
+  melting_remarks: string | null;
+  add_to_inventory: boolean | null;
 }
 
 export default function Repair() {
@@ -44,11 +56,12 @@ export default function Repair() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'in_repair' | 'sent_to_inventory'>('in_repair');
   const [confirmSend, setConfirmSend] = useState<RepairItem | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<RepairItem | null>(null);
+  const [meltingItem, setMeltingItem] = useState<RepairItem | null>(null);
   const isAdmin = useIsAdmin();
   const { user } = useAuth();
   const { toast } = useToast();
   const { logActivity } = useActivityLogger();
-  const navigate = useNavigate();
+  
 
   const load = async () => {
     setLoading(true);
@@ -202,6 +215,22 @@ export default function Repair() {
         ),
     },
     {
+      key: 'melting_status',
+      header: 'Melting',
+      cell: (i: RepairItem) => {
+        const s = i.melting_status || 'not_sent';
+        const map: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+          not_sent: { label: 'Not Sent', variant: 'outline' },
+          sent_to_melting: { label: 'Sent to Melting', variant: 'secondary' },
+          melted: { label: 'Melted', variant: 'secondary' },
+          inventory_added: { label: 'Inventory Added', variant: 'default' },
+          completed: { label: 'Completed', variant: 'default' },
+        };
+        const m = map[s] || map.not_sent;
+        return <Badge variant={m.variant}>{m.label}</Badge>;
+      },
+    },
+    {
       key: 'actions',
       header: 'Actions',
       cell: (i: RepairItem) => (
@@ -221,28 +250,11 @@ export default function Repair() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate('/melting', {
-                state: {
-                  prefill: {
-                    source_type: 'repair',
-                    source_reference_id: i.id,
-                    source_reference_label: i.sku || i.product_name,
-                    customer_name: i.client_name,
-                    description: `From repair: ${i.product_name}${i.sku ? ` (${i.sku})` : ''}`,
-                    items: [{
-                      description: i.product_name,
-                      quantity: i.quantity || 1,
-                      gross_weight: Number(i.weight_grams) || 0,
-                      purity: 92.5,
-                      remarks: i.notes || '',
-                    }],
-                  },
-                },
-              })}
-              title="Send to Melting"
+              onClick={() => setMeltingItem(i)}
+              title="Set Outcome / Send to Melting"
             >
               <Flame className="w-3 h-3 mr-1" />
-              Melt
+              Outcome
             </Button>
           )}
           {isAdmin && (
@@ -331,6 +343,13 @@ export default function Repair() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RepairMeltingDialog
+        open={!!meltingItem}
+        onOpenChange={(o) => !o && setMeltingItem(null)}
+        item={meltingItem}
+        onSaved={load}
+      />
     </AppLayout>
   );
 }
