@@ -27,6 +27,7 @@ interface RepairItem {
   quantity: number;
   original_invoice_id: string | null;
   original_invoice_number: string | null;
+  client_id: string | null;
   client_name: string | null;
   client_phone: string | null;
   source: string;
@@ -35,6 +36,15 @@ interface RepairItem {
   date_sent: string;
   date_resolved: string | null;
   notes: string | null;
+  metal_type: string | null;
+  repair_outcome: string | null;
+  melting_status: string | null;
+  melting_purity: number | null;
+  melting_loss_percent: number | null;
+  recovered_weight: number | null;
+  melting_description: string | null;
+  melting_remarks: string | null;
+  add_to_inventory: boolean | null;
 }
 
 export default function Repair() {
