@@ -17,6 +17,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { RepairMeltingDialog } from '@/components/repair/RepairMeltingDialog';
+
 
 interface RepairItem {
   id: string;
