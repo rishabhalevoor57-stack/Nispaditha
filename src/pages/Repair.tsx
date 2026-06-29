@@ -61,7 +61,7 @@ export default function Repair() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { logActivity } = useActivityLogger();
-  const navigate = useNavigate();
+  
 
   const load = async () => {
     setLoading(true);
