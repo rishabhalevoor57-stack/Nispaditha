@@ -1531,6 +1531,7 @@ export type Database = {
       }
       repair_items: {
         Row: {
+          add_to_inventory: boolean
           amount_credited: number | null
           client_id: string | null
           client_name: string | null
@@ -1540,6 +1541,12 @@ export type Database = {
           date_resolved: string | null
           date_sent: string
           id: string
+          melting_description: string | null
+          melting_entry_id: string | null
+          melting_loss_percent: number | null
+          melting_purity: number | null
+          melting_remarks: string | null
+          melting_status: string
           metal_type: string | null
           notes: string | null
           original_invoice_id: string | null
@@ -1548,6 +1555,8 @@ export type Database = {
           product_name: string
           quantity: number
           rate_used: number | null
+          recovered_weight: number | null
+          repair_outcome: string
           sku: string | null
           source: string
           source_ref_id: string | null
@@ -1558,6 +1567,7 @@ export type Database = {
           weight_grams: number
         }
         Insert: {
+          add_to_inventory?: boolean
           amount_credited?: number | null
           client_id?: string | null
           client_name?: string | null
@@ -1567,6 +1577,12 @@ export type Database = {
           date_resolved?: string | null
           date_sent?: string
           id?: string
+          melting_description?: string | null
+          melting_entry_id?: string | null
+          melting_loss_percent?: number | null
+          melting_purity?: number | null
+          melting_remarks?: string | null
+          melting_status?: string
           metal_type?: string | null
           notes?: string | null
           original_invoice_id?: string | null
@@ -1575,6 +1591,8 @@ export type Database = {
           product_name: string
           quantity?: number
           rate_used?: number | null
+          recovered_weight?: number | null
+          repair_outcome?: string
           sku?: string | null
           source: string
           source_ref_id?: string | null
@@ -1585,6 +1603,7 @@ export type Database = {
           weight_grams?: number
         }
         Update: {
+          add_to_inventory?: boolean
           amount_credited?: number | null
           client_id?: string | null
           client_name?: string | null
@@ -1594,6 +1613,12 @@ export type Database = {
           date_resolved?: string | null
           date_sent?: string
           id?: string
+          melting_description?: string | null
+          melting_entry_id?: string | null
+          melting_loss_percent?: number | null
+          melting_purity?: number | null
+          melting_remarks?: string | null
+          melting_status?: string
           metal_type?: string | null
           notes?: string | null
           original_invoice_id?: string | null
@@ -1602,6 +1627,8 @@ export type Database = {
           product_name?: string
           quantity?: number
           rate_used?: number | null
+          recovered_weight?: number | null
+          repair_outcome?: string
           sku?: string | null
           source?: string
           source_ref_id?: string | null
@@ -1617,6 +1644,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repair_items_melting_entry_id_fkey"
+            columns: ["melting_entry_id"]
+            isOneToOne: false
+            referencedRelation: "melting_entries"
             referencedColumns: ["id"]
           },
         ]
