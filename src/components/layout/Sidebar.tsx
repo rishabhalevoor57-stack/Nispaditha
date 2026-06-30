@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Gem,
   Menu,
-  ClipboardList,
   Truck,
   History,
   ArrowLeftRight,
@@ -23,7 +22,7 @@ import {
   ShoppingBag,
   Wrench,
   Barcode,
-  Flame,
+  ChevronDown,
 } from 'lucide-react';
 
 
@@ -31,6 +30,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -39,19 +39,22 @@ const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[
   { icon: ArrowLeftRight, label: 'Returns', path: '/returns' },
   { icon: ShoppingBag, label: 'Sold', path: '/sold' },
   { icon: Wrench, label: 'Repair', path: '/repair' },
-  { icon: Flame, label: 'Melting', path: '/melting' },
   { icon: Wrench, label: 'Service Forms', path: '/service-forms' },
-  { icon: Barcode, label: 'SKU Generator', path: '/sku-generator' },
   { icon: IndianRupee, label: 'Pending Payments', path: '/pending-payments' },
   { icon: Hammer, label: 'Custom Orders', path: '/custom-orders' },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Truck, label: 'Vendors', path: '/vendors' },
   { icon: Wallet, label: 'Expenses', path: '/expenses' },
-  { icon: BarChart3, label: 'Reports', path: '/reports' },
-  { icon: Trash2, label: 'Recycle Bin', path: '/recycle-bin', adminOnly: true },
-  { icon: History, label: 'Activity Log', path: '/activity-log' },
-  { icon: Settings, label: 'Settings', path: '/settings' },
 ];
+
+const settingsItems: { icon: any; label: string; path: string; adminOnly?: boolean }[] = [
+  { icon: Settings, label: 'General', path: '/settings' },
+  { icon: BarChart3, label: 'Reports', path: '/reports' },
+  { icon: Barcode, label: 'SKU Generator', path: '/sku-generator' },
+  { icon: History, label: 'Activity Log', path: '/activity-log' },
+  { icon: Trash2, label: 'Recycle Bin', path: '/recycle-bin', adminOnly: true },
+];
+
 
 interface SidebarContentProps {
   collapsed: boolean;
