@@ -18,6 +18,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { RepairMeltingDialog } from '@/components/repair/RepairMeltingDialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { MeltingContent } from '@/components/melting/MeltingContent';
+
+
 
 
 interface RepairItem {
