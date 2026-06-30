@@ -64,6 +64,8 @@ interface SidebarContentProps {
 const SidebarContent = ({ collapsed, onCollapse }: SidebarContentProps) => {
   const location = useLocation();
   const { signOut, user, userRole } = useAuth();
+  const settingsPaths = settingsItems.map((s) => s.path);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(settingsPaths.includes(location.pathname));
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -103,7 +105,55 @@ const SidebarContent = ({ collapsed, onCollapse }: SidebarContentProps) => {
             </Link>
           );
         })}
+
+        {/* Settings group */}
+        {collapsed ? (
+          <Link
+            to="/settings"
+            onClick={onCollapse}
+            className={cn('sidebar-link', settingsPaths.includes(location.pathname) && 'active')}
+          >
+            <Settings className="w-5 h-5 flex-shrink-0" />
+          </Link>
+        ) : (
+          <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <CollapsibleTrigger
+              className={cn(
+                'sidebar-link w-full justify-between',
+                settingsPaths.includes(location.pathname) && 'active'
+              )}
+            >
+              <span className="flex items-center gap-3">
+                <Settings className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">Settings</span>
+              </span>
+              <ChevronDown
+                className={cn('w-4 h-4 transition-transform', settingsOpen && 'rotate-180')}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="ml-4 mt-1 space-y-1 border-l border-sidebar-border pl-2">
+              {settingsItems
+                .filter((item) => !item.adminOnly || userRole === 'admin')
+                .map((item) => {
+                  const isActive = location.pathname === item.path;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={onCollapse}
+                      className={cn('sidebar-link', isActive && 'active')}
+                    >
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate text-sm">{item.label}</span>
+                    </Link>
+                  );
+                })}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </nav>
+
 
       {/* User section */}
       <div className="p-3 border-t border-sidebar-border">
