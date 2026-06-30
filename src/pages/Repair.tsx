@@ -283,36 +283,50 @@ export default function Repair() {
         description="Items sent to repair from Returns, Exchanges, or Buybacks"
       />
 
-      <div className="flex gap-2 mb-4">
-        {(['in_repair', 'sent_to_inventory', 'all'] as const).map((k) => (
-          <Button
-            key={k}
-            size="sm"
-            variant={statusFilter === k ? 'default' : 'outline'}
-            onClick={() => setStatusFilter(k)}
-          >
-            {k === 'in_repair' ? 'In Repair' : k === 'sent_to_inventory' ? 'Completed' : 'All'}
-            <span className="ml-1.5 text-xs opacity-70">({counts[k]})</span>
-          </Button>
-        ))}
-      </div>
+      <Tabs defaultValue="repair" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="repair"><Wrench className="w-4 h-4 mr-2" /> Repair</TabsTrigger>
+          <TabsTrigger value="melting"><Flame className="w-4 h-4 mr-2" /> Melting</TabsTrigger>
+        </TabsList>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by product, SKU, invoice, or client..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 max-w-md"
-        />
-      </div>
+        <TabsContent value="repair">
+          <div className="flex gap-2 mb-4">
+            {(['in_repair', 'sent_to_inventory', 'all'] as const).map((k) => (
+              <Button
+                key={k}
+                size="sm"
+                variant={statusFilter === k ? 'default' : 'outline'}
+                onClick={() => setStatusFilter(k)}
+              >
+                {k === 'in_repair' ? 'In Repair' : k === 'sent_to_inventory' ? 'Completed' : 'All'}
+                <span className="ml-1.5 text-xs opacity-70">({counts[k]})</span>
+              </Button>
+            ))}
+          </div>
 
-      <DataTable
-        data={filtered}
-        columns={columns}
-        isLoading={loading}
-        emptyMessage="No repair items."
-      />
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by product, SKU, invoice, or client..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 max-w-md"
+            />
+          </div>
+
+          <DataTable
+            data={filtered}
+            columns={columns}
+            isLoading={loading}
+            emptyMessage="No repair items."
+          />
+        </TabsContent>
+
+        <TabsContent value="melting">
+          <MeltingContent />
+        </TabsContent>
+      </Tabs>
+
 
       <AlertDialog open={!!confirmSend} onOpenChange={(o) => !o && setConfirmSend(null)}>
         <AlertDialogContent>
