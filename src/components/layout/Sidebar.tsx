@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Gem,
   Menu,
-  ClipboardList,
   Truck,
   History,
   ArrowLeftRight,
@@ -23,7 +22,7 @@ import {
   ShoppingBag,
   Wrench,
   Barcode,
-  Flame,
+  ChevronDown,
 } from 'lucide-react';
 
 
@@ -31,6 +30,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -39,19 +39,22 @@ const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[
   { icon: ArrowLeftRight, label: 'Returns', path: '/returns' },
   { icon: ShoppingBag, label: 'Sold', path: '/sold' },
   { icon: Wrench, label: 'Repair', path: '/repair' },
-  { icon: Flame, label: 'Melting', path: '/melting' },
   { icon: Wrench, label: 'Service Forms', path: '/service-forms' },
-  { icon: Barcode, label: 'SKU Generator', path: '/sku-generator' },
   { icon: IndianRupee, label: 'Pending Payments', path: '/pending-payments' },
   { icon: Hammer, label: 'Custom Orders', path: '/custom-orders' },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Truck, label: 'Vendors', path: '/vendors' },
   { icon: Wallet, label: 'Expenses', path: '/expenses' },
-  { icon: BarChart3, label: 'Reports', path: '/reports' },
-  { icon: Trash2, label: 'Recycle Bin', path: '/recycle-bin', adminOnly: true },
-  { icon: History, label: 'Activity Log', path: '/activity-log' },
-  { icon: Settings, label: 'Settings', path: '/settings' },
 ];
+
+const settingsItems: { icon: any; label: string; path: string; adminOnly?: boolean }[] = [
+  { icon: Settings, label: 'General', path: '/settings' },
+  { icon: BarChart3, label: 'Reports', path: '/reports' },
+  { icon: Barcode, label: 'SKU Generator', path: '/sku-generator' },
+  { icon: History, label: 'Activity Log', path: '/activity-log' },
+  { icon: Trash2, label: 'Recycle Bin', path: '/recycle-bin', adminOnly: true },
+];
+
 
 interface SidebarContentProps {
   collapsed: boolean;
@@ -61,6 +64,8 @@ interface SidebarContentProps {
 const SidebarContent = ({ collapsed, onCollapse }: SidebarContentProps) => {
   const location = useLocation();
   const { signOut, user, userRole } = useAuth();
+  const settingsPaths = settingsItems.map((s) => s.path);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(settingsPaths.includes(location.pathname));
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -100,7 +105,55 @@ const SidebarContent = ({ collapsed, onCollapse }: SidebarContentProps) => {
             </Link>
           );
         })}
+
+        {/* Settings group */}
+        {collapsed ? (
+          <Link
+            to="/settings"
+            onClick={onCollapse}
+            className={cn('sidebar-link', settingsPaths.includes(location.pathname) && 'active')}
+          >
+            <Settings className="w-5 h-5 flex-shrink-0" />
+          </Link>
+        ) : (
+          <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <CollapsibleTrigger
+              className={cn(
+                'sidebar-link w-full justify-between',
+                settingsPaths.includes(location.pathname) && 'active'
+              )}
+            >
+              <span className="flex items-center gap-3">
+                <Settings className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">Settings</span>
+              </span>
+              <ChevronDown
+                className={cn('w-4 h-4 transition-transform', settingsOpen && 'rotate-180')}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="ml-4 mt-1 space-y-1 border-l border-sidebar-border pl-2">
+              {settingsItems
+                .filter((item) => !item.adminOnly || userRole === 'admin')
+                .map((item) => {
+                  const isActive = location.pathname === item.path;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={onCollapse}
+                      className={cn('sidebar-link', isActive && 'active')}
+                    >
+                      <Icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate text-sm">{item.label}</span>
+                    </Link>
+                  );
+                })}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </nav>
+
 
       {/* User section */}
       <div className="p-3 border-t border-sidebar-border">
