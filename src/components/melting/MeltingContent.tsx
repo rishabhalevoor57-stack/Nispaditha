@@ -102,11 +102,19 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-        <StatCard label="Total Entries" value={stats.count.toString()} />
-        <StatCard label="Gross Sent" value={`${stats.totalGross.toFixed(2)} g`} />
-        <StatCard label="Fine Metal" value={`${stats.totalFine.toFixed(2)} g`} />
-        <StatCard label="Loss" value={`${stats.totalLoss.toFixed(2)} g`} />
-        <StatCard label="Recovered" value={`${stats.totalRecovered.toFixed(2)} g`} highlight />
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <Card key={i}><CardContent className="p-4 space-y-2"><Skeleton className="h-3 w-20" /><Skeleton className="h-6 w-16" /></CardContent></Card>
+          ))
+        ) : (
+          <>
+            <StatCard label="Total Entries" value={stats.count.toString()} />
+            <StatCard label="Gross Sent" value={`${stats.totalGross.toFixed(2)} g`} />
+            <StatCard label="Fine Metal" value={`${stats.totalFine.toFixed(2)} g`} />
+            <StatCard label="Loss" value={`${stats.totalLoss.toFixed(2)} g`} />
+            <StatCard label="Recovered" value={`${stats.totalRecovered.toFixed(2)} g`} highlight />
+          </>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
