@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Search, Flame, ArrowRightCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLocation } from 'react-router-dom';
