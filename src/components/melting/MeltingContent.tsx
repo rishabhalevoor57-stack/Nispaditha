@@ -131,7 +131,22 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
         </Select>
       </div>
 
-      <DataTable data={filtered} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+      {!loading && filtered.length === 0 ? (
+        <div className="rounded-xl border bg-card p-12 text-center shadow-card">
+          <Flame className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+          <div className="font-medium">No melting entries yet</div>
+          <div className="text-sm text-muted-foreground mb-4">
+            {entries.length === 0 ? 'Create your first melting entry to track refining and recovery.' : 'No entries match your filters.'}
+          </div>
+          {showNewButton && entries.length === 0 && (
+            <Button onClick={() => { setAutoPrefill(undefined); setOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" /> New Melting Entry
+            </Button>
+          )}
+        </div>
+      ) : (
+        <DataTable data={filtered} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+      )}
 
       <MeltingFormDialog
         open={open}
