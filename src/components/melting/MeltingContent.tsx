@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Search, Flame, ArrowRightCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLocation } from 'react-router-dom';
@@ -101,11 +102,19 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-        <StatCard label="Total Entries" value={stats.count.toString()} />
-        <StatCard label="Gross Sent" value={`${stats.totalGross.toFixed(2)} g`} />
-        <StatCard label="Fine Metal" value={`${stats.totalFine.toFixed(2)} g`} />
-        <StatCard label="Loss" value={`${stats.totalLoss.toFixed(2)} g`} />
-        <StatCard label="Recovered" value={`${stats.totalRecovered.toFixed(2)} g`} highlight />
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <Card key={i}><CardContent className="p-4 space-y-2"><Skeleton className="h-3 w-20" /><Skeleton className="h-6 w-16" /></CardContent></Card>
+          ))
+        ) : (
+          <>
+            <StatCard label="Total Entries" value={stats.count.toString()} />
+            <StatCard label="Gross Sent" value={`${stats.totalGross.toFixed(2)} g`} />
+            <StatCard label="Fine Metal" value={`${stats.totalFine.toFixed(2)} g`} />
+            <StatCard label="Loss" value={`${stats.totalLoss.toFixed(2)} g`} />
+            <StatCard label="Recovered" value={`${stats.totalRecovered.toFixed(2)} g`} highlight />
+          </>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
@@ -122,7 +131,22 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
         </Select>
       </div>
 
-      <DataTable data={filtered} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+      {!loading && filtered.length === 0 ? (
+        <div className="rounded-xl border bg-card p-12 text-center shadow-card">
+          <Flame className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+          <div className="font-medium">No melting entries yet</div>
+          <div className="text-sm text-muted-foreground mb-4">
+            {entries.length === 0 ? 'Create your first melting entry to track refining and recovery.' : 'No entries match your filters.'}
+          </div>
+          {showNewButton && entries.length === 0 && (
+            <Button onClick={() => { setAutoPrefill(undefined); setOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" /> New Melting Entry
+            </Button>
+          )}
+        </div>
+      ) : (
+        <DataTable data={filtered} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+      )}
 
       <MeltingFormDialog
         open={open}
