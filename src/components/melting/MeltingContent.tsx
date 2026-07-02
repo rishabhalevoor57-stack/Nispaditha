@@ -161,6 +161,19 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
             {STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, ' ')}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={`${sortKey}:${sortDir}`} onValueChange={(v) => { const [k, d] = v.split(':') as [typeof sortKey, 'asc' | 'desc']; setSortKey(k); setSortDir(d); }}>
+          <SelectTrigger className="w-56"><ArrowUpDown className="w-3 h-3 mr-2" /><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="entry_date:desc">Date (Newest first)</SelectItem>
+            <SelectItem value="entry_date:asc">Date (Oldest first)</SelectItem>
+            <SelectItem value="melting_number:desc">ID (Z → A)</SelectItem>
+            <SelectItem value="melting_number:asc">ID (A → Z)</SelectItem>
+            <SelectItem value="gross_weight:desc">Gross weight (High → Low)</SelectItem>
+            <SelectItem value="gross_weight:asc">Gross weight (Low → High)</SelectItem>
+            <SelectItem value="recovered_weight:desc">Recovered (High → Low)</SelectItem>
+            <SelectItem value="recovered_weight:asc">Recovered (Low → High)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {!loading && filtered.length === 0 ? (
@@ -177,7 +190,16 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
           )}
         </div>
       ) : (
-        <DataTable data={filtered} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+        <>
+          <DataTable data={paginated} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+          <InventoryPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            itemsPerPage={pageSize}
+            onPageChange={setPage}
+          />
+        </>
       )}
 
       <MeltingFormDialog
