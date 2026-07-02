@@ -202,13 +202,17 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
         </div>
       ) : (
         <>
-          <DataTable data={paginated} columns={columns} isLoading={loading || isTransitioning} emptyMessage="No melting entries yet." />
+          {isTransitioning && !loading ? (
+            <SkeletonTable columns={columns} />
+          ) : (
+            <DataTable data={paginated} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+          )}
           <InventoryPagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={filtered.length}
             itemsPerPage={pageSize}
-            onPageChange={setPage}
+            onPageChange={(p) => { setIsTransitioning(true); setPage(p); }}
             disabled={loading || isTransitioning}
           />
         </>
