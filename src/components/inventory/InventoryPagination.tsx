@@ -16,6 +16,7 @@ export function InventoryPagination({
   totalItems,
   itemsPerPage,
   onPageChange,
+  disabled,
 }: InventoryPaginationProps) {
   if (totalPages <= 1) return null;
 
