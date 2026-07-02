@@ -250,3 +250,32 @@ function StatCard({ label, value, highlight }: { label: string; value: string; h
     </Card>
   );
 }
+
+function SkeletonTable({ columns }: { columns: { key: string; header: string }[] }) {
+  return (
+    <div className="rounded-xl border bg-card overflow-hidden shadow-card">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
+            {columns.map((col) => (
+              <TableHead key={col.key} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {col.header}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <TableRow key={i}>
+              {columns.map((col) => (
+                <TableCell key={col.key}>
+                  <Skeleton className="h-4 w-full" />
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
