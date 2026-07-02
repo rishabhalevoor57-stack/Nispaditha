@@ -23,6 +23,10 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
   const [sendDlg, setSendDlg] = useState<MeltingEntry | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortKey, setSortKey] = useState<'entry_date' | 'melting_number' | 'gross_weight' | 'recovered_weight'>('entry_date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
   const isAdmin = useIsAdmin();
   const location = useLocation();
   const prefill = (location.state as { prefill?: Partial<MeltingEntry> } | null)?.prefill;
