@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, Flame, ArrowRightCircle, Trash2 } from 'lucide-react';
+import { InventoryPagination } from '@/components/inventory/InventoryPagination';
+import { Plus, Search, Flame, ArrowRightCircle, Trash2, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLocation } from 'react-router-dom';
 import { useMelting, type MeltingEntry } from '@/hooks/useMelting';
@@ -22,6 +23,10 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
   const [sendDlg, setSendDlg] = useState<MeltingEntry | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortKey, setSortKey] = useState<'entry_date' | 'melting_number' | 'gross_weight' | 'recovered_weight'>('entry_date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
   const isAdmin = useIsAdmin();
   const location = useLocation();
   const prefill = (location.state as { prefill?: Partial<MeltingEntry> } | null)?.prefill;
@@ -44,13 +49,36 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
     return { totalGross, totalFine, totalRecovered, totalLoss, count: entries.length };
   }, [entries]);
 
-  const filtered = entries.filter((e) => {
-    if (statusFilter !== 'all' && e.status !== statusFilter) return false;
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    if (!q) return true;
-    return [e.melting_number, e.vendor_name, e.customer_name, e.description, e.inventory_sku]
-      .some((v) => (v || '').toLowerCase().includes(q));
-  });
+    const list = entries.filter((e) => {
+      if (statusFilter !== 'all' && e.status !== statusFilter) return false;
+      if (!q) return true;
+      return [e.melting_number, e.vendor_name, e.customer_name, e.description, e.inventory_sku]
+        .some((v) => (v || '').toLowerCase().includes(q));
+    });
+    const sorted = [...list].sort((a, b) => {
+      let av: number | string;
+      let bv: number | string;
+      if (sortKey === 'entry_date') { av = new Date(a.entry_date).getTime(); bv = new Date(b.entry_date).getTime(); }
+      else if (sortKey === 'gross_weight') { av = Number(a.gross_weight || 0); bv = Number(b.gross_weight || 0); }
+      else if (sortKey === 'recovered_weight') { av = Number(a.recovered_weight || 0); bv = Number(b.recovered_weight || 0); }
+      else { av = a.melting_number || ''; bv = b.melting_number || ''; }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [entries, search, statusFilter, sortKey, sortDir]);
+
+  useEffect(() => { setPage(1); }, [search, statusFilter, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+
+
 
   const columns = [
     { key: 'melting_number', header: 'ID', cell: (e: MeltingEntry) => <span className="font-mono text-xs">{e.melting_number}</span> },
@@ -129,6 +157,19 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
             {STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, ' ')}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={`${sortKey}:${sortDir}`} onValueChange={(v) => { const [k, d] = v.split(':') as [typeof sortKey, 'asc' | 'desc']; setSortKey(k); setSortDir(d); }}>
+          <SelectTrigger className="w-56"><ArrowUpDown className="w-3 h-3 mr-2" /><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="entry_date:desc">Date (Newest first)</SelectItem>
+            <SelectItem value="entry_date:asc">Date (Oldest first)</SelectItem>
+            <SelectItem value="melting_number:desc">ID (Z → A)</SelectItem>
+            <SelectItem value="melting_number:asc">ID (A → Z)</SelectItem>
+            <SelectItem value="gross_weight:desc">Gross weight (High → Low)</SelectItem>
+            <SelectItem value="gross_weight:asc">Gross weight (Low → High)</SelectItem>
+            <SelectItem value="recovered_weight:desc">Recovered (High → Low)</SelectItem>
+            <SelectItem value="recovered_weight:asc">Recovered (Low → High)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {!loading && filtered.length === 0 ? (
@@ -145,7 +186,16 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
           )}
         </div>
       ) : (
-        <DataTable data={filtered} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+        <>
+          <DataTable data={paginated} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+          <InventoryPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            itemsPerPage={pageSize}
+            onPageChange={setPage}
+          />
+        </>
       )}
 
       <MeltingFormDialog
