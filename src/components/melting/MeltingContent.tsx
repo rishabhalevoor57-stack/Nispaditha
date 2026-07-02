@@ -40,7 +40,6 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
   const prefill = (location.state as { prefill?: Partial<MeltingEntry> } | null)?.prefill;
   const [autoPrefill, setAutoPrefill] = useState<Partial<MeltingEntry> | undefined>();
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const prevSortRef = useRef({ sortKey, sortDir, page });
 
   useEffect(() => {
     if (consumeRouteState && prefill) {
@@ -52,16 +51,10 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
   }, []);
 
   useEffect(() => {
-    const prev = prevSortRef.current;
-    if (prev.sortKey !== sortKey || prev.sortDir !== sortDir || prev.page !== page) {
-      if (!loading) {
-        setIsTransitioning(true);
-        const t = setTimeout(() => setIsTransitioning(false), 300);
-        return () => clearTimeout(t);
-      }
-    }
-    prevSortRef.current = { sortKey, sortDir, page };
-  }, [sortKey, sortDir, page, loading]);
+    if (!isTransitioning) return;
+    const t = setTimeout(() => setIsTransitioning(false), 300);
+    return () => clearTimeout(t);
+  }, [isTransitioning]);
 
   const stats = useMemo(() => {
     const totalGross = entries.reduce((s, e) => s + Number(e.gross_weight || 0), 0);
