@@ -33,7 +33,7 @@ export function InventoryPagination({
           variant="outline"
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          disabled={currentPage === 1 || disabled}
         >
           <ChevronLeft className="w-4 h-4" />
           Previous
