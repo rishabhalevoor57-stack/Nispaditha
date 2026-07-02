@@ -49,13 +49,52 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
     return { totalGross, totalFine, totalRecovered, totalLoss, count: entries.length };
   }, [entries]);
 
-  const filtered = entries.filter((e) => {
-    if (statusFilter !== 'all' && e.status !== statusFilter) return false;
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    if (!q) return true;
-    return [e.melting_number, e.vendor_name, e.customer_name, e.description, e.inventory_sku]
-      .some((v) => (v || '').toLowerCase().includes(q));
-  });
+    const list = entries.filter((e) => {
+      if (statusFilter !== 'all' && e.status !== statusFilter) return false;
+      if (!q) return true;
+      return [e.melting_number, e.vendor_name, e.customer_name, e.description, e.inventory_sku]
+        .some((v) => (v || '').toLowerCase().includes(q));
+    });
+    const sorted = [...list].sort((a, b) => {
+      let av: number | string;
+      let bv: number | string;
+      if (sortKey === 'entry_date') { av = new Date(a.entry_date).getTime(); bv = new Date(b.entry_date).getTime(); }
+      else if (sortKey === 'gross_weight') { av = Number(a.gross_weight || 0); bv = Number(b.gross_weight || 0); }
+      else if (sortKey === 'recovered_weight') { av = Number(a.recovered_weight || 0); bv = Number(b.recovered_weight || 0); }
+      else { av = a.melting_number || ''; bv = b.melting_number || ''; }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [entries, search, statusFilter, sortKey, sortDir]);
+
+  useEffect(() => { setPage(1); }, [search, statusFilter, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const toggleSort = (key: typeof sortKey) => {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+
+  const sortIcon = (key: typeof sortKey) => (
+    <ArrowUpDown className={`inline w-3 h-3 ml-1 ${sortKey === key ? 'text-primary' : 'opacity-40'}`} />
+  );
+
+  const sortableHeader = (label: string, key: typeof sortKey) => (
+    <button type="button" onClick={() => toggleSort(key)} className="inline-flex items-center hover:text-foreground">
+      {label}{sortIcon(key)}
+    </button>
+  );
+
+  const columns = [
+    { key: 'melting_number', header: sortableHeader('ID', 'melting_number') as unknown as string, cell: (e: MeltingEntry) => <span className="font-mono text-xs">{e.melting_number}</span> },
+    { key: 'entry_date', header: sortableHeader('Date', 'entry_date') as unknown as string, cell: (e: MeltingEntry) => format(new Date(e.entry_date), 'dd MMM yyyy') },
 
   const columns = [
     { key: 'melting_number', header: 'ID', cell: (e: MeltingEntry) => <span className="font-mono text-xs">{e.melting_number}</span> },
