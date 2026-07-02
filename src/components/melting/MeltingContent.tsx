@@ -172,7 +172,7 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
             {STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, ' ')}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={`${sortKey}:${sortDir}`} onValueChange={(v) => { const [k, d] = v.split(':') as [typeof sortKey, 'asc' | 'desc']; setSortKey(k); setSortDir(d); }}>
+        <Select value={`${sortKey}:${sortDir}`} onValueChange={(v) => { setIsTransitioning(true); const [k, d] = v.split(':') as [typeof sortKey, 'asc' | 'desc']; setSortKey(k); setSortDir(d); }}>
           <SelectTrigger className="w-56"><ArrowUpDown className="w-3 h-3 mr-2" /><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="entry_date:desc">Date (Newest first)</SelectItem>
