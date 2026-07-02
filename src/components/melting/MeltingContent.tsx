@@ -77,10 +77,6 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
   const currentPage = Math.min(page, totalPages);
   const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const toggleSort = (key: typeof sortKey) => {
-    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortKey(key); setSortDir('desc'); }
-  };
 
 
 
