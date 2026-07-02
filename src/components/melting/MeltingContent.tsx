@@ -82,15 +82,7 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
     else { setSortKey(key); setSortDir('desc'); }
   };
 
-  const sortIcon = (key: typeof sortKey) => (
-    <ArrowUpDown className={`inline w-3 h-3 ml-1 ${sortKey === key ? 'text-primary' : 'opacity-40'}`} />
-  );
 
-  const sortableHeader = (label: string, key: typeof sortKey) => (
-    <button type="button" onClick={() => toggleSort(key)} className="inline-flex items-center hover:text-foreground">
-      {label}{sortIcon(key)}
-    </button>
-  );
 
   const columns = [
     { key: 'melting_number', header: 'ID', cell: (e: MeltingEntry) => <span className="font-mono text-xs">{e.melting_number}</span> },
