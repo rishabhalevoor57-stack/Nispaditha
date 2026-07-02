@@ -5,6 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { InventoryPagination } from '@/components/inventory/InventoryPagination';
 import { Plus, Search, Flame, ArrowRightCircle, Trash2, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
@@ -31,6 +39,7 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
   const location = useLocation();
   const prefill = (location.state as { prefill?: Partial<MeltingEntry> } | null)?.prefill;
   const [autoPrefill, setAutoPrefill] = useState<Partial<MeltingEntry> | undefined>();
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     if (consumeRouteState && prefill) {
@@ -40,6 +49,12 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!isTransitioning) return;
+    const t = setTimeout(() => setIsTransitioning(false), 300);
+    return () => clearTimeout(t);
+  }, [isTransitioning]);
 
   const stats = useMemo(() => {
     const totalGross = entries.reduce((s, e) => s + Number(e.gross_weight || 0), 0);
@@ -157,7 +172,7 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
             {STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, ' ')}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={`${sortKey}:${sortDir}`} onValueChange={(v) => { const [k, d] = v.split(':') as [typeof sortKey, 'asc' | 'desc']; setSortKey(k); setSortDir(d); }}>
+        <Select value={`${sortKey}:${sortDir}`} onValueChange={(v) => { setIsTransitioning(true); const [k, d] = v.split(':') as [typeof sortKey, 'asc' | 'desc']; setSortKey(k); setSortDir(d); }}>
           <SelectTrigger className="w-56"><ArrowUpDown className="w-3 h-3 mr-2" /><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="entry_date:desc">Date (Newest first)</SelectItem>
@@ -187,13 +202,18 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
         </div>
       ) : (
         <>
-          <DataTable data={paginated} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+          {isTransitioning && !loading ? (
+            <SkeletonTable columns={columns} />
+          ) : (
+            <DataTable data={paginated} columns={columns} isLoading={loading} emptyMessage="No melting entries yet." />
+          )}
           <InventoryPagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={filtered.length}
             itemsPerPage={pageSize}
-            onPageChange={setPage}
+            onPageChange={(p) => { setIsTransitioning(true); setPage(p); }}
+            disabled={loading || isTransitioning}
           />
         </>
       )}
@@ -228,5 +248,34 @@ function StatCard({ label, value, highlight }: { label: string; value: string; h
         <div className={`text-xl font-bold ${highlight ? 'text-primary' : ''}`}>{value}</div>
       </CardContent>
     </Card>
+  );
+}
+
+function SkeletonTable({ columns }: { columns: { key: string; header: string }[] }) {
+  return (
+    <div className="rounded-xl border bg-card overflow-hidden shadow-card">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
+            {columns.map((col) => (
+              <TableHead key={col.key} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {col.header}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <TableRow key={i}>
+              {columns.map((col) => (
+                <TableCell key={col.key}>
+                  <Skeleton className="h-4 w-full" />
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

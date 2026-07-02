@@ -7,6 +7,7 @@ interface InventoryPaginationProps {
   totalItems: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
+  disabled?: boolean;
 }
 
 export function InventoryPagination({
@@ -15,6 +16,7 @@ export function InventoryPagination({
   totalItems,
   itemsPerPage,
   onPageChange,
+  disabled,
 }: InventoryPaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -31,7 +33,7 @@ export function InventoryPagination({
           variant="outline"
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          disabled={currentPage === 1 || disabled}
         >
           <ChevronLeft className="w-4 h-4" />
           Previous
@@ -56,6 +58,7 @@ export function InventoryPagination({
                 size="sm"
                 className="w-8"
                 onClick={() => onPageChange(page)}
+                disabled={disabled}
               >
                 {page}
               </Button>
@@ -66,7 +69,7 @@ export function InventoryPagination({
           variant="outline"
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={currentPage === totalPages || disabled}
         >
           Next
           <ChevronRight className="w-4 h-4" />
