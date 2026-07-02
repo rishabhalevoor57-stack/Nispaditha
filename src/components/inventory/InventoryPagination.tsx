@@ -7,6 +7,7 @@ interface InventoryPaginationProps {
   totalItems: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
+  disabled?: boolean;
 }
 
 export function InventoryPagination({
