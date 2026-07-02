@@ -58,6 +58,7 @@ export function InventoryPagination({
                 size="sm"
                 className="w-8"
                 onClick={() => onPageChange(page)}
+                disabled={disabled}
               >
                 {page}
               </Button>
