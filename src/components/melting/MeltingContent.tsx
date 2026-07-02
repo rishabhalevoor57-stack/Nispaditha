@@ -93,10 +93,6 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
   );
 
   const columns = [
-    { key: 'melting_number', header: sortableHeader('ID', 'melting_number') as unknown as string, cell: (e: MeltingEntry) => <span className="font-mono text-xs">{e.melting_number}</span> },
-    { key: 'entry_date', header: sortableHeader('Date', 'entry_date') as unknown as string, cell: (e: MeltingEntry) => format(new Date(e.entry_date), 'dd MMM yyyy') },
-
-  const columns = [
     { key: 'melting_number', header: 'ID', cell: (e: MeltingEntry) => <span className="font-mono text-xs">{e.melting_number}</span> },
     { key: 'entry_date', header: 'Date', cell: (e: MeltingEntry) => format(new Date(e.entry_date), 'dd MMM yyyy') },
     { key: 'source_type', header: 'Source', cell: (e: MeltingEntry) => <Badge variant="outline" className="capitalize">{e.source_type.replace('_', ' ')}</Badge> },
