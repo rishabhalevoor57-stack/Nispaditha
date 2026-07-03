@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
 import { GlobalSearchDialog } from './GlobalSearchDialog';
+import { BranchSwitcher } from './BranchSwitcher';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -27,7 +28,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       <Sidebar />
       <main className="flex-1 lg:p-8 p-4 pt-20 lg:pt-8 overflow-auto">
         <div className="max-w-7xl mx-auto animate-fade-in">
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end mb-4 gap-2">
+            <BranchSwitcher />
             <Button
               variant="outline"
               size="sm"

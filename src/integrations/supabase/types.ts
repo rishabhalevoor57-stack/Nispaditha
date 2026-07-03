@@ -92,6 +92,51 @@ export type Database = {
         }
         Relationships: []
       }
+      branches: {
+        Row: {
+          address: string | null
+          code: string
+          created_at: string
+          email: string | null
+          gst_number: string | null
+          id: string
+          is_default: boolean
+          manager_id: string | null
+          name: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          code: string
+          created_at?: string
+          email?: string | null
+          gst_number?: string | null
+          id?: string
+          is_default?: boolean
+          manager_id?: string | null
+          name: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          code?: string
+          created_at?: string
+          email?: string | null
+          gst_number?: string | null
+          id?: string
+          is_default?: boolean
+          manager_id?: string | null
+          name?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       business_settings: {
         Row: {
           address: string | null
@@ -145,6 +190,7 @@ export type Database = {
       }
       buybacks: {
         Row: {
+          branch_id: string | null
           client_id: string | null
           created_at: string
           destination: string
@@ -160,6 +206,7 @@ export type Database = {
           weight: number
         }
         Insert: {
+          branch_id?: string | null
           client_id?: string | null
           created_at?: string
           destination?: string
@@ -175,6 +222,7 @@ export type Database = {
           weight?: number
         }
         Update: {
+          branch_id?: string | null
           client_id?: string | null
           created_at?: string
           destination?: string
@@ -190,6 +238,13 @@ export type Database = {
           weight?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "buybacks_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "buybacks_client_id_fkey"
             columns: ["client_id"]
@@ -334,6 +389,7 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          branch_id: string | null
           comments: string | null
           created_at: string
           email: string | null
@@ -350,6 +406,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          branch_id?: string | null
           comments?: string | null
           created_at?: string
           email?: string | null
@@ -366,6 +423,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          branch_id?: string | null
           comments?: string | null
           created_at?: string
           email?: string | null
@@ -380,7 +438,15 @@ export type Database = {
           total_purchases?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       custom_order_components: {
         Row: {
@@ -515,6 +581,7 @@ export type Database = {
         Row: {
           additional_charge: number
           additional_charge_label: string | null
+          branch_id: string | null
           client_name: string
           components_total: number
           components_weight: number
@@ -544,6 +611,7 @@ export type Database = {
         Insert: {
           additional_charge?: number
           additional_charge_label?: string | null
+          branch_id?: string | null
           client_name: string
           components_total?: number
           components_weight?: number
@@ -573,6 +641,7 @@ export type Database = {
         Update: {
           additional_charge?: number
           additional_charge_label?: string | null
+          branch_id?: string | null
           client_name?: string
           components_total?: number
           components_weight?: number
@@ -601,6 +670,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "custom_orders_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "custom_orders_converted_to_invoice_id_fkey"
             columns: ["converted_to_invoice_id"]
             isOneToOne: false
@@ -614,6 +690,7 @@ export type Database = {
           amount: number
           attachment_url: string | null
           bill_image_url: string | null
+          branch_id: string | null
           category: string
           created_at: string
           created_by: string | null
@@ -639,6 +716,7 @@ export type Database = {
           amount: number
           attachment_url?: string | null
           bill_image_url?: string | null
+          branch_id?: string | null
           category: string
           created_at?: string
           created_by?: string | null
@@ -664,6 +742,7 @@ export type Database = {
           amount?: number
           attachment_url?: string | null
           bill_image_url?: string | null
+          branch_id?: string | null
           category?: string
           created_at?: string
           created_by?: string | null
@@ -685,7 +764,15 @@ export type Database = {
           updated_by?: string | null
           weight_grams?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hidden_sold_entries: {
         Row: {
@@ -834,6 +921,7 @@ export type Database = {
           amount_after_credits: number
           amount_paid_via_mode: number
           balance_due: number
+          branch_id: string | null
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -873,6 +961,7 @@ export type Database = {
           amount_after_credits?: number
           amount_paid_via_mode?: number
           balance_due?: number
+          branch_id?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -912,6 +1001,7 @@ export type Database = {
           amount_after_credits?: number
           amount_paid_via_mode?: number
           balance_due?: number
+          branch_id?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -947,6 +1037,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_client_id_fkey"
             columns: ["client_id"]
@@ -1011,6 +1108,7 @@ export type Database = {
       melting_entries: {
         Row: {
           avg_purity: number
+          branch_id: string | null
           client_id: string | null
           created_at: string
           created_by: string | null
@@ -1038,6 +1136,7 @@ export type Database = {
         }
         Insert: {
           avg_purity?: number
+          branch_id?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1065,6 +1164,7 @@ export type Database = {
         }
         Update: {
           avg_purity?: number
+          branch_id?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1091,6 +1191,13 @@ export type Database = {
           vendor_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "melting_entries_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "melting_entries_client_id_fkey"
             columns: ["client_id"]
@@ -1248,6 +1355,7 @@ export type Database = {
           address: string | null
           advance_received: number | null
           balance: number | null
+          branch_id: string | null
           created_at: string
           created_by: string | null
           customer_name: string
@@ -1270,6 +1378,7 @@ export type Database = {
           address?: string | null
           advance_received?: number | null
           balance?: number | null
+          branch_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_name: string
@@ -1292,6 +1401,7 @@ export type Database = {
           address?: string | null
           advance_received?: number | null
           balance?: number | null
+          branch_id?: string | null
           created_at?: string
           created_by?: string | null
           customer_name?: string
@@ -1310,7 +1420,15 @@ export type Database = {
           time_slot?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "order_notes_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_store_quantities: {
         Row: {
@@ -1357,6 +1475,7 @@ export type Database = {
       products: {
         Row: {
           bangle_size: string | null
+          branch_id: string | null
           category_id: string | null
           created_at: string
           date_ordered: string | null
@@ -1388,6 +1507,7 @@ export type Database = {
         }
         Insert: {
           bangle_size?: string | null
+          branch_id?: string | null
           category_id?: string | null
           created_at?: string
           date_ordered?: string | null
@@ -1419,6 +1539,7 @@ export type Database = {
         }
         Update: {
           bangle_size?: string | null
+          branch_id?: string | null
           category_id?: string | null
           created_at?: string
           date_ordered?: string | null
@@ -1450,6 +1571,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "products_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -1474,6 +1602,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          assigned_branch_id: string | null
           avatar_url: string | null
           created_at: string
           email: string | null
@@ -1484,6 +1613,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_branch_id?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -1494,6 +1624,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_branch_id?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -1503,7 +1634,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_assigned_branch_id_fkey"
+            columns: ["assigned_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_history: {
         Row: {
@@ -1533,6 +1672,7 @@ export type Database = {
         Row: {
           add_to_inventory: boolean
           amount_credited: number | null
+          branch_id: string | null
           client_id: string | null
           client_name: string | null
           client_phone: string | null
@@ -1569,6 +1709,7 @@ export type Database = {
         Insert: {
           add_to_inventory?: boolean
           amount_credited?: number | null
+          branch_id?: string | null
           client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
@@ -1605,6 +1746,7 @@ export type Database = {
         Update: {
           add_to_inventory?: boolean
           amount_credited?: number | null
+          branch_id?: string | null
           client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
@@ -1639,6 +1781,13 @@ export type Database = {
           weight_grams?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "repair_items_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "repair_items_client_id_fkey"
             columns: ["client_id"]
@@ -1733,6 +1882,7 @@ export type Database = {
       return_exchanges: {
         Row: {
           additional_charge: number
+          branch_id: string | null
           buyback_kind: string | null
           client_id: string | null
           client_name: string | null
@@ -1760,6 +1910,7 @@ export type Database = {
         }
         Insert: {
           additional_charge?: number
+          branch_id?: string | null
           buyback_kind?: string | null
           client_id?: string | null
           client_name?: string | null
@@ -1787,6 +1938,7 @@ export type Database = {
         }
         Update: {
           additional_charge?: number
+          branch_id?: string | null
           buyback_kind?: string | null
           client_id?: string | null
           client_name?: string | null
@@ -1814,6 +1966,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "return_exchanges_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "return_exchanges_original_invoice_id_fkey"
             columns: ["original_invoice_id"]
             isOneToOne: false
@@ -1831,6 +1990,7 @@ export type Database = {
       }
       service_forms: {
         Row: {
+          branch_id: string | null
           client_id: string | null
           client_name: string
           client_phone: string | null
@@ -1857,6 +2017,7 @@ export type Database = {
           weight_grams: number
         }
         Insert: {
+          branch_id?: string | null
           client_id?: string | null
           client_name: string
           client_phone?: string | null
@@ -1883,6 +2044,7 @@ export type Database = {
           weight_grams?: number
         }
         Update: {
+          branch_id?: string | null
           client_id?: string | null
           client_name?: string
           client_phone?: string | null
@@ -1908,7 +2070,15 @@ export type Database = {
           updated_at?: string
           weight_grams?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "service_forms_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sku_registry: {
         Row: {
@@ -2552,6 +2722,7 @@ export type Database = {
         Args: { p_amount: number; p_name: string; p_phone: string }
         Returns: string
       }
+      user_can_access_branch: { Args: { _branch_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "staff"
