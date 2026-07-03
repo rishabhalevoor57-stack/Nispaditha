@@ -163,9 +163,9 @@ export function MeltingContent({ showNewButton = true, consumeRouteState = true 
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search ID, vendor, customer, SKU..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+          <Input placeholder="Search ID, vendor, customer, SKU..." value={search} onChange={(e) => { setIsTransitioning(true); setSearch(e.target.value); }} className="pl-10" />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => { setIsTransitioning(true); setStatusFilter(v); }}>
           <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
