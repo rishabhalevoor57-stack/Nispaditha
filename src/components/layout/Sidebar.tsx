@@ -23,6 +23,7 @@ import {
   Wrench,
   Barcode,
   ChevronDown,
+  Building2,
 } from 'lucide-react';
 
 
@@ -49,6 +50,7 @@ const navItems: { icon: any; label: string; path: string; adminOnly?: boolean }[
 
 const settingsItems: { icon: any; label: string; path: string; adminOnly?: boolean }[] = [
   { icon: Settings, label: 'General', path: '/settings' },
+  { icon: Building2, label: 'Branches', path: '/branches' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
   { icon: Barcode, label: 'SKU Generator', path: '/sku-generator' },
   { icon: History, label: 'Activity Log', path: '/activity-log' },
