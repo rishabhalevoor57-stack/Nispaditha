@@ -1,113 +1,102 @@
-## SKU Generator Module — Implementation Plan
 
-A new top-level module to generate, reserve, manage, print, export, and track SKUs before they are attached to inventory. Acts as the **single source of truth** for SKU creation.
+# Phase 2 Expansion Plan
 
----
-
-### 1. Database (single migration)
-
-**New table: `sku_registry`** — permanent reservation table. Once a row is inserted, it is NEVER deleted (only status changes).
-
-Columns:
-- `sku` (text, PRIMARY KEY) — full code e.g. `NABSCP80`
-- `type_of_work_code`, `vendor_code`, `category_code`, `running_number`
-- `type_of_work_id`, `vendor_id` (FK suppliers), `category_id` (FK categories)
-- `status` (enum: `generated | assigned | in_inventory | sold | archived | deleted_product | used | inactive`)
-- `product_id` (FK products, nullable) — set when assigned
-- `barcode_value` (text) — same as SKU (Code128)
-- `qr_payload` (jsonb) — SKU + vendor + category + work + date + status
-- `notes`
-- `created_by`, `created_at`, `updated_at`
-
-**Add code columns** so codes are stable and editable:
-- `categories.code` (text, nullable, unique-when-not-null)
-- `suppliers.code` (text, nullable, unique-when-not-null)
-- `types_of_work.code` (text, nullable, unique-when-not-null)
-
-**RPC `generate_skus(type_of_work_id, vendor_id, category_id, quantity)`** — security definer, atomic:
-1. Resolve/auto-fill codes (Type of Work from fixed map; Vendor from initials; Category from first letter or 2 letters).
-2. Compute prefix `[TW][V][C]`.
-3. Lock the registry, find `MAX(running_number)` for that prefix.
-4. Insert N new rows starting at `MAX+1`, status `generated`.
-5. Cross-check against `products.sku`, `manual_sold_items.sku`, `repair_items.sku`, `return_exchange_items.sku`, `custom_order_items.sku` — skip used numbers.
-6. Return inserted SKUs.
-
-**Trigger on `products`**: when an inventory item is created/updated/soft-deleted/sold, sync the corresponding `sku_registry.status` and `product_id`. Never delete the registry row.
-
-GRANTs + RLS: authenticated full SELECT/INSERT/UPDATE, only admins can UPDATE status to `inactive`. No DELETE for anyone.
+This is a large scope. To keep the app stable and shippable, I'll deliver it in **4 sequenced phases**, each independently testable. Nothing existing gets removed or renamed — only additive changes.
 
 ---
 
-### 2. Frontend
+## Phase A — Multi-Branch Foundation (do first, it unblocks everything else)
 
-**Sidebar**: new entry `SKU Generator` (icon: Barcode), route `/sku-generator`.
+**Why first:** CRM, Reports, and Gold all filter by branch, so the branch column must exist before those modules can key off it.
 
-**Pages / components** (under `src/pages/SkuGenerator.tsx` + `src/components/sku/`):
+**DB**
+- New table `branches` (code, name, address, phone, email, gst_number, manager_id, status, is_default).
+- Seed **Main Branch — Nispaditha Ventures LLP** (`BLR-MAIN`) and backfill it as `branch_id` on every existing row.
+- Add nullable `branch_id uuid references branches(id)` to: `products`, `invoices`, `repair_items`, `service_forms`, `clients`, `custom_orders`, `buybacks`, `return_exchanges`, `melting_entries`, `expenses`, `order_notes`. Default = Main Branch.
+- Add `assigned_branch_id` on `profiles` for Manager/Staff scoping. Owner (admin) sees all.
+- RLS: keep current policies; add branch-scoping helper `public.user_can_access_branch(uuid)` used in future filters (non-breaking).
 
-1. **Dashboard tab** — 7 stat cards (Total / Assigned / Available / Sold / Archived / Deleted / Recently Generated list).
-2. **Generate tab** — form with: Type of Work, Vendor, Category, Quantity (with quick buttons 10/50/100/custom). Shows preview prefix + next number. Submit → calls RPC, shows generated list.
-3. **History tab** — searchable/filterable table (SKU, vendor, category, work, date, created by, status, assigned product, barcode preview, QR preview). Filters: status, vendor, category, work, date range, free-text.
-4. **Label printing** — select rows → "Print Labels" opens a print-ready sheet (jsPDF) with barcode (JsBarcode) + QR (qrcode) + SKU + vendor + category. Bulk select supported.
-5. **Export** — Excel/CSV/PDF of selected or filtered set; dedicated Barcode-only sheet and QR-only sheet.
-
-**Inventory integration** (`ProductFormDialog`):
-- New SKU input becomes an **autocomplete dropdown** of `status='generated'` SKUs from `sku_registry`. Admin toggle "Enter manually" preserved.
-- On save, validate SKU exists in registry; trigger updates status to `assigned`/`in_inventory`.
-
----
-
-### 3. Code generation rules (frontend helpers)
-
-- `typeOfWorkCode`: fixed map (NA, CA, HM, MM, AN, PO, CU). New entries → first 2 letters uppercase, fallback to existing `code` column.
-- `vendorCode`: stored `code` if present, else initials of words (3 chars), with collision suffix.
-- `categoryCode`: fixed map (P, R, C, B, E, N, A, BG, CN), else first letter / 2 letters, with collision suffix.
-- Codes persist back into `categories.code` / `suppliers.code` / `types_of_work.code` on first generation so future generations are stable.
+**Frontend**
+- New page `/settings/branches` (Admin only): list, create, edit, activate/deactivate.
+- Global **Branch Switcher** in the top bar: "All Branches" (admin only) or a specific branch. Stored in a `useBranchContext` + localStorage.
+- Wire the switcher as an optional filter on: Dashboard, Inventory, Invoices, Repairs, Services, Custom Orders, Buyback/Exchange, Melting, Expenses, Pending Payments. Default = current user's assigned branch (or Main).
+- Do **not** hard-block existing screens if `branch_id` is null — treat null as Main.
 
 ---
 
-### 4. Libraries to install
+## Phase B — Gold Support
 
-- `jsbarcode` — Code128 barcode rendering
-- `qrcode` — QR generation (canvas + dataURL)
+**DB**
+- Extend `rate_history` and `business_settings` with `gold_rate_22k`, `gold_rate_18k`, `gold_rate_24k` (silver rate untouched).
+- `products.metal_type` already exists; ensure `'gold'` is a first-class value and add `gold_purity` (`22K`/`18K`/`24K`) column.
 
-(`jspdf` + `jspdf-autotable` + `xlsx` already in project for exports.)
-
----
-
-### 5. Permanence guarantees
-
-- Registry rows never deleted (no DELETE policy).
-- Soft-deleting a product, selling, archiving, invoice deletion → only mutate `status`.
-- Cross-check on generation against all other SKU-bearing tables to avoid historical collisions.
-- DB unique constraint on `sku_registry.sku` ensures 100k+ scale.
+**Frontend**
+- Dashboard **Rates card**: show Silver + Gold 22K/18K/24K side by side, each editable inline (admin). Log to `rate_history`.
+- Inventory form: when Metal = Gold, show Purity selector; weight-based billing picks the matching gold rate.
+- `useInvoiceCalculations`: branch on metal_type → pick silver rate OR gold rate (by purity). Flat Price path untouched.
 
 ---
 
-### Files to add / edit
+## Phase C — Customer CRM
 
-**Add**
-- `supabase` migration (table + columns + RPC + triggers + RLS + GRANTs)
-- `src/pages/SkuGenerator.tsx`
-- `src/components/sku/SkuDashboard.tsx`
-- `src/components/sku/SkuGenerateForm.tsx`
-- `src/components/sku/SkuHistoryTable.tsx`
-- `src/components/sku/SkuLabelPrint.tsx`
-- `src/components/sku/SkuPicker.tsx` (autocomplete for inventory)
-- `src/hooks/useSkuRegistry.ts`
-- `src/utils/skuCodes.ts` (code mapping helpers)
-- `src/utils/skuLabelPdf.ts`
+**Frontend only** (data already exists across `clients`, `invoices`, `repair_items`, `service_forms`, `custom_orders`, `buybacks`, `return_exchanges`, `wallet_transactions`).
 
-**Edit**
-- `src/components/layout/Sidebar.tsx` — add nav entry
-- `src/App.tsx` — add route
-- `src/components/inventory/ProductFormDialog.tsx` — integrate `SkuPicker`
-- `package.json` — add `jsbarcode`, `qrcode`
+- Extend `clients` with `email`, `birthday`, `anniversary`, `preferred_metal`, `preferred_category_id`, `notes` (nullable, non-breaking).
+- New route `/customers/:id` — **Customer Profile** with:
+  - **Info card** (all fields, inline edit).
+  - **Financial Summary** cards: Total Purchases, Custom Orders, Repairs, Services, Buybacks, Exchanges, Wallet, Pending, Lifetime Revenue — computed via parallel Supabase queries + a small `useCustomerSummary` hook.
+  - **Timeline**: merged, date-sorted feed of invoices / repairs / custom orders / exchanges / buybacks / services. Each row links to its module.
+  - **Statistics** panel: totals, favourite category, last purchase, last visit, avg bill, top vendor, top product (computed client-side from the same queries).
+  - **Quick Actions** bar: New Invoice / Repair / Service / Custom Order / Exchange / Buyback (prefill customer), plus `tel:` and `wa.me` links.
+- Existing Customers list becomes clickable → profile.
 
 ---
 
-### Confirm before I build
+## Phase D — Reports Center
 
-1. **Auto-codes for new vendors/categories**: I'll auto-derive (initials / first letters) and let admin edit the code later in Settings. OK?
-2. **Manual SKU entry in Inventory**: keep as an **admin-only** override (per rule 20). OK?
-3. **Existing inventory items**: I'll **backfill** `sku_registry` from current `products.sku` on migration so nothing collides. OK?
-4. **Label size**: default to **50mm x 25mm** jewellery tag layout (SKU + barcode + QR + vendor/category). OK or different size?
+**Frontend + a couple of read-only RPCs for heavy aggregations.**
+
+- New route `/settings/reports/center` (keeps existing Reports page intact; this is an upgraded hub).
+- Global filter bar: Today / Yesterday / This Week / This Month / Custom, plus Branch / Employee / Vendor / Category.
+- Report sections (each a tabbed sub-page, lazy-loaded):
+  1. **Sales** — Daily/Weekly/Monthly/Yearly, GST, Payment Mode, by Customer/Category/Vendor/Branch, plus **Silver vs Gold** split.
+  2. **Inventory** — Current, Low, Dead, Fast/Slow moving, Valuation, Ageing, Silver/Gold split.
+  3. **Repairs** — Pending, Completed, Revenue, Status mix, TAT.
+  4. **Custom Orders** — Pending, Completed, Revenue, Delivery.
+  5. **Buyback** — Weight, Amount, Metal recovery.
+  6. **Exchange** — Value, Profit.
+  7. **Melting** — Gross, Recovered, Loss, Inventory added, Vendor-wise.
+  8. **Financial** — P&L, Expenses, Cash Flow, Income, Outstanding (Customer + Vendor).
+  9. **GST** — CGST, SGST, Tax summary, Monthly GST.
+- Every report supports **Export → Excel (xlsx)** and **Export → PDF** via existing pdf/xlsx utilities.
+
+---
+
+## Guardrails (apply to every phase)
+
+- Additive DB only — no drops, no renames, no policy removals.
+- Every new `public` table ships with `GRANT` + RLS + policies in the same migration.
+- Existing invoice numbering, SKU logic, stock triggers, pricing formulas: **untouched**.
+- Match current luxury-fintech UI (gold/slate tokens, shadcn components).
+- Each phase is behind its own migration + PR-sized set of files so we can validate before moving on.
+
+---
+
+## Technical notes
+
+- Branch context: `src/contexts/BranchContext.tsx` + `useBranch()` hook; provider mounted in `App.tsx` above the router.
+- CRM summary: single `useCustomerSummary(clientId)` fires ~7 parallel `supabase.from(...).select('sum/count')` queries with `Promise.all`.
+- Reports aggregations that are expensive (P&L, Ageing, Fast/Slow moving) get SQL views or `security definer` functions to avoid pulling raw rows to the client.
+- Gold rate: reuse existing `rate_history` trigger pattern; add columns, don't fork the table.
+
+---
+
+## Suggested execution order
+
+1. **Approve this plan.**
+2. I ship **Phase A** (branches + switcher + backfill) and we sanity-check existing screens still work.
+3. **Phase B** (Gold) — small, isolated.
+4. **Phase C** (CRM profile).
+5. **Phase D** (Reports Center) — largest, done last so it can filter by branch + metal from day one.
+
+Reply **"go"** to start Phase A, or tell me to reorder / drop anything.
