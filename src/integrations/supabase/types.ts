@@ -2725,7 +2725,15 @@ export type Database = {
       user_can_access_branch: { Args: { _branch_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "staff"
+      app_role:
+        | "admin"
+        | "staff"
+        | "super_admin"
+        | "branch_manager"
+        | "sales_staff"
+        | "technician"
+        | "inventory_manager"
+        | "cashier"
       delivery_type: "pickup" | "home_delivery"
       order_note_status:
         | "order_noted"
@@ -2860,7 +2868,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff"],
+      app_role: [
+        "admin",
+        "staff",
+        "super_admin",
+        "branch_manager",
+        "sales_staff",
+        "technician",
+        "inventory_manager",
+        "cashier",
+      ],
       delivery_type: ["pickup", "home_delivery"],
       order_note_status: [
         "order_noted",
