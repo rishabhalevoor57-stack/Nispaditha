@@ -10,6 +10,8 @@ import { CategoryStockValuation } from '@/components/dashboard/CategoryStockValu
 import { CustomOrdersSummary } from '@/components/dashboard/CustomOrdersSummary';
 import { GSTSalesSummary } from '@/components/dashboard/GSTSalesSummary';
 import { supabase } from '@/integrations/supabase/client';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
+
 import { 
   IndianRupee, 
   TrendingUp, 
