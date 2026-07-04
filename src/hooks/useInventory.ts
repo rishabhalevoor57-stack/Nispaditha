@@ -188,7 +188,9 @@ export function useInventory() {
         category_id: formData.category_id || null,
         supplier_id: formData.supplier_id || null,
         image_url,
-      };
+        branch_id: branch.branchId,
+      } as any;
+
 
       const { data, error } = await supabase.from('products').insert([productData]).select().single();
       if (error) throw error;
