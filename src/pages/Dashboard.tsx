@@ -73,7 +73,7 @@ export default function Dashboard() {
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const startOfToday = new Date(today.setHours(0, 0, 0, 0));
 
-      const b = branch.apply.bind(branch);
+      const b = branch.apply;
 
       const { data: todayInvoices } = await b(supabase
         .from('invoices')
