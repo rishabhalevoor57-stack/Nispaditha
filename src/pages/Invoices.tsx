@@ -34,13 +34,15 @@ export default function Invoices() {
   const [buybackInvoiceNum, setBuybackInvoiceNum] = useState<string | null>(null);
   const { toast } = useToast();
   const isAdmin = useIsAdmin();
+  const branch = useBranchFilter();
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchInvoices();
     fetchBusinessSettings();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branch.filterId]);
 
   // If navigated from Custom Orders with editDraftId, open the draft for editing
   useEffect(() => {
@@ -55,10 +57,13 @@ export default function Invoices() {
 
   const fetchInvoices = async () => {
     try {
-      const { data, error } = await supabase
+      let q = supabase
         .from('invoices')
         .select('*, clients(name, phone, address, gst_number)')
         .order('created_at', { ascending: false });
+      q = branch.apply(q as any) as any;
+      const { data, error } = await q;
+
 
       if (error) throw error;
       
