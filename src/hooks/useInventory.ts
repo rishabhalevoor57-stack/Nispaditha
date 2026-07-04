@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useActivityLogger } from '@/hooks/useActivityLog';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
 import type { Product, ProductFormData, ProductStatus, TypeOfWork } from '@/types/inventory';
+
 
 interface Category {
   id: string;
@@ -37,30 +39,23 @@ export function useInventory() {
   const itemsPerPage = 50;
   const { toast } = useToast();
   const { logActivity } = useActivityLogger();
+  const branch = useBranchFilter();
 
-  useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-    fetchSuppliers();
-    const handler = () => fetchProducts();
-    window.addEventListener('inventory:refresh', handler);
-    return () => window.removeEventListener('inventory:refresh', handler);
-  }, []);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       // Paginated fetch to bypass Supabase 1000-row limit
       const PAGE = 1000;
       let from = 0;
       const all: any[] = [];
-      // Safety cap at 50k rows
       while (from < 50000) {
-        const { data, error } = await supabase
+        let q = supabase
           .from('products')
           .select('*, categories(name), suppliers(name)')
           .is('deleted_at', null)
           .order('created_at', { ascending: false })
           .range(from, from + PAGE - 1);
+        q = branch.apply(q as any) as any;
+        const { data, error } = await q;
         if (error) throw error;
         if (!data || data.length === 0) break;
         all.push(...data);
@@ -69,6 +64,7 @@ export function useInventory() {
       }
 
       const typedProducts = all.map((item) => ({
+
         ...item,
         type_of_work: (item.type_of_work || 'Others') as TypeOfWork,
         status: (item.status || 'in_stock') as ProductStatus,
@@ -82,7 +78,17 @@ export function useInventory() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [branch.filterId, branch.branchId]);
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+    fetchSuppliers();
+    const handler = () => fetchProducts();
+    window.addEventListener('inventory:refresh', handler);
+    return () => window.removeEventListener('inventory:refresh', handler);
+  }, [fetchProducts]);
+
 
   const fetchCategories = async () => {
     const { data } = await supabase.from('categories').select('*').order('name');
@@ -182,7 +188,9 @@ export function useInventory() {
         category_id: formData.category_id || null,
         supplier_id: formData.supplier_id || null,
         image_url,
-      };
+        branch_id: branch.branchId,
+      } as any;
+
 
       const { data, error } = await supabase.from('products').insert([productData]).select().single();
       if (error) throw error;

@@ -92,6 +92,69 @@ export type Database = {
         }
         Relationships: []
       }
+      branch_transfers: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          from_branch_id: string | null
+          id: string
+          kind: string
+          notes: string | null
+          status: string
+          to_branch_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          from_branch_id?: string | null
+          id?: string
+          kind: string
+          notes?: string | null
+          status?: string
+          to_branch_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          from_branch_id?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          status?: string
+          to_branch_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_transfers_from_branch_id_fkey"
+            columns: ["from_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_transfers_to_branch_id_fkey"
+            columns: ["to_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branches: {
         Row: {
           address: string | null
@@ -2577,6 +2640,7 @@ export type Database = {
         }
         Returns: number
       }
+      current_branch_ids: { Args: never; Returns: string[] }
       generate_custom_order_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_melting_number: { Args: never; Returns: string }
@@ -2725,7 +2789,15 @@ export type Database = {
       user_can_access_branch: { Args: { _branch_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "staff"
+      app_role:
+        | "admin"
+        | "staff"
+        | "super_admin"
+        | "branch_manager"
+        | "sales_staff"
+        | "technician"
+        | "inventory_manager"
+        | "cashier"
       delivery_type: "pickup" | "home_delivery"
       order_note_status:
         | "order_noted"
@@ -2860,7 +2932,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff"],
+      app_role: [
+        "admin",
+        "staff",
+        "super_admin",
+        "branch_manager",
+        "sales_staff",
+        "technician",
+        "inventory_manager",
+        "cashier",
+      ],
       delivery_type: ["pickup", "home_delivery"],
       order_note_status: [
         "order_noted",

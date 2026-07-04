@@ -20,6 +20,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
+
 import { Calculator, Download, Printer, Eye, CalendarIcon } from 'lucide-react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -90,6 +92,8 @@ export function CreateInvoiceDialog({
 
   const { toast } = useToast();
   const { user } = useAuth();
+  const branch = useBranchFilter();
+
   const { totals } = useInvoiceCalculations(invoiceItems, gstPct, gstMode);
   const { logActivity } = useActivityLogger();
 
@@ -468,7 +472,7 @@ export function CreateInvoiceDialog({
       } else {
         const { data: inserted, error: invoiceError } = await supabase
           .from('invoices')
-          .insert([{ ...invoicePayload, created_by: user?.id } as never])
+          .insert([{ ...invoicePayload, created_by: user?.id, branch_id: branch.branchId } as never])
           .select()
           .single();
         if (invoiceError) throw invoiceError;
@@ -660,7 +664,7 @@ export function CreateInvoiceDialog({
       } else {
         const { data: ins, error: invoiceError } = await supabase
           .from('invoices')
-          .insert([{ ...draftPayload, invoice_number: draftNumber, created_by: user?.id } as never])
+          .insert([{ ...draftPayload, invoice_number: draftNumber, created_by: user?.id, branch_id: branch.branchId } as never])
           .select()
           .single();
         if (invoiceError) throw invoiceError;

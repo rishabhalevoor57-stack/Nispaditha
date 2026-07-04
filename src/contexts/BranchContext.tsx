@@ -11,19 +11,21 @@ export interface Branch {
   email: string | null;
   gst_number: string | null;
   manager_id: string | null;
-  status: string;
+  status: string; // 'active' | 'inactive' | 'archived'
   is_default: boolean;
 }
 
-/**
- * currentBranchId === null means "All Branches" (admin only).
- * When there is exactly one branch and the user is not admin, it stays pinned to that branch.
- */
 interface BranchContextValue {
   branches: Branch[];
   currentBranch: Branch | null;
   currentBranchId: string | null;
+  /** Convenience: the id to filter server queries by, or null for "all branches". */
+  branchFilterId: string | null;
   isAllBranches: boolean;
+  /** Current branch is inactive — new records should be blocked. */
+  isInactive: boolean;
+  /** Current branch is archived — all writes should be blocked (read-only). */
+  isReadOnly: boolean;
   loading: boolean;
   setCurrentBranchId: (id: string | null) => void;
   refresh: () => Promise<void>;
@@ -35,13 +37,13 @@ const BranchContext = createContext<BranchContextValue | undefined>(undefined);
 const STORAGE_KEY = 'nispaditha.currentBranchId';
 
 export const BranchProvider = ({ children }: { children: ReactNode }) => {
-  const { user, userRole } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentBranchId, setCurrentBranchIdState] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     const v = window.localStorage.getItem(STORAGE_KEY);
-    return v && v !== 'ALL' ? v : v === 'ALL' ? null : null;
+    return v && v !== 'ALL' ? v : null;
   });
 
   const refresh = useCallback(async () => {
@@ -59,22 +61,19 @@ export const BranchProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, [user]);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  useEffect(() => { refresh(); }, [refresh]);
 
-  // If no branch chosen yet, default to the default branch for non-admins.
   useEffect(() => {
     if (loading || branches.length === 0) return;
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
-    if (stored === 'ALL' && userRole === 'admin') {
+    if (stored === 'ALL' && isAdmin) {
       setCurrentBranchIdState(null);
       return;
     }
     if (currentBranchId && branches.some((b) => b.id === currentBranchId)) return;
     const def = branches.find((b) => b.is_default) ?? branches[0];
     setCurrentBranchIdState(def?.id ?? null);
-  }, [branches, loading, userRole, currentBranchId]);
+  }, [branches, loading, isAdmin, currentBranchId]);
 
   const setCurrentBranchId = useCallback((id: string | null) => {
     setCurrentBranchIdState(id);
@@ -86,17 +85,21 @@ export const BranchProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo<BranchContextValue>(() => {
     const currentBranch = branches.find((b) => b.id === currentBranchId) ?? null;
     const defaultBranch = branches.find((b) => b.is_default) ?? branches[0] ?? null;
+    const isAllBranches = currentBranchId === null && !!user && isAdmin;
     return {
       branches,
       currentBranch,
       currentBranchId,
-      isAllBranches: currentBranchId === null && !!user,
+      branchFilterId: isAllBranches ? null : currentBranchId,
+      isAllBranches,
+      isInactive: currentBranch?.status === 'inactive',
+      isReadOnly: currentBranch?.status === 'archived',
       loading,
       setCurrentBranchId,
       refresh,
       defaultBranch,
     };
-  }, [branches, currentBranchId, loading, setCurrentBranchId, refresh, user]);
+  }, [branches, currentBranchId, loading, setCurrentBranchId, refresh, user, isAdmin]);
 
   return <BranchContext.Provider value={value}>{children}</BranchContext.Provider>;
 };
@@ -106,3 +109,22 @@ export const useBranch = () => {
   if (!ctx) throw new Error('useBranch must be used within BranchProvider');
   return ctx;
 };
+
+/**
+ * Small helper used across list pages/hooks to apply a branch filter to a Supabase
+ * select query. Pass a builder callback; returns the same query untouched when
+ * "All Branches" is selected. Rows with NULL branch_id are always included so
+ * legacy data (backfilled to Main) remains visible.
+ */
+export function applyBranchFilter<T extends { or: (...args: any[]) => any; eq: (...args: any[]) => any }>(
+  query: T,
+  branchFilterId: string | null,
+  defaultBranchId: string | null,
+): T {
+  if (!branchFilterId) return query;
+  // Include rows explicitly at this branch OR unassigned rows that belong to the default branch
+  if (branchFilterId === defaultBranchId) {
+    return query.or(`branch_id.eq.${branchFilterId},branch_id.is.null`);
+  }
+  return query.eq('branch_id', branchFilterId) as T;
+}
