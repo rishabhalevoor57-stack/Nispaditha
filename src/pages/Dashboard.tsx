@@ -60,10 +60,12 @@ export default function Dashboard() {
   const [recentInvoices, setRecentInvoices] = useState<RecentInvoice[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const branch = useBranchFilter();
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branch.filterId]);
 
   const fetchDashboardData = async () => {
     try {
@@ -71,46 +73,45 @@ export default function Dashboard() {
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const startOfToday = new Date(today.setHours(0, 0, 0, 0));
 
-      // Fetch today's sales
-      const { data: todayInvoices } = await supabase
+      const b = branch.apply.bind(branch);
+
+      const { data: todayInvoices } = await b(supabase
         .from('invoices')
         .select('grand_total')
-        .gte('created_at', startOfToday.toISOString());
+        .gte('created_at', startOfToday.toISOString()) as any);
 
-      // Fetch monthly sales
-      const { data: monthlyInvoices } = await supabase
+      const { data: monthlyInvoices } = await b(supabase
         .from('invoices')
         .select('grand_total')
-        .gte('created_at', startOfMonth.toISOString());
+        .gte('created_at', startOfMonth.toISOString()) as any);
 
-      // Fetch monthly expenses
-      const { data: monthlyExpenses } = await supabase
+      const { data: monthlyExpenses } = await b(supabase
         .from('expenses')
         .select('amount')
-        .gte('expense_date', startOfMonth.toISOString().split('T')[0]);
+        .gte('expense_date', startOfMonth.toISOString().split('T')[0]) as any);
 
-      // Fetch all products and filter for low stock
-      const { data: allProducts } = await supabase
+      const { data: allProducts } = await b(supabase
         .from('products')
-        .select('id, name, sku, quantity, low_stock_alert');
+        .select('id, name, sku, quantity, low_stock_alert')
+        .is('deleted_at', null) as any);
 
-      const lowStockFiltered = allProducts?.filter(p => p.quantity <= p.low_stock_alert) || [];
+      const lowStockFiltered = (allProducts as any[] | null)?.filter((p: any) => p.quantity <= p.low_stock_alert) || [];
 
-      // Fetch counts
-      const { count: clientCount } = await supabase
+      const { count: clientCount } = await b(supabase
         .from('clients')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true }) as any);
 
-      const { count: productCount } = await supabase
+      const { count: productCount } = await b(supabase
         .from('products')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .is('deleted_at', null) as any);
 
-      // Fetch recent invoices
-      const { data: recent } = await supabase
+      const { data: recent } = await b(supabase
         .from('invoices')
         .select('id, invoice_number, grand_total, payment_status, created_at, clients(name)')
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(5) as any);
+
 
       setStats({
         todaySales: todayInvoices?.reduce((sum, inv) => sum + Number(inv.grand_total), 0) || 0,
