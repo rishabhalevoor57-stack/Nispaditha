@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useActivityLogger } from '@/hooks/useActivityLog';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
 import type { Product, ProductFormData, ProductStatus, TypeOfWork } from '@/types/inventory';
+
 
 interface Category {
   id: string;
