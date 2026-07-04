@@ -78,7 +78,17 @@ export function useInventory() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [branch.filterId, branch.branchId]);
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+    fetchSuppliers();
+    const handler = () => fetchProducts();
+    window.addEventListener('inventory:refresh', handler);
+    return () => window.removeEventListener('inventory:refresh', handler);
+  }, [fetchProducts]);
+
 
   const fetchCategories = async () => {
     const { data } = await supabase.from('categories').select('*').order('name');
