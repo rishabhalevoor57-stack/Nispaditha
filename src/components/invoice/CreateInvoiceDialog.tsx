@@ -472,7 +472,7 @@ export function CreateInvoiceDialog({
       } else {
         const { data: inserted, error: invoiceError } = await supabase
           .from('invoices')
-          .insert([{ ...invoicePayload, created_by: user?.id } as never])
+          .insert([{ ...invoicePayload, created_by: user?.id, branch_id: branch.branchId } as never])
           .select()
           .single();
         if (invoiceError) throw invoiceError;
