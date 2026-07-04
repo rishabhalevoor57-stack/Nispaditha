@@ -92,6 +92,8 @@ export function CreateInvoiceDialog({
 
   const { toast } = useToast();
   const { user } = useAuth();
+  const branch = useBranchFilter();
+
   const { totals } = useInvoiceCalculations(invoiceItems, gstPct, gstMode);
   const { logActivity } = useActivityLogger();
 
