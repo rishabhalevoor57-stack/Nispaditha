@@ -1,102 +1,111 @@
+# Multi-Branch Completion + Phase B — Execution Plan
 
-# Phase 2 Expansion Plan
+This scope is very large. To keep the app stable, I'll ship it in **6 sequenced milestones**. Each is independently testable, additive-only, and behind its own migration. Nothing existing is removed, renamed, or reformatted.
 
-This is a large scope. To keep the app stable and shippable, I'll deliver it in **4 sequenced phases**, each independently testable. Nothing existing gets removed or renamed — only additive changes.
+Reply **"go M1"** (or any milestone number) to start. You can also tell me to reorder / drop items.
 
 ---
 
-## Phase A — Multi-Branch Foundation (do first, it unblocks everything else)
+## M1 — Finish Multi-Branch (make the switcher real)
 
-**Why first:** CRM, Reports, and Gold all filter by branch, so the branch column must exist before those modules can key off it.
+Right now `branch_id` exists on every table and the switcher is wired, but modules don't actually filter by it yet. This milestone makes branch selection *mean* something.
 
-**DB**
-- New table `branches` (code, name, address, phone, email, gst_number, manager_id, status, is_default).
-- Seed **Main Branch — Nispaditha Ventures LLP** (`BLR-MAIN`) and backfill it as `branch_id` on every existing row.
-- Add nullable `branch_id uuid references branches(id)` to: `products`, `invoices`, `repair_items`, `service_forms`, `clients`, `custom_orders`, `buybacks`, `return_exchanges`, `melting_entries`, `expenses`, `order_notes`. Default = Main Branch.
-- Add `assigned_branch_id` on `profiles` for Manager/Staff scoping. Owner (admin) sees all.
-- RLS: keep current policies; add branch-scoping helper `public.user_can_access_branch(uuid)` used in future filters (non-breaking).
+**DB (one migration)**
+- Add `role` enum values: `super_admin`, `branch_manager`, `sales_staff`, `technician`, `inventory_manager`, `cashier` (keep existing `admin`/`staff`).
+- Auto-migrate every current `admin` → also `super_admin` (non-destructive; both roles held).
+- Add `branches.status` check for `active | inactive | archived` (currently just active flag).
+- Add scaffolding tables for future transfers (no UI): `branch_transfers` (kind, from_branch, to_branch, entity_type, entity_id, status, notes).
+- Helper fn `public.current_branch_ids()` returning branches the user can see.
 
 **Frontend**
-- New page `/settings/branches` (Admin only): list, create, edit, activate/deactivate.
-- Global **Branch Switcher** in the top bar: "All Branches" (admin only) or a specific branch. Stored in a `useBranchContext` + localStorage.
-- Wire the switcher as an optional filter on: Dashboard, Inventory, Invoices, Repairs, Services, Custom Orders, Buyback/Exchange, Melting, Expenses, Pending Payments. Default = current user's assigned branch (or Main).
-- Do **not** hard-block existing screens if `branch_id` is null — treat null as Main.
+- Wire `useBranch()` into every list query: Dashboard, Inventory, Invoices, Customers, Pending Payments, Repairs, Services, Custom Orders, Returns, Sold, Buyback, Exchange, Melting, Expenses, Activity Log, Reports, SKU Generator. Null `branch_id` rows fall back to Main so nothing disappears.
+- Default new records (invoice, product, repair, etc.) to `currentBranchId ?? mainBranch.id`.
+- Inactive branch → block "New/Create" buttons with tooltip. Archived → read-only across the app.
+- Branches page: Super Admin only Delete Branch (with typed confirmation + count summary of what will be removed). Main Branch never deletable. Status selector (Active/Inactive/Archived).
+- "All Branches" already exists for admin — extend it to combine dashboard KPIs.
 
 ---
 
-## Phase B — Gold Support
+## M2 — Roles & Permissions v2
 
 **DB**
-- Extend `rate_history` and `business_settings` with `gold_rate_22k`, `gold_rate_18k`, `gold_rate_24k` (silver rate untouched).
-- `products.metal_type` already exists; ensure `'gold'` is a first-class value and add `gold_purity` (`22K`/`18K`/`24K`) column.
+- New table `role_permissions` (role, module, can_view, can_create, can_edit, can_delete, can_print, can_export, can_approve). Seeded defaults per role.
+- Helper `public.user_can(module text, action text)`.
 
 **Frontend**
-- Dashboard **Rates card**: show Silver + Gold 22K/18K/24K side by side, each editable inline (admin). Log to `rate_history`.
-- Inventory form: when Metal = Gold, show Purity selector; weight-based billing picks the matching gold rate.
-- `useInvoiceCalculations`: branch on metal_type → pick silver rate OR gold rate (by purity). Flat Price path untouched.
+- Settings → **Roles & Permissions** matrix (Super Admin only). Toggle per role/module/action.
+- Replace hard-coded `useIsAdmin` gates with `useCan(module, action)`. Existing admin behavior preserved (super_admin = all true).
 
 ---
 
-## Phase C — Customer CRM
+## M3 — Vendor Management + Purchase Orders
 
-**Frontend only** (data already exists across `clients`, `invoices`, `repair_items`, `service_forms`, `custom_orders`, `buybacks`, `return_exchanges`, `wallet_transactions`).
+**DB**
+- Extend `suppliers` (already exists) with: `email`, `pan`, `bank_details jsonb`, `upi_id`, `notes`, `status`, `rating`, `documents jsonb`.
+- New tables: `purchase_orders`, `purchase_order_items`, `po_receipts`, `po_receipt_items`.
+- View `vendor_ledger` combining PO totals + `vendor_payments`.
 
-- Extend `clients` with `email`, `birthday`, `anniversary`, `preferred_metal`, `preferred_category_id`, `notes` (nullable, non-breaking).
-- New route `/customers/:id` — **Customer Profile** with:
-  - **Info card** (all fields, inline edit).
-  - **Financial Summary** cards: Total Purchases, Custom Orders, Repairs, Services, Buybacks, Exchanges, Wallet, Pending, Lifetime Revenue — computed via parallel Supabase queries + a small `useCustomerSummary` hook.
-  - **Timeline**: merged, date-sorted feed of invoices / repairs / custom orders / exchanges / buybacks / services. Each row links to its module.
-  - **Statistics** panel: totals, favourite category, last purchase, last visit, avg bill, top vendor, top product (computed client-side from the same queries).
-  - **Quick Actions** bar: New Invoice / Repair / Service / Custom Order / Exchange / Buyback (prefill customer), plus `tel:` and `wa.me` links.
-- Existing Customers list becomes clickable → profile.
+**Frontend**
+- Upgrade Vendors page → Vendor profile (info, ledger, POs, products supplied, outstanding, performance).
+- New `/purchase-orders` module: Draft → Approved → Received (partial/full) → QC → Inventory → Paid. PDF export via existing `invoicePdf` pattern. Print/email.
 
 ---
 
-## Phase D — Reports Center
+## M4 — Staff, Attendance, Payroll
 
-**Frontend + a couple of read-only RPCs for heavy aggregations.**
+**DB**
+- `employees` (linked optionally to `profiles.user_id`), `employee_documents`.
+- `attendance` (clock_in/out, break, status, notes) — one row/day/employee.
+- `payroll_runs`, `payroll_lines` (salary, bonus, commission, advance, deductions, PF, ESI, net).
 
-- New route `/settings/reports/center` (keeps existing Reports page intact; this is an upgraded hub).
-- Global filter bar: Today / Yesterday / This Week / This Month / Custom, plus Branch / Employee / Vendor / Category.
-- Report sections (each a tabbed sub-page, lazy-loaded):
-  1. **Sales** — Daily/Weekly/Monthly/Yearly, GST, Payment Mode, by Customer/Category/Vendor/Branch, plus **Silver vs Gold** split.
-  2. **Inventory** — Current, Low, Dead, Fast/Slow moving, Valuation, Ageing, Silver/Gold split.
-  3. **Repairs** — Pending, Completed, Revenue, Status mix, TAT.
-  4. **Custom Orders** — Pending, Completed, Revenue, Delivery.
-  5. **Buyback** — Weight, Amount, Metal recovery.
-  6. **Exchange** — Value, Profit.
-  7. **Melting** — Gross, Recovered, Loss, Inventory added, Vendor-wise.
-  8. **Financial** — P&L, Expenses, Cash Flow, Income, Outstanding (Customer + Vendor).
-  9. **GST** — CGST, SGST, Tax summary, Monthly GST.
-- Every report supports **Export → Excel (xlsx)** and **Export → PDF** via existing pdf/xlsx utilities.
+**Frontend**
+- `/staff` list + profile (photo, role, branch, salary, targets, performance from invoices/repairs).
+- `/attendance` daily grid + export.
+- `/payroll` monthly run + payslip PDF.
 
 ---
 
-## Guardrails (apply to every phase)
+## M5 — Daily Cash Closing + Notification Center + Settings Expansion
 
-- Additive DB only — no drops, no renames, no policy removals.
+**DB**
+- `daily_cash_closings` (branch_id, closing_date UNIQUE per branch, opening/sales-by-mode/expenses/withdrawn/deposited/expected/actual/difference, remarks, manager_id, approved_by, approved_at).
+- `notifications` (user_id, type, title, body, link, read_at) + generator triggers (low stock, pending repairs, PO due, closing pending, vendor due).
+
+**Frontend**
+- `/cash-closing` per branch, one entry/day, auto-computed expected cash from invoices/expenses.
+- Bell icon in header with unread badge, dropdown, deep links.
+- Settings page grows into tabs: General / GST / Invoice Templates / SMS-WhatsApp-Email / Backup / Security / Users / Roles / Branches / Theme / Number Series / Tax / Printing / Barcode / Import / Export. (Existing sub-pages are just re-grouped, no logic change.)
+
+---
+
+## M6 — Performance Pass (no functional change)
+
+**DB (indexes only — safe, additive)**
+- `products (sku)`, `products (branch_id, status)`, `invoices (invoice_number)`, `invoices (branch_id, invoice_date DESC)`, `clients (phone)`, `clients (name gin_trgm_ops)`, `repair_items (branch_id, status)`, `custom_orders (branch_id, status)`, `melting_entries (branch_id, created_at DESC)`, `expenses (branch_id, expense_date)`, `stock_history (product_id, created_at DESC)`, `activity_logs (created_at DESC)`, `sku_registry (sku)`.
+- Materialized-view style RPCs for Dashboard KPIs (`dashboard_summary(branch_id, from, to)`) to replace the 6 parallel client queries.
+
+**Frontend**
+- React Query cache with sensible `staleTime` for Dashboard / rates / branches / categories / vendors.
+- Route-level `React.lazy` for Reports, Payroll, Attendance, PO, Melting, SKU Generator.
+- Virtualized rows (`@tanstack/react-virtual`) on Inventory + Invoices + Activity Log when >200 rows.
+- Memoize row components + column defs. Debounce every search input (250ms).
+- Drop redundant `select('*')` — hand-pick columns on list pages.
+
+---
+
+## Guardrails (every milestone)
+
+- Additive DB only — no drops/renames/policy removals.
 - Every new `public` table ships with `GRANT` + RLS + policies in the same migration.
-- Existing invoice numbering, SKU logic, stock triggers, pricing formulas: **untouched**.
-- Match current luxury-fintech UI (gold/slate tokens, shadcn components).
-- Each phase is behind its own migration + PR-sized set of files so we can validate before moving on.
+- Existing invoice numbering, SKU logic, stock triggers, pricing formulas, PDFs: **untouched**.
+- Luxury fintech tokens (gold/slate) reused via existing shadcn variants.
+- Each milestone = 1 migration + a focused set of files, so you can validate before moving on.
 
 ---
 
-## Technical notes
+## Suggested order
 
-- Branch context: `src/contexts/BranchContext.tsx` + `useBranch()` hook; provider mounted in `App.tsx` above the router.
-- CRM summary: single `useCustomerSummary(clientId)` fires ~7 parallel `supabase.from(...).select('sum/count')` queries with `Promise.all`.
-- Reports aggregations that are expensive (P&L, Ageing, Fast/Slow moving) get SQL views or `security definer` functions to avoid pulling raw rows to the client.
-- Gold rate: reuse existing `rate_history` trigger pattern; add columns, don't fork the table.
+M1 → M2 → M3 → M4 → M5 → M6.
+M6 last on purpose: indexes and lazy-loading benefit most once all new modules exist.
 
----
-
-## Suggested execution order
-
-1. **Approve this plan.**
-2. I ship **Phase A** (branches + switcher + backfill) and we sanity-check existing screens still work.
-3. **Phase B** (Gold) — small, isolated.
-4. **Phase C** (CRM profile).
-5. **Phase D** (Reports Center) — largest, done last so it can filter by branch + metal from day one.
-
-Reply **"go"** to start Phase A, or tell me to reorder / drop anything.
+Reply **"go M1"** to start, or tell me to reorder / cut scope.
