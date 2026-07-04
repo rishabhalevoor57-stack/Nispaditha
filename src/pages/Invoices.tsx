@@ -10,7 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Eye, Trash2, Download, Printer, ArrowLeftRight, Coins, Pencil } from 'lucide-react';
 import { BuybackDialog } from '@/components/returns/BuybackDialog';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { format } from 'date-fns';
+
 import { CreateInvoiceDialog } from '@/components/invoice/CreateInvoiceDialog';
 import { ViewInvoiceDialog } from '@/components/invoice/ViewInvoiceDialog';
 import { InvoiceFilters, type InvoiceStatusFilter } from '@/components/invoice/InvoiceFilters';
