@@ -92,6 +92,83 @@ export type Database = {
         }
         Relationships: []
       }
+      branch_stock_transfers: {
+        Row: {
+          created_at: string
+          destination_product_id: string | null
+          from_branch_id: string | null
+          id: string
+          product_id: string | null
+          product_name: string | null
+          quantity: number
+          remarks: string | null
+          sku: string | null
+          status: string
+          to_branch_id: string | null
+          transfer_date: string
+          transferred_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          destination_product_id?: string | null
+          from_branch_id?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string | null
+          quantity: number
+          remarks?: string | null
+          sku?: string | null
+          status?: string
+          to_branch_id?: string | null
+          transfer_date?: string
+          transferred_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          destination_product_id?: string | null
+          from_branch_id?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string | null
+          quantity?: number
+          remarks?: string | null
+          sku?: string | null
+          status?: string
+          to_branch_id?: string | null
+          transfer_date?: string
+          transferred_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_stock_transfers_destination_product_id_fkey"
+            columns: ["destination_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_stock_transfers_from_branch_id_fkey"
+            columns: ["from_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_stock_transfers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_stock_transfers_to_branch_id_fkey"
+            columns: ["to_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branch_transfers: {
         Row: {
           approved_at: string | null
@@ -574,6 +651,7 @@ export type Database = {
           rate_per_gram: number | null
           reference_image_url: string | null
           sku: string | null
+          strings_used: number | null
         }
         Insert: {
           base_price?: number
@@ -598,6 +676,7 @@ export type Database = {
           rate_per_gram?: number | null
           reference_image_url?: string | null
           sku?: string | null
+          strings_used?: number | null
         }
         Update: {
           base_price?: number
@@ -622,6 +701,7 @@ export type Database = {
           rate_per_gram?: number | null
           reference_image_url?: string | null
           sku?: string | null
+          strings_used?: number | null
         }
         Relationships: [
           {
@@ -659,12 +739,24 @@ export type Database = {
           gst_mode: string
           gst_percentage: number
           id: string
+          inventory_product_id: string | null
           labour_charges: number
           making_charges: number
           notes: string | null
           order_date: string
+          order_type: string
           phone_number: string | null
           polishing_charges: number
+          product_buying_price: number | null
+          product_category_id: string | null
+          product_date_of_making: string | null
+          product_description: string | null
+          product_image_urls: Json
+          product_selling_price: number | null
+          product_selling_price_manual: boolean
+          product_sku: string | null
+          product_title: string | null
+          product_vendor_id: string | null
           reference_number: string
           repair_charges: number
           status: string
@@ -689,12 +781,24 @@ export type Database = {
           gst_mode?: string
           gst_percentage?: number
           id?: string
+          inventory_product_id?: string | null
           labour_charges?: number
           making_charges?: number
           notes?: string | null
           order_date?: string
+          order_type?: string
           phone_number?: string | null
           polishing_charges?: number
+          product_buying_price?: number | null
+          product_category_id?: string | null
+          product_date_of_making?: string | null
+          product_description?: string | null
+          product_image_urls?: Json
+          product_selling_price?: number | null
+          product_selling_price_manual?: boolean
+          product_sku?: string | null
+          product_title?: string | null
+          product_vendor_id?: string | null
           reference_number: string
           repair_charges?: number
           status?: string
@@ -719,12 +823,24 @@ export type Database = {
           gst_mode?: string
           gst_percentage?: number
           id?: string
+          inventory_product_id?: string | null
           labour_charges?: number
           making_charges?: number
           notes?: string | null
           order_date?: string
+          order_type?: string
           phone_number?: string | null
           polishing_charges?: number
+          product_buying_price?: number | null
+          product_category_id?: string | null
+          product_date_of_making?: string | null
+          product_description?: string | null
+          product_image_urls?: Json
+          product_selling_price?: number | null
+          product_selling_price_manual?: boolean
+          product_sku?: string | null
+          product_title?: string | null
+          product_vendor_id?: string | null
           reference_number?: string
           repair_charges?: number
           status?: string
@@ -740,10 +856,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "custom_orders_category_fkey"
+            columns: ["product_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "custom_orders_converted_to_invoice_id_fkey"
             columns: ["converted_to_invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_orders_inventory_product_fkey"
+            columns: ["inventory_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_orders_vendor_fkey"
+            columns: ["product_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -1541,12 +1678,14 @@ export type Database = {
           branch_id: string | null
           category_id: string | null
           created_at: string
+          date_of_making: string | null
           date_ordered: string | null
           deleted_at: string | null
           description: string | null
           gst_percentage: number
           id: string
           image_url: string | null
+          is_list_price: boolean
           locked_by_custom_order_id: string | null
           low_stock_alert: number
           making_charges: number
@@ -1563,6 +1702,7 @@ export type Database = {
           selling_price: number
           sku: string
           status: string | null
+          strings_count: number | null
           supplier_id: string | null
           type_of_work: string | null
           updated_at: string
@@ -1573,12 +1713,14 @@ export type Database = {
           branch_id?: string | null
           category_id?: string | null
           created_at?: string
+          date_of_making?: string | null
           date_ordered?: string | null
           deleted_at?: string | null
           description?: string | null
           gst_percentage?: number
           id?: string
           image_url?: string | null
+          is_list_price?: boolean
           locked_by_custom_order_id?: string | null
           low_stock_alert?: number
           making_charges?: number
@@ -1595,6 +1737,7 @@ export type Database = {
           selling_price?: number
           sku: string
           status?: string | null
+          strings_count?: number | null
           supplier_id?: string | null
           type_of_work?: string | null
           updated_at?: string
@@ -1605,12 +1748,14 @@ export type Database = {
           branch_id?: string | null
           category_id?: string | null
           created_at?: string
+          date_of_making?: string | null
           date_ordered?: string | null
           deleted_at?: string | null
           description?: string | null
           gst_percentage?: number
           id?: string
           image_url?: string | null
+          is_list_price?: boolean
           locked_by_custom_order_id?: string | null
           low_stock_alert?: number
           making_charges?: number
@@ -1627,6 +1772,7 @@ export type Database = {
           selling_price?: number
           sku?: string
           status?: string | null
+          strings_count?: number | null
           supplier_id?: string | null
           type_of_work?: string | null
           updated_at?: string
@@ -2761,6 +2907,10 @@ export type Database = {
         }
         Returns: Json
       }
+      send_custom_order_to_inventory: {
+        Args: { p_custom_order_id: string; p_final_quantity?: number }
+        Returns: string
+      }
       send_melting_to_inventory: {
         Args: {
           p_making_charges?: number
@@ -2772,6 +2922,16 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      transfer_product_to_branch: {
+        Args: {
+          p_product_id: string
+          p_quantity: number
+          p_remarks?: string
+          p_to_branch_id: string
+          p_transfer_date?: string
+        }
+        Returns: Json
+      }
       transfer_stock: {
         Args: {
           p_from_store_id: string

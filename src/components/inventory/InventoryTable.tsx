@@ -21,7 +21,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Trash2, Eye, Package, Coins, Wrench } from 'lucide-react';
+import { Edit, Trash2, Eye, Package, Coins, Wrench, Truck } from 'lucide-react';
+import { BranchTransferDialog } from './BranchTransferDialog';
 import { Product, STATUS_OPTIONS } from '@/types/inventory';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
@@ -53,6 +54,7 @@ export function InventoryTable({
   const [repairQty, setRepairQty] = useState<number>(1);
   const [repairNotes, setRepairNotes] = useState<string>('');
   const [repairSubmitting, setRepairSubmitting] = useState(false);
+  const [transferProduct, setTransferProduct] = useState<Product | null>(null);
 
   const openRepair = (p: Product) => {
     setRepairProduct(p);
@@ -314,6 +316,23 @@ export function InventoryTable({
                           </Tooltip>
                         </TooltipProvider>
                       )}
+                      {product.quantity > 0 && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => { e.stopPropagation(); setTransferProduct(product); }}
+                                className="text-primary hover:text-primary"
+                              >
+                                <Truck className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Send to Branch</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       {isAdmin && (
                         <Button 
                           variant="ghost" 
@@ -377,6 +396,13 @@ export function InventoryTable({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BranchTransferDialog
+        open={!!transferProduct}
+        onOpenChange={(o) => !o && setTransferProduct(null)}
+        product={transferProduct}
+        onTransferred={() => setTransferProduct(null)}
+      />
     </div>
   );
 }

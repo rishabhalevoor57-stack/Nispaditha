@@ -20,6 +20,7 @@ export interface CustomOrderItem {
   discount_type: 'fixed' | 'percentage';
   discount_value: number;
   item_total: number;
+  strings_used?: number | null;
   created_at?: string;
 }
 
@@ -48,9 +49,12 @@ export interface ExtraCharge {
   amount: number;
 }
 
+export type CustomOrderType = 'customer' | 'in_house';
+
 export interface CustomOrder {
   id: string;
   reference_number: string;
+  order_type: CustomOrderType;
   client_name: string;
   phone_number: string | null;
   order_date: string;
@@ -76,6 +80,18 @@ export interface CustomOrder {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  // In-house product fields
+  product_sku?: string | null;
+  product_title?: string | null;
+  product_description?: string | null;
+  product_date_of_making?: string | null;
+  product_vendor_id?: string | null;
+  product_buying_price?: number | null;
+  product_selling_price?: number | null;
+  product_selling_price_manual?: boolean;
+  product_category_id?: string | null;
+  product_image_urls?: string[];
+  inventory_product_id?: string | null;
   items?: CustomOrderItem[];
   components?: CustomOrderComponent[];
 }
