@@ -14,7 +14,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Trash2, Package, Coins, Wrench, History, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { Edit, Trash2, Package, Coins, Wrench, History, ArrowDownCircle, ArrowUpCircle, Truck } from 'lucide-react';
+import { ProductTransferHistory } from './ProductTransferHistory';
 import { Product, STATUS_OPTIONS } from '@/types/inventory';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
@@ -290,6 +291,18 @@ export function ProductDetailDialog({
           </div>
 
           <Separator />
+
+          {/* Branch transfer history */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Truck className="w-4 h-4 text-muted-foreground" />
+              <h4 className="text-sm font-semibold">Branch Transfer History</h4>
+            </div>
+            <ProductTransferHistory sku={product.sku} productId={product.id} />
+          </div>
+
+          <Separator />
+
 
           {/* Actions */}
           <div className="flex flex-wrap justify-end gap-3">

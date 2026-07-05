@@ -20,13 +20,17 @@ import { useActivityLogger } from '@/hooks/useActivityLog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBranch } from '@/contexts/BranchContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { convertCustomOrderToInvoice } from '@/utils/customOrderToInvoice';
+import { supabase } from '@/integrations/supabase/client';
 
 const CustomOrders = () => {
   const { customOrders, isLoading, updateStatus, deleteOrder, getOrderWithItems } = useCustomOrders();
   const { logActivity } = useActivityLogger();
   const { user } = useAuth();
+  const { currentBranch, defaultBranch } = useBranch();
+  const isMainBranch = !!currentBranch && !!defaultBranch && currentBranch.id === defaultBranch.id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -141,6 +145,32 @@ const CustomOrders = () => {
 
   const handleNew = () => { setSelected(null); setFormOpen(true); };
 
+  const handleSendToInventory = async (order: CustomOrder) => {
+    if (!isMainBranch) {
+      toast({ variant: 'destructive', title: 'Main Branch only', description: 'In-house orders can only be stocked from the Main Branch.' });
+      return;
+    }
+    try {
+      const { data, error } = await supabase.rpc('send_custom_order_to_inventory' as any, {
+        p_custom_order_id: order.id,
+        p_final_quantity: 1,
+      });
+      if (error) throw error;
+      logActivity({
+        module: 'Custom Orders',
+        action: 'Send to Inventory',
+        recordId: order.id,
+        recordLabel: order.reference_number,
+        newValue: { inventory_product_id: data },
+      });
+      queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast({ title: 'Sent to Inventory', description: `${order.product_title || order.reference_number} is now a list-price product.` });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Failed', description: e.message });
+    }
+  };
+
   const pendingOrders = customOrders.filter(o => ['draft', 'confirmed', 'in_production'].includes(o.status)).length;
   const readyOrders = customOrders.filter(o => o.status === 'ready').length;
   const totalValue = customOrders.reduce((sum, o) => sum + o.total_amount, 0);
@@ -220,6 +250,7 @@ const CustomOrders = () => {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onStatusChange={handleStatusChange}
+                onSendToInventory={handleSendToInventory}
               />
             )}
           </CardContent>
