@@ -29,6 +29,10 @@ export interface Product {
   purchase_price_per_gram: number;
   purchase_making_charges: number;
   pricing_mode: PricingMode;
+  branch_id?: string | null;
+  strings_count?: number | null;
+  is_list_price?: boolean;
+  date_of_making?: string | null;
   created_at: string;
   updated_at: string;
   categories?: { name: string } | null;
