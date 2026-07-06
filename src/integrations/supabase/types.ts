@@ -590,42 +590,68 @@ export type Database = {
       }
       custom_order_components: {
         Row: {
+          category: string | null
           component_name: string
           created_at: string
           custom_order_id: string
           id: string
           material: string | null
+          product_id: string | null
           quantity: number
+          quantity_used: number | null
           rate_per_gram: number
+          sku: string | null
+          strings_used: number | null
           total: number
+          unit: string
           unit_price: number
           weight_grams: number
         }
         Insert: {
+          category?: string | null
           component_name: string
           created_at?: string
           custom_order_id: string
           id?: string
           material?: string | null
+          product_id?: string | null
           quantity?: number
+          quantity_used?: number | null
           rate_per_gram?: number
+          sku?: string | null
+          strings_used?: number | null
           total?: number
+          unit?: string
           unit_price?: number
           weight_grams?: number
         }
         Update: {
+          category?: string | null
           component_name?: string
           created_at?: string
           custom_order_id?: string
           id?: string
           material?: string | null
+          product_id?: string | null
           quantity?: number
+          quantity_used?: number | null
           rate_per_gram?: number
+          sku?: string | null
+          strings_used?: number | null
           total?: number
+          unit?: string
           unit_price?: number
           weight_grams?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "custom_order_components_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       custom_order_items: {
         Row: {
@@ -2909,6 +2935,14 @@ export type Database = {
       }
       send_custom_order_to_inventory: {
         Args: { p_custom_order_id: string; p_final_quantity?: number }
+        Returns: string
+      }
+      send_custom_order_to_inventory_v2: {
+        Args: {
+          p_custom_order_id: string
+          p_final_quantity?: number
+          p_total_weight?: number
+        }
         Returns: string
       }
       send_melting_to_inventory: {
