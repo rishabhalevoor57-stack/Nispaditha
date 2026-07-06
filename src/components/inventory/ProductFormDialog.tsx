@@ -82,6 +82,7 @@ export function ProductFormDialog({
         purity: product.purity || '',
         weight_grams: product.weight_grams,
         quantity: product.quantity,
+        strings_count: (product as any).strings_count || 0,
         purchase_price: product.purchase_price,
         selling_price: product.selling_price,
         making_charges: product.making_charges,
