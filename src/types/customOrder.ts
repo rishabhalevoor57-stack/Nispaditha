@@ -24,13 +24,21 @@ export interface CustomOrderItem {
   created_at?: string;
 }
 
+export type ComponentUnit = 'weight_based' | 'quantity' | 'strings';
+
 export interface CustomOrderComponent {
   id?: string;
   custom_order_id?: string;
+  product_id?: string | null;
+  sku?: string | null;
+  category?: string | null;
   component_name: string;
   material?: string | null;
+  unit?: ComponentUnit;
   weight_grams: number;
   quantity: number;
+  quantity_used?: number | null;
+  strings_used?: number | null;
   unit_price: number;
   rate_per_gram: number;
   total: number;
