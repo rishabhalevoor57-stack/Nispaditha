@@ -1,111 +1,72 @@
-# Multi-Branch Completion + Phase B — Execution Plan
 
-This scope is very large. To keep the app stable, I'll ship it in **6 sequenced milestones**. Each is independently testable, additive-only, and behind its own migration. Nothing existing is removed, renamed, or reformatted.
+# Complete In-House Custom Order & Components Workflow
 
-Reply **"go M1"** (or any milestone number) to start. You can also tell me to reorder / drop items.
+This is a large, multi-part change. It touches the database, custom-order form, components table, items table, inventory form, and the Custom Orders page. Existing customer orders, invoices, PDFs, GST, and payments will not be altered.
 
----
+## Scope (mapped to your 15 sections)
 
-## M1 — Finish Multi-Branch (make the switcher real)
+1. **Component inventory deduction on Send to Inventory** — done inside a single DB function, atomic, runs exactly once
+2. **Components support Qty + Weight + Strings** simultaneously (per row, whichever fields apply based on linked inventory item)
+3. **Customer Orders get the same dual Qty/Strings fields** in customer-supplied materials and components
+4. **Beads & Pearls inventory finalized** — Title, SKU (optional/auto), Description, Vendor, Buying Price, Selling Price, Date of Purchase, Quantity, Strings; hide legacy "Pearls" category from dropdowns
+5. **Total Finished Weight** auto-summed from weight-based components only (excludes beads/strings/labour), displayed near Pricing Summary and stored on the finished product
+6. **Send to Inventory** persists: total_weight, selling price, buying price, sku, title, description, images, vendor, date of making
+7. **Pricing rule** — components use live dashboard silver rate during build; the finished inventory product is stamped `is_list_price=true` with a frozen selling price. Invoice logic already respects list-price items — no invoice changes
+8. **Components table columns**: SKU · Component · Category · Available Stock · Weight Used · Qty Used · Strings Used · Buying Cost · Remove. Fields grey out based on the inventory category of the linked SKU
+9. **Multiple images** — real multi-file uploader (product-images bucket), preview grid, remove per image
+10. **Filters** on Custom Orders page: All / Customer / In-House tabs
+11. **Search** by SKU, product name, vendor, description (works on both order types)
+12. **UI reorg** for In-House form: Product Details · Manufacturing (Items, Components, Charges) · Component Summary (live totals) · Pricing · Send to Inventory
+13. **Validations** before Send to Inventory: unique SKU, required fields, sufficient stock for every component, no negative results
+14. **Invoices untouched** — no edits to invoice components, PDF, GST logic, or preview
+15. **Perf** — inventory picker uses trigram search + limit(20), deduction runs server-side in one RPC
 
-Right now `branch_id` exists on every table and the switcher is wired, but modules don't actually filter by it yet. This milestone makes branch selection *mean* something.
+## Technical breakdown
 
-**DB (one migration)**
-- Add `role` enum values: `super_admin`, `branch_manager`, `sales_staff`, `technician`, `inventory_manager`, `cashier` (keep existing `admin`/`staff`).
-- Auto-migrate every current `admin` → also `super_admin` (non-destructive; both roles held).
-- Add `branches.status` check for `active | inactive | archived` (currently just active flag).
-- Add scaffolding tables for future transfers (no UI): `branch_transfers` (kind, from_branch, to_branch, entity_type, entity_id, status, notes).
-- Helper fn `public.current_branch_ids()` returning branches the user can see.
+### DB migration (one migration)
+- Add `product_id`, `strings_used`, `unit` (weight_based|quantity|strings) columns to `custom_order_components`
+- New RPC `send_custom_order_to_inventory_v2(p_custom_order_id, p_final_quantity)`:
+  - Validates order type = in_house, not already stocked
+  - Validates SKU uniqueness
+  - Iterates components with `product_id`, locks source rows, checks stock (qty / weight / strings depending on unit), raises on shortfall
+  - Deducts from `products.quantity`, `products.weight_grams`, or `products.strings_count`
+  - Writes `stock_history` rows for each deduction
+  - Creates finished product with `is_list_price=true`, `weight_grams` = sum of weight_based components, `pricing_mode='flat_price'`, frozen `selling_price`, `image_url` = first image
+  - Marks order `inventory_product_id`
+- Keep old `send_custom_order_to_inventory` intact for backward compatibility
+- Backfill: nothing destructive; existing "Pearls" rows stay but category is filtered out of pickers (already migrated to Beads & Pearls earlier)
 
-**Frontend**
-- Wire `useBranch()` into every list query: Dashboard, Inventory, Invoices, Customers, Pending Payments, Repairs, Services, Custom Orders, Returns, Sold, Buyback, Exchange, Melting, Expenses, Activity Log, Reports, SKU Generator. Null `branch_id` rows fall back to Main so nothing disappears.
-- Default new records (invoice, product, repair, etc.) to `currentBranchId ?? mainBranch.id`.
-- Inactive branch → block "New/Create" buttons with tooltip. Archived → read-only across the app.
-- Branches page: Super Admin only Delete Branch (with typed confirmation + count summary of what will be removed). Main Branch never deletable. Status selector (Active/Inactive/Archived).
-- "All Branches" already exists for admin — extend it to combine dashboard KPIs.
+### Frontend
+- Rewrite `CustomOrderComponentsTable.tsx` — SKU picker, dynamic columns, live totals footer (Total Weight, Total Qty, Total Strings, Total Cost)
+- Extend `CustomOrderItemsTable.tsx` — expose `strings_used` for Beads & Pearls rows (customer orders too)
+- Restructure `CustomOrderFormDialog.tsx` into sectioned cards for in-house mode; add Component Summary card; add multi-image uploader; add Send-to-Inventory guard/validations; call new RPC
+- `CustomOrders.tsx` — add tabs (All/Customer/In-House) + search box across sku/title/vendor/description
+- `ProductFormDialog.tsx` — for Beads & Pearls category show both Quantity and Strings fields; already have `strings_count` column
+- Hide "Pearls" category from category dropdowns (filter by name)
 
----
+### Files
+```text
+supabase/migrations/<new>.sql                                  new
+src/types/customOrder.ts                                       edit (component fields)
+src/hooks/useCustomOrders.ts                                   edit (persist new component fields, RPC call)
+src/components/custom-orders/CustomOrderComponentsTable.tsx    rewrite
+src/components/custom-orders/CustomOrderItemsTable.tsx         edit (strings_used field for beads)
+src/components/custom-orders/CustomOrderFormDialog.tsx         edit (sections, multi-image, totals, RPC)
+src/components/custom-orders/CustomOrderTable.tsx              edit (order type badge column)
+src/pages/CustomOrders.tsx                                     edit (tabs + search)
+src/components/inventory/ProductFormDialog.tsx                 edit (Beads & Pearls dual fields)
+src/integrations/supabase/types.ts                             regenerated after migration
+```
 
-## M2 — Roles & Permissions v2
+## What stays exactly as-is
+- Invoice creation, edit, PDF, GST, payment, preview
+- Customer Order pricing math (only the components/materials rows get an extra Strings field)
+- Existing custom orders already sent to inventory
+- SKU generator, Sold, Repairs, Returns, Reports
 
-**DB**
-- New table `role_permissions` (role, module, can_view, can_create, can_edit, can_delete, can_print, can_export, can_approve). Seeded defaults per role.
-- Helper `public.user_can(module text, action text)`.
+## Rollout order in this thread
+1. Migration (needs your approval) — creates RPC + schema additions
+2. Once approved and types regenerate: all frontend edits in one batch
+3. Quick smoke: create in-house order → add 2 component SKUs → Send to Inventory → verify stock deduction, new product weight, list-price flag
 
-**Frontend**
-- Settings → **Roles & Permissions** matrix (Super Admin only). Toggle per role/module/action.
-- Replace hard-coded `useIsAdmin` gates with `useCan(module, action)`. Existing admin behavior preserved (super_admin = all true).
-
----
-
-## M3 — Vendor Management + Purchase Orders
-
-**DB**
-- Extend `suppliers` (already exists) with: `email`, `pan`, `bank_details jsonb`, `upi_id`, `notes`, `status`, `rating`, `documents jsonb`.
-- New tables: `purchase_orders`, `purchase_order_items`, `po_receipts`, `po_receipt_items`.
-- View `vendor_ledger` combining PO totals + `vendor_payments`.
-
-**Frontend**
-- Upgrade Vendors page → Vendor profile (info, ledger, POs, products supplied, outstanding, performance).
-- New `/purchase-orders` module: Draft → Approved → Received (partial/full) → QC → Inventory → Paid. PDF export via existing `invoicePdf` pattern. Print/email.
-
----
-
-## M4 — Staff, Attendance, Payroll
-
-**DB**
-- `employees` (linked optionally to `profiles.user_id`), `employee_documents`.
-- `attendance` (clock_in/out, break, status, notes) — one row/day/employee.
-- `payroll_runs`, `payroll_lines` (salary, bonus, commission, advance, deductions, PF, ESI, net).
-
-**Frontend**
-- `/staff` list + profile (photo, role, branch, salary, targets, performance from invoices/repairs).
-- `/attendance` daily grid + export.
-- `/payroll` monthly run + payslip PDF.
-
----
-
-## M5 — Daily Cash Closing + Notification Center + Settings Expansion
-
-**DB**
-- `daily_cash_closings` (branch_id, closing_date UNIQUE per branch, opening/sales-by-mode/expenses/withdrawn/deposited/expected/actual/difference, remarks, manager_id, approved_by, approved_at).
-- `notifications` (user_id, type, title, body, link, read_at) + generator triggers (low stock, pending repairs, PO due, closing pending, vendor due).
-
-**Frontend**
-- `/cash-closing` per branch, one entry/day, auto-computed expected cash from invoices/expenses.
-- Bell icon in header with unread badge, dropdown, deep links.
-- Settings page grows into tabs: General / GST / Invoice Templates / SMS-WhatsApp-Email / Backup / Security / Users / Roles / Branches / Theme / Number Series / Tax / Printing / Barcode / Import / Export. (Existing sub-pages are just re-grouped, no logic change.)
-
----
-
-## M6 — Performance Pass (no functional change)
-
-**DB (indexes only — safe, additive)**
-- `products (sku)`, `products (branch_id, status)`, `invoices (invoice_number)`, `invoices (branch_id, invoice_date DESC)`, `clients (phone)`, `clients (name gin_trgm_ops)`, `repair_items (branch_id, status)`, `custom_orders (branch_id, status)`, `melting_entries (branch_id, created_at DESC)`, `expenses (branch_id, expense_date)`, `stock_history (product_id, created_at DESC)`, `activity_logs (created_at DESC)`, `sku_registry (sku)`.
-- Materialized-view style RPCs for Dashboard KPIs (`dashboard_summary(branch_id, from, to)`) to replace the 6 parallel client queries.
-
-**Frontend**
-- React Query cache with sensible `staleTime` for Dashboard / rates / branches / categories / vendors.
-- Route-level `React.lazy` for Reports, Payroll, Attendance, PO, Melting, SKU Generator.
-- Virtualized rows (`@tanstack/react-virtual`) on Inventory + Invoices + Activity Log when >200 rows.
-- Memoize row components + column defs. Debounce every search input (250ms).
-- Drop redundant `select('*')` — hand-pick columns on list pages.
-
----
-
-## Guardrails (every milestone)
-
-- Additive DB only — no drops/renames/policy removals.
-- Every new `public` table ships with `GRANT` + RLS + policies in the same migration.
-- Existing invoice numbering, SKU logic, stock triggers, pricing formulas, PDFs: **untouched**.
-- Luxury fintech tokens (gold/slate) reused via existing shadcn variants.
-- Each milestone = 1 migration + a focused set of files, so you can validate before moving on.
-
----
-
-## Suggested order
-
-M1 → M2 → M3 → M4 → M5 → M6.
-M6 last on purpose: indexes and lazy-loading benefit most once all new modules exist.
-
-Reply **"go M1"** to start, or tell me to reorder / cut scope.
+Reply **"go"** to run the migration and proceed with the frontend, or tell me which sections to trim.
