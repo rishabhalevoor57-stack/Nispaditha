@@ -685,11 +685,18 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
           {/* Nispaditha Components */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Nispaditha Components</CardTitle>
-              <p className="text-xs text-muted-foreground">Items added by your business. Weight-based components use today's silver rate.</p>
+              <CardTitle className="text-sm font-medium flex items-center justify-between">
+                <span>Nispaditha Components</span>
+                {isInHouse && (
+                  <span className="text-xs font-normal">
+                    Total Finished Weight: <span className="font-semibold text-primary">{componentsWeight.toFixed(3)} g</span>
+                  </span>
+                )}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">Weight-based components use today's silver rate. Beads / pearls counted separately by strings or pieces.</p>
             </CardHeader>
             <CardContent>
-              <CustomOrderComponentsTable components={components} onChange={setComponents} />
+              <CustomOrderComponentsTable components={components} onChange={setComponents} silverRate={silverRate} />
             </CardContent>
           </Card>
 
