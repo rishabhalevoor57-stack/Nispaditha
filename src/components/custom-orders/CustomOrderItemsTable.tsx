@@ -49,7 +49,8 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
   }, []);
 
   const isBeadsCategory = (category?: string | null) => {
-    return category?.toLowerCase() === 'beads';
+    const n = (category || '').toLowerCase();
+    return n.includes('bead') || n.includes('pearl');
   };
 
   const recalculate = (item: CustomOrderItem): CustomOrderItem => {
