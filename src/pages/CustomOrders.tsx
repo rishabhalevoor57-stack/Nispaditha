@@ -157,9 +157,10 @@ const CustomOrders = () => {
       return;
     }
     try {
-      const { data, error } = await supabase.rpc('send_custom_order_to_inventory' as any, {
+      const { data, error } = await supabase.rpc('send_custom_order_to_inventory_v2' as any, {
         p_custom_order_id: order.id,
         p_final_quantity: 1,
+        p_total_weight: null,
       });
       if (error) throw error;
       logActivity({
