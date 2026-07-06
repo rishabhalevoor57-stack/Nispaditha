@@ -226,11 +226,19 @@ const CustomOrders = () => {
               </CardTitle>
               <div className="flex flex-col md:flex-row gap-3">
                 <Input
-                  placeholder="Search by name, phone, reference..."
+                  placeholder="Search SKU, product, vendor, name, phone, ref..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="md:w-[250px]"
+                  className="md:w-[280px]"
                 />
+                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                  <SelectTrigger className="md:w-[160px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Orders</SelectItem>
+                    <SelectItem value="customer">Customer Orders</SelectItem>
+                    <SelectItem value="in_house">In-House Orders</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="md:w-[160px]">
                     <SelectValue placeholder="All Status" />
