@@ -105,7 +105,22 @@ export const useCustomOrders = () => {
       }
 
       if (data.components && data.components.length > 0) {
-        const componentsWithId = data.components.map(c => ({ ...c, custom_order_id: orderData.id }));
+        const componentsWithId = data.components.map(c => ({
+          custom_order_id: orderData.id,
+          product_id: (c as any).product_id || null,
+          sku: (c as any).sku || null,
+          category: (c as any).category || null,
+          component_name: c.component_name,
+          material: c.material || null,
+          unit: (c as any).unit || 'weight_based',
+          weight_grams: c.weight_grams || 0,
+          quantity: c.quantity || 1,
+          quantity_used: (c as any).quantity_used ?? 0,
+          strings_used: (c as any).strings_used ?? 0,
+          unit_price: c.unit_price || 0,
+          rate_per_gram: c.rate_per_gram || 0,
+          total: c.total || 0,
+        }));
         const { error: compErr } = await (supabase.from('custom_order_components' as any).insert(componentsWithId) as any);
         if (compErr) throw compErr;
       }
@@ -182,7 +197,22 @@ export const useCustomOrders = () => {
       // Replace components
       await (supabase.from('custom_order_components' as any).delete().eq('custom_order_id', data.id) as any);
       if (data.components && data.components.length > 0) {
-        const compsWithId = data.components.map(c => ({ ...c, custom_order_id: data.id }));
+        const compsWithId = data.components.map(c => ({
+          custom_order_id: data.id,
+          product_id: (c as any).product_id || null,
+          sku: (c as any).sku || null,
+          category: (c as any).category || null,
+          component_name: c.component_name,
+          material: c.material || null,
+          unit: (c as any).unit || 'weight_based',
+          weight_grams: c.weight_grams || 0,
+          quantity: c.quantity || 1,
+          quantity_used: (c as any).quantity_used ?? 0,
+          strings_used: (c as any).strings_used ?? 0,
+          unit_price: c.unit_price || 0,
+          rate_per_gram: c.rate_per_gram || 0,
+          total: c.total || 0,
+        }));
         const { error: compErr } = await (supabase.from('custom_order_components' as any).insert(compsWithId) as any);
         if (compErr) throw compErr;
       }

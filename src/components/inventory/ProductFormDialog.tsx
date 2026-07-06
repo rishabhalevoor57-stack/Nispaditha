@@ -82,6 +82,7 @@ export function ProductFormDialog({
         purity: product.purity || '',
         weight_grams: product.weight_grams,
         quantity: product.quantity,
+        strings_count: (product as any).strings_count || 0,
         purchase_price: product.purchase_price,
         selling_price: product.selling_price,
         making_charges: product.making_charges,
@@ -402,51 +403,40 @@ export function ProductFormDialog({
           </div>
 
           {/* Quantity & Stock */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="quantity">
-                {(() => {
-                  const catName = categories.find(c => c.id === formData.category_id)?.name?.toLowerCase() || '';
-                  if (catName.includes('bangle')) return 'Quantity (Pair) *';
-                  if (catName.includes('bead')) return 'Quantity (Strings) *';
-                  return 'Number of Pieces *';
-                })()}
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="quantity"
-                  type="number"
-                  value={formData.quantity}
-                  onChange={(e) => updateField('quantity', parseInt(e.target.value) || 0)}
-                  required
-                />
-                {(() => {
-                  const catName = categories.find(c => c.id === formData.category_id)?.name?.toLowerCase() || '';
-                  if (catName.includes('bangle')) return <span className="text-sm text-muted-foreground whitespace-nowrap">, Pair</span>;
-                  if (catName.includes('bead')) return <span className="text-sm text-muted-foreground whitespace-nowrap">, Strings</span>;
-                  return null;
-                })()}
+          {(() => {
+            const catName = categories.find(c => c.id === formData.category_id)?.name?.toLowerCase() || '';
+            const isBeadsPearls = catName.includes('bead') || catName.includes('pearl');
+            const isBangle = catName.includes('bangle');
+            return (
+              <div className={`grid grid-cols-1 md:grid-cols-${isBeadsPearls ? '4' : '3'} gap-4`}>
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">
+                    {isBangle ? 'Quantity (Pair) *' : isBeadsPearls ? 'Quantity (Pieces)' : 'Number of Pieces *'}
+                  </Label>
+                  <Input id="quantity" type="number" value={formData.quantity}
+                    onChange={(e) => updateField('quantity', parseInt(e.target.value) || 0)}
+                    required={!isBeadsPearls} />
+                </div>
+                {isBeadsPearls && (
+                  <div className="space-y-2">
+                    <Label htmlFor="strings">Number of Strings</Label>
+                    <Input id="strings" type="number" step="0.01" value={formData.strings_count || 0}
+                      onChange={(e) => updateField('strings_count' as any, parseFloat(e.target.value) || 0)} />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="low_stock">Low Stock Alert Level</Label>
+                  <Input id="low_stock" type="number" value={formData.low_stock_alert}
+                    onChange={(e) => updateField('low_stock_alert', parseInt(e.target.value) || 0)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date_ordered">Date Ordered</Label>
+                  <Input id="date_ordered" type="date" value={formData.date_ordered}
+                    onChange={(e) => updateField('date_ordered', e.target.value)} />
+                </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="low_stock">Low Stock Alert Level</Label>
-              <Input
-                id="low_stock"
-                type="number"
-                value={formData.low_stock_alert}
-                onChange={(e) => updateField('low_stock_alert', parseInt(e.target.value) || 0)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="date_ordered">Date Ordered</Label>
-              <Input
-                id="date_ordered"
-                type="date"
-                value={formData.date_ordered}
-                onChange={(e) => updateField('date_ordered', e.target.value)}
-              />
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Pricing */}
           <div className="space-y-4">

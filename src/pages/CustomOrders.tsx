@@ -36,21 +36,27 @@ const CustomOrders = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'customer' | 'in_house'>('all');
   const [formOpen, setFormOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selected, setSelected] = useState<CustomOrder | null>(null);
 
   const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return customOrders.filter((o) => {
-      const matchesSearch = !searchQuery ||
-        o.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.phone_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.reference_number.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = !q ||
+        o.client_name.toLowerCase().includes(q) ||
+        o.phone_number?.toLowerCase().includes(q) ||
+        o.reference_number.toLowerCase().includes(q) ||
+        o.product_sku?.toLowerCase().includes(q) ||
+        o.product_title?.toLowerCase().includes(q) ||
+        o.product_description?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesType = typeFilter === 'all' || (o.order_type || 'customer') === typeFilter;
+      return matchesSearch && matchesStatus && matchesType;
     });
-  }, [customOrders, searchQuery, statusFilter]);
+  }, [customOrders, searchQuery, statusFilter, typeFilter]);
 
   const handleView = (order: CustomOrder) => { setSelected(order); setViewOpen(true); };
   const handleEdit = (order: CustomOrder) => { setSelected(order); setFormOpen(true); };
@@ -151,9 +157,10 @@ const CustomOrders = () => {
       return;
     }
     try {
-      const { data, error } = await supabase.rpc('send_custom_order_to_inventory' as any, {
+      const { data, error } = await supabase.rpc('send_custom_order_to_inventory_v2' as any, {
         p_custom_order_id: order.id,
         p_final_quantity: 1,
+        p_total_weight: null,
       });
       if (error) throw error;
       logActivity({
@@ -219,11 +226,19 @@ const CustomOrders = () => {
               </CardTitle>
               <div className="flex flex-col md:flex-row gap-3">
                 <Input
-                  placeholder="Search by name, phone, reference..."
+                  placeholder="Search SKU, product, vendor, name, phone, ref..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="md:w-[250px]"
+                  className="md:w-[280px]"
                 />
+                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                  <SelectTrigger className="md:w-[160px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Orders</SelectItem>
+                    <SelectItem value="customer">Customer Orders</SelectItem>
+                    <SelectItem value="in_house">In-House Orders</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="md:w-[160px]">
                     <SelectValue placeholder="All Status" />

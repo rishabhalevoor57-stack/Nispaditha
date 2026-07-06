@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Search, Factory, User, Plus, X } from 'lucide-react';
+import { CalendarIcon, Search, Factory, User, Plus, X, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -95,7 +95,10 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
 
   const itemsTotal = items.reduce((sum, item) => sum + item.item_total, 0);
   const componentsTotal = components.reduce((sum, c) => sum + (Number(c.total) || 0), 0);
-  const componentsWeight = components.reduce((sum, c) => sum + (Number(c.weight_grams) || 0) * (Number(c.quantity) || 0), 0);
+  const componentsWeight = components.reduce((sum, c) => {
+    if ((c as any).unit && (c as any).unit !== 'weight_based') return sum;
+    return sum + (Number(c.weight_grams) || 0) * (Number(c.quantity) || 1);
+  }, 0);
   const extraChargesTotal = extraCharges.reduce((s, c) => s + (Number(c.amount) || 0), 0);
   const allChargesTotal = (Number(makingCharges) || 0) + (Number(labourCharges) || 0)
     + (Number(polishingCharges) || 0) + (Number(repairCharges) || 0)
@@ -514,13 +517,45 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label>Image URLs (one per line, optional)</Label>
-                    <Textarea
-                      rows={3}
-                      placeholder="https://..."
-                      value={productImageUrls.join('\n')}
-                      onChange={(e) => setProductImageUrls(e.target.value.split('\n').map((s) => s.trim()).filter(Boolean))}
-                    />
+                    <Label>Product Images</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {productImageUrls.map((url, i) => (
+                        <div key={i} className="relative w-20 h-20 rounded-md overflow-hidden border">
+                          <img src={url} alt="" className="w-full h-full object-cover" />
+                          <button type="button"
+                            onClick={() => setProductImageUrls(productImageUrls.filter((_, j) => j !== i))}
+                            className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-bl p-0.5">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <label className="w-20 h-20 border-2 border-dashed rounded-md flex flex-col items-center justify-center cursor-pointer hover:border-primary text-muted-foreground">
+                        <Upload className="h-5 w-5" />
+                        <span className="text-[10px] mt-1">Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={async (e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (files.length === 0) return;
+                            const uploaded: string[] = [];
+                            for (const file of files) {
+                              const ext = file.name.split('.').pop();
+                              const fileName = `custom-order-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+                              const { error: upErr } = await supabase.storage.from('product-images').upload(fileName, file);
+                              if (upErr) { toast({ variant: 'destructive', title: 'Upload failed', description: upErr.message }); continue; }
+                              const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
+                              uploaded.push(publicUrl);
+                            }
+                            setProductImageUrls([...productImageUrls, ...uploaded]);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">Multiple images allowed. The first image becomes the inventory thumbnail.</p>
                   </div>
                 </div>
                 {alreadyStocked && (
@@ -650,11 +685,18 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
           {/* Nispaditha Components */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Nispaditha Components</CardTitle>
-              <p className="text-xs text-muted-foreground">Items added by your business. Weight-based components use today's silver rate.</p>
+              <CardTitle className="text-sm font-medium flex items-center justify-between">
+                <span>Nispaditha Components</span>
+                {isInHouse && (
+                  <span className="text-xs font-normal">
+                    Total Finished Weight: <span className="font-semibold text-primary">{componentsWeight.toFixed(3)} g</span>
+                  </span>
+                )}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">Weight-based components use today's silver rate. Beads / pearls counted separately by strings or pieces.</p>
             </CardHeader>
             <CardContent>
-              <CustomOrderComponentsTable components={components} onChange={setComponents} />
+              <CustomOrderComponentsTable components={components} onChange={setComponents} silverRate={silverRate} />
             </CardContent>
           </Card>
 
