@@ -88,6 +88,7 @@ export const initialProductForm: ProductFormData = {
   purity: '',
   weight_grams: 0,
   quantity: 0,
+  strings_count: 0,
   purchase_price: 0,
   selling_price: 0,
   making_charges: 0,
