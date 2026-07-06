@@ -63,6 +63,7 @@ export interface ProductFormData {
   purchase_price_per_gram: number;
   purchase_making_charges: number;
   pricing_mode: PricingMode;
+  strings_count?: number;
 }
 
 // TYPE_OF_WORK_OPTIONS is now fetched from the database via useTypesOfWork hook
