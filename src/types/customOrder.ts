@@ -50,6 +50,7 @@ export interface CustomerSuppliedMaterial {
   description?: string;
   quantity?: number;
   weight_grams?: number;
+  strings?: number;
 }
 
 export interface ExtraCharge {
