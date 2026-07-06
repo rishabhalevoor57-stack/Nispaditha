@@ -95,7 +95,10 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
 
   const itemsTotal = items.reduce((sum, item) => sum + item.item_total, 0);
   const componentsTotal = components.reduce((sum, c) => sum + (Number(c.total) || 0), 0);
-  const componentsWeight = components.reduce((sum, c) => sum + (Number(c.weight_grams) || 0) * (Number(c.quantity) || 0), 0);
+  const componentsWeight = components.reduce((sum, c) => {
+    if ((c as any).unit && (c as any).unit !== 'weight_based') return sum;
+    return sum + (Number(c.weight_grams) || 0) * (Number(c.quantity) || 1);
+  }, 0);
   const extraChargesTotal = extraCharges.reduce((s, c) => s + (Number(c.amount) || 0), 0);
   const allChargesTotal = (Number(makingCharges) || 0) + (Number(labourCharges) || 0)
     + (Number(polishingCharges) || 0) + (Number(repairCharges) || 0)
