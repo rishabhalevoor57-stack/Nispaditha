@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Search, Factory, User, Plus, X } from 'lucide-react';
+import { CalendarIcon, Search, Factory, User, Plus, X, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
