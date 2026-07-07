@@ -53,7 +53,7 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
         category: null,
         component_name: '',
         material: '',
-        unit: 'weight_based',
+        unit: 'quantity',
         weight_grams: 0,
         quantity: 1,
         quantity_used: 0,
@@ -67,7 +67,7 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
 
   const removeRow = (idx: number) => onChange(components.filter((_, i) => i !== idx));
 
-  const totalWeight = components.reduce((s, c) => c.unit === 'weight_based' ? s + (Number(c.weight_grams) || 0) * (Number(c.quantity) || 1) : s, 0);
+  const totalWeight = components.reduce((s, c) => s + (Number(c.weight_grams) || 0), 0);
   const totalQty = components.reduce((s, c) => c.unit === 'quantity' ? s + (Number(c.quantity_used) || 0) : s, 0);
   const totalStrings = components.reduce((s, c) => c.unit === 'strings' ? s + (Number(c.strings_used) || 0) : s, 0);
   const totalCost = components.reduce((s, c) => s + (Number(c.total) || 0), 0);
