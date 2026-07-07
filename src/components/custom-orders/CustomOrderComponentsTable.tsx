@@ -93,24 +93,25 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
             />
           </div>
 
-          {/* Unit */}
+          {/* Unit — Qty or Strings only. Weight is a separate optional field. */}
           <div className="col-span-6 md:col-span-1 space-y-1">
             <Label className="text-xs">Unit</Label>
-            <Select value={c.unit || 'weight_based'} onValueChange={(v) => updateRow(idx, { unit: v as ComponentUnit })}>
+            <Select
+              value={c.unit === 'strings' ? 'strings' : 'quantity'}
+              onValueChange={(v) => updateRow(idx, { unit: v as ComponentUnit })}
+            >
               <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="weight_based">Weight</SelectItem>
                 <SelectItem value="quantity">Qty</SelectItem>
                 <SelectItem value="strings">Strings</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Weight */}
+          {/* Weight (optional, always editable) */}
           <div className="col-span-6 md:col-span-2 space-y-1">
-            <Label className="text-xs">Weight (g)</Label>
+            <Label className="text-xs">Weight (g) <span className="text-muted-foreground">(optional)</span></Label>
             <Input type="number" min="0" step="0.001" value={c.weight_grams || ''}
-              disabled={c.unit !== 'weight_based'}
               onChange={(e) => updateRow(idx, { weight_grams: parseFloat(e.target.value) || 0 })}
               className="h-9" />
           </div>
@@ -133,16 +134,13 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
               className="h-9" />
           </div>
 
-          {/* Rate / Buying */}
+          {/* Buying Price per unit + optional Rate/g */}
           <div className="col-span-6 md:col-span-2 space-y-1">
-            <Label className="text-xs">{c.unit === 'weight_based' ? 'Rate/g' : 'Buying Price'}</Label>
+            <Label className="text-xs">Buying Price</Label>
             <Input type="number" min="0" step="0.01"
-              value={c.unit === 'weight_based' ? (c.rate_per_gram || '') : (c.unit_price || '')}
-              onChange={(e) => updateRow(idx,
-                c.unit === 'weight_based'
-                  ? { rate_per_gram: parseFloat(e.target.value) || 0 }
-                  : { unit_price: parseFloat(e.target.value) || 0 }
-              )} className="h-9" />
+              value={c.unit_price || ''}
+              onChange={(e) => updateRow(idx, { unit_price: parseFloat(e.target.value) || 0 })}
+              className="h-9" />
           </div>
 
           {/* Buying cost */}
