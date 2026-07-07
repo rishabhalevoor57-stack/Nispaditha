@@ -19,17 +19,17 @@ interface Props {
 // RPC remain in place so integration can be re-enabled with a simple toggle
 // later — see plan.md.
 
+// Cost = (unit qty × unit price) + optional weight × rate/g surcharge.
+// Weight is now an optional field on every component (not a distinct unit).
 const calcTotal = (c: CustomOrderComponent): number => {
+  const weightCost = (c.weight_grams || 0) * (c.rate_per_gram || 0);
+  let unitCost = 0;
   if (c.unit === 'quantity') {
-    return Number(((c.quantity_used || 0) * (c.unit_price || 0)).toFixed(2));
+    unitCost = (c.quantity_used || 0) * (c.unit_price || 0);
+  } else if (c.unit === 'strings') {
+    unitCost = (c.strings_used || 0) * (c.unit_price || 0);
   }
-  if (c.unit === 'strings') {
-    return Number(((c.strings_used || 0) * (c.unit_price || 0)).toFixed(2));
-  }
-  // weight_based
-  const w = (c.weight_grams || 0) * (c.quantity || 1);
-  if ((c.rate_per_gram || 0) > 0) return Number((w * c.rate_per_gram).toFixed(2));
-  return Number(((c.unit_price || 0) * (c.quantity || 1)).toFixed(2));
+  return Number((unitCost + weightCost).toFixed(2));
 };
 
 export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 0 }: Props) => {
