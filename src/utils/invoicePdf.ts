@@ -422,13 +422,15 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const cgst = (data.totals.gstAmount || 0) / 2;
   const sgst = (data.totals.gstAmount || 0) / 2;
   // Inclusive: subtotal already contains GST; do not add GST again.
-  const grandTotalWithRound = isInclusive
+  const grossTotalWithRound = isInclusive
     ? (data.totals.subtotal || 0) + roundOff
     : (data.totals.grandTotal || 0) + roundOff;
+  // Store credits reduce the grand total (not counted again as payment).
+  const grandTotalWithRound = Math.max(0, grossTotalWithRound - storeCreditsUsed);
   const breakdown = data.paymentBreakdown || [];
   const breakdownTotal = breakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
-  let balanceDue = Math.round((grandTotalWithRound - cashPaid - storeCreditsUsed) * 100) / 100;
+  let balanceDue = Math.round((grandTotalWithRound - cashPaid) * 100) / 100;
   if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
 
   doc.setFontSize(9);
