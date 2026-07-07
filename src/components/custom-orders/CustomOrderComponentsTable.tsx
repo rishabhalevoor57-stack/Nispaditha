@@ -19,17 +19,17 @@ interface Props {
 // RPC remain in place so integration can be re-enabled with a simple toggle
 // later — see plan.md.
 
+// Cost = (unit qty × unit price) + optional weight × rate/g surcharge.
+// Weight is now an optional field on every component (not a distinct unit).
 const calcTotal = (c: CustomOrderComponent): number => {
+  const weightCost = (c.weight_grams || 0) * (c.rate_per_gram || 0);
+  let unitCost = 0;
   if (c.unit === 'quantity') {
-    return Number(((c.quantity_used || 0) * (c.unit_price || 0)).toFixed(2));
+    unitCost = (c.quantity_used || 0) * (c.unit_price || 0);
+  } else if (c.unit === 'strings') {
+    unitCost = (c.strings_used || 0) * (c.unit_price || 0);
   }
-  if (c.unit === 'strings') {
-    return Number(((c.strings_used || 0) * (c.unit_price || 0)).toFixed(2));
-  }
-  // weight_based
-  const w = (c.weight_grams || 0) * (c.quantity || 1);
-  if ((c.rate_per_gram || 0) > 0) return Number((w * c.rate_per_gram).toFixed(2));
-  return Number(((c.unit_price || 0) * (c.quantity || 1)).toFixed(2));
+  return Number((unitCost + weightCost).toFixed(2));
 };
 
 export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 0 }: Props) => {
@@ -53,7 +53,7 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
         category: null,
         component_name: '',
         material: '',
-        unit: 'weight_based',
+        unit: 'quantity',
         weight_grams: 0,
         quantity: 1,
         quantity_used: 0,
@@ -67,7 +67,7 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
 
   const removeRow = (idx: number) => onChange(components.filter((_, i) => i !== idx));
 
-  const totalWeight = components.reduce((s, c) => c.unit === 'weight_based' ? s + (Number(c.weight_grams) || 0) * (Number(c.quantity) || 1) : s, 0);
+  const totalWeight = components.reduce((s, c) => s + (Number(c.weight_grams) || 0), 0);
   const totalQty = components.reduce((s, c) => c.unit === 'quantity' ? s + (Number(c.quantity_used) || 0) : s, 0);
   const totalStrings = components.reduce((s, c) => c.unit === 'strings' ? s + (Number(c.strings_used) || 0) : s, 0);
   const totalCost = components.reduce((s, c) => s + (Number(c.total) || 0), 0);
@@ -93,24 +93,25 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
             />
           </div>
 
-          {/* Unit */}
+          {/* Unit — Qty or Strings only. Weight is a separate optional field. */}
           <div className="col-span-6 md:col-span-1 space-y-1">
             <Label className="text-xs">Unit</Label>
-            <Select value={c.unit || 'weight_based'} onValueChange={(v) => updateRow(idx, { unit: v as ComponentUnit })}>
+            <Select
+              value={c.unit === 'strings' ? 'strings' : 'quantity'}
+              onValueChange={(v) => updateRow(idx, { unit: v as ComponentUnit })}
+            >
               <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="weight_based">Weight</SelectItem>
                 <SelectItem value="quantity">Qty</SelectItem>
                 <SelectItem value="strings">Strings</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Weight */}
+          {/* Weight (optional, always editable) */}
           <div className="col-span-6 md:col-span-2 space-y-1">
-            <Label className="text-xs">Weight (g)</Label>
+            <Label className="text-xs">Weight (g) <span className="text-muted-foreground">(optional)</span></Label>
             <Input type="number" min="0" step="0.001" value={c.weight_grams || ''}
-              disabled={c.unit !== 'weight_based'}
               onChange={(e) => updateRow(idx, { weight_grams: parseFloat(e.target.value) || 0 })}
               className="h-9" />
           </div>
@@ -133,16 +134,13 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
               className="h-9" />
           </div>
 
-          {/* Rate / Buying */}
+          {/* Buying Price per unit + optional Rate/g */}
           <div className="col-span-6 md:col-span-2 space-y-1">
-            <Label className="text-xs">{c.unit === 'weight_based' ? 'Rate/g' : 'Buying Price'}</Label>
+            <Label className="text-xs">Buying Price</Label>
             <Input type="number" min="0" step="0.01"
-              value={c.unit === 'weight_based' ? (c.rate_per_gram || '') : (c.unit_price || '')}
-              onChange={(e) => updateRow(idx,
-                c.unit === 'weight_based'
-                  ? { rate_per_gram: parseFloat(e.target.value) || 0 }
-                  : { unit_price: parseFloat(e.target.value) || 0 }
-              )} className="h-9" />
+              value={c.unit_price || ''}
+              onChange={(e) => updateRow(idx, { unit_price: parseFloat(e.target.value) || 0 })}
+              className="h-9" />
           </div>
 
           {/* Buying cost */}
