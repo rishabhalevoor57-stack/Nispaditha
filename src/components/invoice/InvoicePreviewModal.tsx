@@ -108,17 +108,19 @@ export function InvoicePreviewModal({
   const sgst = (totals.gstAmount || 0) / 2;
   // In inclusive mode the line-totals already contain GST, so grandTotal == subtotal + roundOff.
   // In exclusive mode GST is added on top.
-  const grandTotal = isInclusive
+  const grossTotal = isInclusive
     ? (totals.subtotal || 0) + roundOff
     : (totals.grandTotal || 0) + roundOff;
+  // Store credits are treated as a deduction from the grand total, not as a payment.
+  const grandTotal = Math.max(0, grossTotal - storeCreditsUsed);
   const breakdownTotal = paymentBreakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashOrUpiPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
-  const paidTotal = cashOrUpiPaid + storeCreditsUsed;
+  const paidTotal = cashOrUpiPaid; // credits already deducted from grand total
   let balanceDue = Math.round((grandTotal - paidTotal) * 100) / 100;
   if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
 
-  const isPaidFull = grandTotal > 0 && balanceDue === 0 && paidTotal > 0;
-  const isOverpaid = paidTotal > grandTotal + 0.05 && grandTotal > 0;
+  const isPaidFull = grandTotal > 0 && balanceDue === 0 && (paidTotal > 0 || storeCreditsUsed > 0);
+  const isOverpaid = paidTotal > grandTotal + 0.05 && grandTotal >= 0;
   const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
 
   const num: React.CSSProperties = {
