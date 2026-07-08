@@ -176,6 +176,8 @@ const CustomOrders = () => {
         finalize: true,
         createdBy: user?.id || null,
       });
+      // Mark the order as Invoiced now that a real invoice exists
+      await supabase.from('custom_orders').update({ status: 'invoiced' } as any).eq('id', order.id);
       queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       logActivity({
@@ -191,6 +193,7 @@ const CustomOrders = () => {
       toast({ title: 'Bill failed', description: error.message, variant: 'destructive' });
     }
   };
+
 
   const handleNew = () => { setSelected(null); setFormOpen(true); };
 
@@ -307,6 +310,7 @@ const CustomOrders = () => {
                 onView={handleView}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onCancel={handleCancel}
                 onStatusChange={handleStatusChange}
                 onSendToInventory={handleSendToInventory}
               />
@@ -332,8 +336,35 @@ const CustomOrders = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Order {selected?.reference_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This order will be cancelled and cannot be restored. The reference number stays permanently reserved and will never be reused.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label className="text-xs">Reason (optional)</Label>
+            <Textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Why is this order being cancelled?"
+              className="min-h-[70px]"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Order</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel} className="bg-orange-600 hover:bg-orange-700 text-white">
+              Cancel Order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
 
 export default CustomOrders;
+
