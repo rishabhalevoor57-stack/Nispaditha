@@ -43,7 +43,10 @@ const CustomOrders = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [selected, setSelected] = useState<CustomOrder | null>(null);
+
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -62,8 +65,45 @@ const CustomOrders = () => {
   }, [customOrders, searchQuery, statusFilter, typeFilter]);
 
   const handleView = (order: CustomOrder) => { setSelected(order); setViewOpen(true); };
-  const handleEdit = (order: CustomOrder) => { setSelected(order); setFormOpen(true); };
+  const handleEdit = (order: CustomOrder) => {
+    if (order.status === 'cancelled') {
+      toast({ variant: 'destructive', title: 'Cancelled', description: 'This order is cancelled and is read-only.' });
+      return;
+    }
+    setSelected(order); setFormOpen(true);
+  };
   const handleDelete = (order: CustomOrder) => { setSelected(order); setDeleteOpen(true); };
+  const handleCancel = (order: CustomOrder) => { setSelected(order); setCancelReason(''); setCancelOpen(true); };
+
+  const confirmCancel = async () => {
+    if (!selected) return;
+    const reasonNote = cancelReason.trim()
+      ? `[CANCELLED: ${cancelReason.trim()}]`
+      : '[CANCELLED]';
+    const newNotes = [selected.notes || '', reasonNote].filter(Boolean).join('\n');
+    const { error } = await supabase
+      .from('custom_orders')
+      .update({ status: 'cancelled', notes: newNotes } as any)
+      .eq('id', selected.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Cancel failed', description: error.message });
+      return;
+    }
+    // Unlock any locked SKUs
+    await (supabase.from('products').update({ locked_by_custom_order_id: null } as any).eq('locked_by_custom_order_id', selected.id) as any);
+    logActivity({
+      module: 'Custom Orders',
+      action: 'Cancel',
+      recordId: selected.id,
+      recordLabel: selected.reference_number,
+      newValue: { reason: cancelReason.trim() || null },
+    });
+    queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
+    toast({ title: 'Order cancelled', description: `${selected.reference_number} has been cancelled. Reference is permanently reserved.` });
+    setCancelOpen(false);
+    setSelected(null);
+  };
+
 
   const confirmDelete = async () => {
     if (selected) {
