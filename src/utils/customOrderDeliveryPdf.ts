@@ -123,22 +123,25 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
   }
 
   // Charges
-  const charges: Array<[string, number]> = [
-    ['Making Charges', Number(order.making_charges) || 0],
-    ['Design Charges', Number(order.design_charges) || 0],
-    ['Labour Charges', Number(order.labour_charges) || 0],
-    ['Polishing Charges', Number(order.polishing_charges) || 0],
-    ['Repair Charges', Number(order.repair_charges) || 0],
-    [order.additional_charge_label || 'Additional Charge', Number(order.additional_charge) || 0],
-    ...((order.extra_charges || []).map((c) => [c.label, Number(c.amount) || 0] as [string, number])),
-  ].filter(([, amt]) => amt > 0);
+  const charges: Array<[string, number]> = [];
+  charges.push(['Making Charges', Number(order.making_charges) || 0]);
+  charges.push(['Design Charges', Number(order.design_charges) || 0]);
+  charges.push(['Labour Charges', Number(order.labour_charges) || 0]);
+  charges.push(['Polishing Charges', Number(order.polishing_charges) || 0]);
+  charges.push(['Repair Charges', Number(order.repair_charges) || 0]);
+  charges.push([order.additional_charge_label || 'Additional Charge', Number(order.additional_charge) || 0]);
+  (order.extra_charges || []).forEach((c) => {
+    charges.push([c.label, Number(c.amount) || 0]);
+  });
+  const activeCharges = charges.filter((c) => c[1] > 0);
 
   const flatDiscount = Number(order.flat_discount) || 0;
   const grandTotal = Number(order.total_amount) || 0;
   const balance = Math.max(0, grandTotal - (Number(advancePaid) || 0));
 
   const summaryRows: Array<[string, string]> = [];
-  charges.forEach(([label, amt]) => summaryRows.push([label, money(amt)]));
+  activeCharges.forEach(([label, amt]) => summaryRows.push([label, money(amt)]));
+
   if (flatDiscount > 0) summaryRows.push(['Flat Discount', '- ' + money(flatDiscount)]);
   if (Number(order.gst_percentage) > 0) {
     summaryRows.push([
