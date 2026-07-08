@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Edit, Eye, Trash2, FileText, PackagePlus, Factory, User } from 'lucide-react';
+import { Edit, Eye, Trash2, FileText, PackagePlus, Factory, User, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,11 +13,13 @@ interface CustomOrderTableProps {
   onView: (order: CustomOrder) => void;
   onEdit: (order: CustomOrder) => void;
   onDelete: (order: CustomOrder) => void;
+  onCancel?: (order: CustomOrder) => void;
   onStatusChange: (id: string, status: CustomOrderStatus) => void;
   onSendToInventory?: (order: CustomOrder) => void;
 }
 
-export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onStatusChange, onSendToInventory }: CustomOrderTableProps) => {
+export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onCancel, onStatusChange, onSendToInventory }: CustomOrderTableProps) => {
+
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
 
@@ -103,8 +105,15 @@ export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onStatusCha
                 <TableCell>
                   <div className="flex items-center justify-end gap-1">
                     <Button variant="ghost" size="icon" onClick={() => onView(order)}><Eye className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => onEdit(order)}><Edit className="h-4 w-4" /></Button>
-                    {isInHouse && !order.inventory_product_id && onSendToInventory && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onEdit(order)}
+                      disabled={order.status === 'cancelled'}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    {isInHouse && !order.inventory_product_id && order.status !== 'cancelled' && onSendToInventory && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -121,6 +130,18 @@ export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onStatusCha
                         </Tooltip>
                       </TooltipProvider>
                     )}
+                    {onCancel && order.status !== 'cancelled' && !order.converted_to_invoice_id && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => onCancel(order)}>
+                              <Ban className="h-4 w-4 text-orange-600" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Cancel Order</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                     {isAdmin && (
                       <Button variant="ghost" size="icon" onClick={() => onDelete(order)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -128,6 +149,7 @@ export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onStatusCha
                     )}
                   </div>
                 </TableCell>
+
               </TableRow>
             );
           })}
