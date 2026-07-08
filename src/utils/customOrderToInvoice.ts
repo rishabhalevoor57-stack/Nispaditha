@@ -201,36 +201,42 @@ const buildInvoiceData = (order: CustomOrder, items: CustomOrderItem[], componen
   const details = buildCustomOrderDetails(order, items, components, chargeLines);
   const lines = buildInvoiceLines(order, items, components, chargeLines);
   const linesSubtotal = lines.reduce((s, l) => s + l.subtotal, 0);
-  const discount = Number(order.flat_discount) || 0;
-  const taxableBase = Math.max(0, linesSubtotal - discount);
+  const flatDiscount = Number(order.flat_discount) || 0;
+  // Sum per-item line discounts so they don't silently disappear on the invoice
+  const itemsDiscount = items.reduce((s, i) => s + (Number(i.discount) || 0), 0);
+  const totalDiscount = flatDiscount + itemsDiscount;
+  // Gross subtotal = post-per-item-discount lines + itemsDiscount so subtotal - totalDiscount = same taxable base
+  const grossSubtotal = linesSubtotal + itemsDiscount;
+  const taxableBase = Math.max(0, linesSubtotal - flatDiscount);
   const pct = Number(order.gst_percentage) || 0;
   const gstMode = order.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive';
   let gstAmount = 0;
   let grandTotal = 0;
-  let subtotalForInvoice = taxableBase;
+  let subtotalForInvoice = grossSubtotal;
   if (gstMode === 'inclusive') {
     const divisor = 1 + pct / 100;
     const taxable = divisor > 0 ? taxableBase / divisor : taxableBase;
     gstAmount = Math.max(0, taxableBase - taxable);
     grandTotal = taxableBase;
-    subtotalForInvoice = taxable + discount;
+    subtotalForInvoice = taxable + totalDiscount;
   } else {
     gstAmount = taxableBase * (pct / 100);
     grandTotal = taxableBase + gstAmount;
-    subtotalForInvoice = linesSubtotal;
+    subtotalForInvoice = grossSubtotal;
   }
   return {
     lines,
     details,
     notes: buildCustomOrderNotes(order, details),
     subtotalForInvoice,
-    discount,
+    discount: totalDiscount,
     gstAmount,
     grandTotal,
     pct,
     gstMode,
   };
 };
+
 
 const buildItemsPayload = (invoiceId: string, lines: LineItemInput[]) => lines.map(l => ({
   invoice_id: invoiceId,

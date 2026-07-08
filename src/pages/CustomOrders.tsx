@@ -6,6 +6,8 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -25,6 +27,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { convertCustomOrderToInvoice } from '@/utils/customOrderToInvoice';
 import { supabase } from '@/integrations/supabase/client';
 
+
 const CustomOrders = () => {
   const { customOrders, isLoading, updateStatus, deleteOrder, getOrderWithItems } = useCustomOrders();
   const { logActivity } = useActivityLogger();
@@ -40,7 +43,10 @@ const CustomOrders = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [selected, setSelected] = useState<CustomOrder | null>(null);
+
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -59,8 +65,45 @@ const CustomOrders = () => {
   }, [customOrders, searchQuery, statusFilter, typeFilter]);
 
   const handleView = (order: CustomOrder) => { setSelected(order); setViewOpen(true); };
-  const handleEdit = (order: CustomOrder) => { setSelected(order); setFormOpen(true); };
+  const handleEdit = (order: CustomOrder) => {
+    if (order.status === 'cancelled') {
+      toast({ variant: 'destructive', title: 'Cancelled', description: 'This order is cancelled and is read-only.' });
+      return;
+    }
+    setSelected(order); setFormOpen(true);
+  };
   const handleDelete = (order: CustomOrder) => { setSelected(order); setDeleteOpen(true); };
+  const handleCancel = (order: CustomOrder) => { setSelected(order); setCancelReason(''); setCancelOpen(true); };
+
+  const confirmCancel = async () => {
+    if (!selected) return;
+    const reasonNote = cancelReason.trim()
+      ? `[CANCELLED: ${cancelReason.trim()}]`
+      : '[CANCELLED]';
+    const newNotes = [selected.notes || '', reasonNote].filter(Boolean).join('\n');
+    const { error } = await supabase
+      .from('custom_orders')
+      .update({ status: 'cancelled', notes: newNotes } as any)
+      .eq('id', selected.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Cancel failed', description: error.message });
+      return;
+    }
+    // Unlock any locked SKUs
+    await (supabase.from('products').update({ locked_by_custom_order_id: null } as any).eq('locked_by_custom_order_id', selected.id) as any);
+    logActivity({
+      module: 'Custom Orders',
+      action: 'Cancel',
+      recordId: selected.id,
+      recordLabel: selected.reference_number,
+      newValue: { reason: cancelReason.trim() || null },
+    });
+    queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
+    toast({ title: 'Order cancelled', description: `${selected.reference_number} has been cancelled. Reference is permanently reserved.` });
+    setCancelOpen(false);
+    setSelected(null);
+  };
+
 
   const confirmDelete = async () => {
     if (selected) {
@@ -133,6 +176,8 @@ const CustomOrders = () => {
         finalize: true,
         createdBy: user?.id || null,
       });
+      // Mark the order as Invoiced now that a real invoice exists
+      await supabase.from('custom_orders').update({ status: 'invoiced' } as any).eq('id', order.id);
       queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       logActivity({
@@ -148,6 +193,7 @@ const CustomOrders = () => {
       toast({ title: 'Bill failed', description: error.message, variant: 'destructive' });
     }
   };
+
 
   const handleNew = () => { setSelected(null); setFormOpen(true); };
 
@@ -264,6 +310,7 @@ const CustomOrders = () => {
                 onView={handleView}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onCancel={handleCancel}
                 onStatusChange={handleStatusChange}
                 onSendToInventory={handleSendToInventory}
               />
@@ -289,8 +336,35 @@ const CustomOrders = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Order {selected?.reference_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This order will be cancelled and cannot be restored. The reference number stays permanently reserved and will never be reused.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label className="text-xs">Reason (optional)</Label>
+            <Textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Why is this order being cancelled?"
+              className="min-h-[70px]"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Order</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel} className="bg-orange-600 hover:bg-orange-700 text-white">
+              Cancel Order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
 
 export default CustomOrders;
+

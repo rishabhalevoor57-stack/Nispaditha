@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { FileText, Send, Receipt } from 'lucide-react';
+import { FileText, Send, Receipt, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { CustomOrder, CustomOrderItem, CustomOrderComponent, CUSTOM_ORDER_STATUS_LABELS, CUSTOM_ORDER_STATUS_COLORS } from '@/types/customOrder';
 import { useCustomOrders } from '@/hooks/useCustomOrders';
+import { printCustomOrderDeliveryBill, downloadCustomOrderDeliveryBill } from '@/utils/customOrderDeliveryPdf';
+
 
 interface ViewCustomOrderDialogProps {
   open: boolean;
@@ -63,7 +65,21 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToIn
               <Badge className={CUSTOM_ORDER_STATUS_COLORS[o.status]}>
                 {CUSTOM_ORDER_STATUS_LABELS[o.status]}
               </Badge>
-              {!o.converted_to_invoice_id && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => printCustomOrderDeliveryBill({ order: o, items, components })}
+              >
+                <Printer className="h-4 w-4 mr-1.5" /> Print Order Bill
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadCustomOrderDeliveryBill({ order: o, items, components })}
+              >
+                <Download className="h-4 w-4 mr-1.5" /> Download PDF
+              </Button>
+              {!o.converted_to_invoice_id && o.status !== 'cancelled' && (
                 <>
                   {onBillNow && (
                     <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onBillNow(o, items, components)}>
@@ -88,6 +104,7 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToIn
             </div>
           </div>
         </DialogHeader>
+
 
         <div className="space-y-6 mt-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
