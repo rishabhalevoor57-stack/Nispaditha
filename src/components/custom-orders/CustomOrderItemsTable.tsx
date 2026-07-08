@@ -39,14 +39,14 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
     const fetchProducts = async () => {
       const { data } = await supabase
         .from('products')
-        .select('*, categories(name)')
+        .select('id, sku, name, description, weight_grams, quantity, selling_price, making_charges, price_per_gram, pricing_mode, mrp, locked_by_custom_order_id, categories(name)')
         .is('deleted_at', null)
-        .gt('quantity', 0)
         .order('name');
       setProducts((data || []) as unknown as InventoryProduct[]);
     };
     fetchProducts();
   }, []);
+
 
   const isBeadsCategory = (category?: string | null) => {
     const n = (category || '').toLowerCase();
@@ -180,15 +180,20 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
     const t = term.toLowerCase().trim();
     return products
       .filter(p => {
-        const alreadyAdded = items.some(item => item.product_id === p.id);
         const isLocked = p.locked_by_custom_order_id && p.locked_by_custom_order_id !== orderId;
-        return !alreadyAdded && !isLocked && (
+        if (isLocked) return false;
+        const catName = (p.categories?.name || '').toLowerCase();
+        const desc = ((p as any).description || '').toLowerCase();
+        return (
           p.sku.toLowerCase().includes(t) ||
-          p.name.toLowerCase().includes(t)
+          p.name.toLowerCase().includes(t) ||
+          desc.includes(t) ||
+          catName.includes(t)
         );
       })
-      .slice(0, 10);
+      .slice(0, 50);
   };
+
 
   const grandTotal = items.reduce((sum, item) => sum + item.item_total, 0);
 

@@ -105,7 +105,7 @@ export interface CustomOrder {
   components?: CustomOrderComponent[];
 }
 
-export type CustomOrderStatus = 'draft' | 'confirmed' | 'in_production' | 'ready' | 'delivered' | 'released';
+export type CustomOrderStatus = 'draft' | 'confirmed' | 'in_production' | 'ready' | 'delivered' | 'released' | 'invoiced' | 'cancelled';
 
 export const CUSTOM_ORDER_STATUS_LABELS: Record<CustomOrderStatus, string> = {
   draft: 'Draft',
@@ -113,7 +113,9 @@ export const CUSTOM_ORDER_STATUS_LABELS: Record<CustomOrderStatus, string> = {
   in_production: 'In Production',
   ready: 'Ready',
   delivered: 'Delivered',
+  invoiced: 'Invoiced',
   released: 'Released',
+  cancelled: 'Cancelled',
 };
 
 export const CUSTOM_ORDER_STATUS_COLORS: Record<CustomOrderStatus, string> = {
@@ -122,5 +124,8 @@ export const CUSTOM_ORDER_STATUS_COLORS: Record<CustomOrderStatus, string> = {
   in_production: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
   ready: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
   delivered: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  released: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  invoiced: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400',
+  released: 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400',
+  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
 };
+
