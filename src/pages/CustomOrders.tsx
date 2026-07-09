@@ -131,68 +131,35 @@ const CustomOrders = () => {
     });
   };
 
-  const handleConvertToInvoice = async (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => {
-    try {
-      const result = await convertCustomOrderToInvoice(order, items, components, {
-        finalize: false,
-        createdBy: user?.id || null,
-      });
-      queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      logActivity({
-        module: 'Custom Orders',
-        action: 'Convert to Invoice',
-        recordId: order.id,
-        recordLabel: order.reference_number,
-        newValue: { invoice_number: result.invoiceNumber },
-      });
-      toast({ title: 'Invoice created', description: `Draft invoice ${result.invoiceNumber} ready for review.` });
-      setViewOpen(false);
-      navigate('/invoices');
-    } catch (error: any) {
-      toast({ title: 'Conversion failed', description: error.message, variant: 'destructive' });
+  const handleGenerateInvoice = async (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => {
+    if (order.converted_to_invoice_id) {
+      toast({ title: 'Already invoiced', description: 'This order already has a GST invoice.', variant: 'destructive' });
+      return;
     }
-  };
-
-  const handleSendToInvoicePage = async (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => {
-    try {
-      const result = await convertCustomOrderToInvoice(order, items, components, {
-        finalize: false,
-        createdBy: user?.id || null,
-      });
-      queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      setViewOpen(false);
-      toast({ title: 'Sent to Invoice Page', description: `Opening draft ${result.invoiceNumber} for editing.` });
-      navigate('/invoices', { state: { editDraftId: result.invoiceId } });
-    } catch (error: any) {
-      toast({ title: 'Send failed', description: error.message, variant: 'destructive' });
-    }
-  };
-
-  const handleBillNow = async (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => {
     try {
       const result = await convertCustomOrderToInvoice(order, items, components, {
         finalize: true,
         createdBy: user?.id || null,
       });
-      // Mark the order as Invoiced now that a real invoice exists
+      // Mark the custom order as Invoiced
       await supabase.from('custom_orders').update({ status: 'invoiced' } as any).eq('id', order.id);
       queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       logActivity({
         module: 'Custom Orders',
-        action: 'Bill Now',
+        action: 'Generate GST Invoice',
         recordId: order.id,
         recordLabel: order.reference_number,
         newValue: { invoice_number: result.invoiceNumber },
       });
-      toast({ title: 'Invoice billed', description: `Invoice ${result.invoiceNumber} created — collect payment from Invoices.` });
+      toast({ title: 'GST Invoice created', description: `Invoice ${result.invoiceNumber} generated.` });
       setViewOpen(false);
+      navigate('/invoices', { state: { editDraftId: result.invoiceId } });
     } catch (error: any) {
-      toast({ title: 'Bill failed', description: error.message, variant: 'destructive' });
+      toast({ title: 'Invoice generation failed', description: error.message, variant: 'destructive' });
     }
   };
+
 
 
   const handleNew = () => { setSelected(null); setFormOpen(true); };
