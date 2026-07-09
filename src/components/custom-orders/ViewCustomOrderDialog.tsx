@@ -78,28 +78,13 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
               >
                 <Download className="h-4 w-4 mr-1.5" /> Download PDF
               </Button>
-              {!o.converted_to_invoice_id && o.status !== 'cancelled' && (
-                <>
-                  {onBillNow && (
-                    <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onBillNow(o, items, components)}>
-                      <Receipt className="h-4 w-4 mr-1.5" />
-                      Bill Now
-                    </Button>
-                  )}
-                  {onConvertToInvoice && (
-                    <Button variant="default" size="sm" onClick={() => onConvertToInvoice(o, items, components)}>
-                      <FileText className="h-4 w-4 mr-1.5" />
-                      Generate Invoice
-                    </Button>
-                  )}
-                  {onSendToInvoicePage && (
-                    <Button variant="outline" size="sm" onClick={() => onSendToInvoicePage(o, items, components)}>
-                      <Send className="h-4 w-4 mr-1.5" />
-                      Send to Invoice Page
-                    </Button>
-                  )}
-                </>
+              {!o.converted_to_invoice_id && o.status !== 'cancelled' && onGenerateInvoice && (
+                <Button variant="default" size="sm" onClick={() => onGenerateInvoice(o, items, components)}>
+                  <FileText className="h-4 w-4 mr-1.5" />
+                  Generate GST Invoice
+                </Button>
               )}
+
             </div>
           </div>
         </DialogHeader>
