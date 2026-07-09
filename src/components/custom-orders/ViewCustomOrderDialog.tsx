@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { FileText, Send, Receipt, Printer, Download } from 'lucide-react';
+import { FileText, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -15,12 +15,11 @@ interface ViewCustomOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   order: CustomOrder | null;
-  onConvertToInvoice?: (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => void;
-  onSendToInvoicePage?: (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => void;
-  onBillNow?: (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => void;
+  onGenerateInvoice?: (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => void;
 }
 
-export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToInvoice, onSendToInvoicePage, onBillNow }: ViewCustomOrderDialogProps) => {
+export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInvoice }: ViewCustomOrderDialogProps) => {
+
   const { getOrderWithItems } = useCustomOrders();
   const [items, setItems] = useState<CustomOrderItem[]>([]);
   const [components, setComponents] = useState<CustomOrderComponent[]>([]);
