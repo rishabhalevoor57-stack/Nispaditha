@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { FileText, Send, Receipt, Printer, Download } from 'lucide-react';
+import { FileText, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -15,12 +15,11 @@ interface ViewCustomOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   order: CustomOrder | null;
-  onConvertToInvoice?: (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => void;
-  onSendToInvoicePage?: (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => void;
-  onBillNow?: (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => void;
+  onGenerateInvoice?: (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => void;
 }
 
-export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToInvoice, onSendToInvoicePage, onBillNow }: ViewCustomOrderDialogProps) => {
+export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInvoice }: ViewCustomOrderDialogProps) => {
+
   const { getOrderWithItems } = useCustomOrders();
   const [items, setItems] = useState<CustomOrderItem[]>([]);
   const [components, setComponents] = useState<CustomOrderComponent[]>([]);
@@ -79,28 +78,13 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onConvertToIn
               >
                 <Download className="h-4 w-4 mr-1.5" /> Download PDF
               </Button>
-              {!o.converted_to_invoice_id && o.status !== 'cancelled' && (
-                <>
-                  {onBillNow && (
-                    <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onBillNow(o, items, components)}>
-                      <Receipt className="h-4 w-4 mr-1.5" />
-                      Bill Now
-                    </Button>
-                  )}
-                  {onConvertToInvoice && (
-                    <Button variant="default" size="sm" onClick={() => onConvertToInvoice(o, items, components)}>
-                      <FileText className="h-4 w-4 mr-1.5" />
-                      Generate Invoice
-                    </Button>
-                  )}
-                  {onSendToInvoicePage && (
-                    <Button variant="outline" size="sm" onClick={() => onSendToInvoicePage(o, items, components)}>
-                      <Send className="h-4 w-4 mr-1.5" />
-                      Send to Invoice Page
-                    </Button>
-                  )}
-                </>
+              {!o.converted_to_invoice_id && o.status !== 'cancelled' && onGenerateInvoice && (
+                <Button variant="default" size="sm" onClick={() => onGenerateInvoice(o, items, components)}>
+                  <FileText className="h-4 w-4 mr-1.5" />
+                  Generate GST Invoice
+                </Button>
               )}
+
             </div>
           </div>
         </DialogHeader>

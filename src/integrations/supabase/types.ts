@@ -786,6 +786,7 @@ export type Database = {
           reference_number: string
           repair_charges: number
           status: string
+          stock_deducted: boolean
           total_amount: number
           updated_at: string
         }
@@ -828,6 +829,7 @@ export type Database = {
           reference_number: string
           repair_charges?: number
           status?: string
+          stock_deducted?: boolean
           total_amount?: number
           updated_at?: string
         }
@@ -870,6 +872,7 @@ export type Database = {
           reference_number?: string
           repair_charges?: number
           status?: string
+          stock_deducted?: boolean
           total_amount?: number
           updated_at?: string
         }
@@ -2813,6 +2816,14 @@ export type Database = {
         Returns: number
       }
       current_branch_ids: { Args: never; Returns: string[] }
+      custom_order_deduct_stock: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
+      custom_order_restore_stock: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       generate_custom_order_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_melting_number: { Args: never; Returns: string }
