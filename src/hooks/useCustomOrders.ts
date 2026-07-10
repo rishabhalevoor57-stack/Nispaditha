@@ -289,6 +289,7 @@ export const useCustomOrders = () => {
     customOrders,
     isLoading,
     silverRate,
+    metalRates,
     generateReference,
     getOrderWithItems,
     createOrder,
