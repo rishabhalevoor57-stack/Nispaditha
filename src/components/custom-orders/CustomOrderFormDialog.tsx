@@ -627,7 +627,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
               <p className="text-xs text-muted-foreground">Finished pieces being made for this order.</p>
             </CardHeader>
             <CardContent>
-              <CustomOrderItemsTable items={items} onChange={setItems} silverRate={silverRate} orderId={order?.id} />
+              <CustomOrderItemsTable items={items} onChange={setItems} silverRate={silverRate} metalRates={metalRates} orderId={order?.id} />
             </CardContent>
           </Card>
 
