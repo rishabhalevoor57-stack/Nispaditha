@@ -1,3 +1,12 @@
+export type MetalType = 'silver' | 'gold_18k' | 'gold_22k' | 'gold_24k';
+
+export const METAL_TYPE_LABELS: Record<MetalType, string> = {
+  silver: 'Silver',
+  gold_18k: 'Gold 18K',
+  gold_22k: 'Gold 22K',
+  gold_24k: 'Gold 24K',
+};
+
 export interface CustomOrderItem {
   id?: string;
   custom_order_id?: string;
@@ -10,6 +19,7 @@ export interface CustomOrderItem {
   quantity: number;
   expected_weight: number;
   pricing_mode: 'weight_based' | 'flat_price';
+  metal_type?: MetalType;
   flat_price: number;
   mc_per_gram: number;
   discount_on_mc: number;
@@ -24,7 +34,7 @@ export interface CustomOrderItem {
   created_at?: string;
 }
 
-export type ComponentUnit = 'weight_based' | 'quantity' | 'strings';
+export type ComponentUnit = 'quantity' | 'strings';
 
 export interface CustomOrderComponent {
   id?: string;
