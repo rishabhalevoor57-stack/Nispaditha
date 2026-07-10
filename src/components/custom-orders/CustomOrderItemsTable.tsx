@@ -398,6 +398,26 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                       </div>
                     </TableCell>
 
+                    {/* Metal */}
+                    <TableCell className="py-3">
+                      <Select
+                        value={(item.metal_type as MetalType) || 'silver'}
+                        onValueChange={(v) => updateItem(index, 'metal_type' as any, v)}
+                      >
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(METAL_TYPE_LABELS) as MetalType[]).map(m => (
+                            <SelectItem key={m} value={m}>{METAL_TYPE_LABELS[m]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        ₹{rateForMetal((item.metal_type as MetalType) || 'silver').toLocaleString('en-IN')}/g
+                      </div>
+                    </TableCell>
+
                     {/* Mode */}
                     <TableCell className="py-3">
                       {isBeads ? (
