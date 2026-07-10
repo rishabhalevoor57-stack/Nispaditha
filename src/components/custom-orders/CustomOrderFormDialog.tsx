@@ -41,7 +41,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const { toast } = useToast();
   const { currentBranch, defaultBranch } = useBranch();
   const isMainBranch = !!currentBranch && !!defaultBranch && currentBranch.id === defaultBranch.id;
-  const { generateReference, getOrderWithItems, createOrder, updateOrder, silverRate } = useCustomOrders();
+  const { generateReference, getOrderWithItems, createOrder, updateOrder, silverRate, metalRates } = useCustomOrders();
 
   const [loading, setLoading] = useState(false);
   const [reference, setReference] = useState('');
