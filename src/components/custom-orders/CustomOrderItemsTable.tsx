@@ -156,10 +156,11 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
         quantity: 1,
         expected_weight: 0,
         pricing_mode: 'weight_based',
+        metal_type: 'silver',
         flat_price: 0,
         mc_per_gram: 0,
         discount_on_mc: 0,
-        rate_per_gram: silverRate,
+        rate_per_gram: rates.silver,
         base_price: 0,
         mc_amount: 0,
         discount: 0,
@@ -173,8 +174,8 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
   const updateItem = (index: number, field: keyof CustomOrderItem, value: string | number) => {
     const updated = items.map((item, i) => {
       if (i !== index) return item;
-      let newItem = { ...item, [field]: value };
-      
+      let newItem: CustomOrderItem = { ...item, [field]: value } as CustomOrderItem;
+
       if (field === 'pricing_mode') {
         if (value === 'flat_price') {
           newItem.mc_per_gram = 0;
@@ -182,7 +183,15 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
           newItem.discount_on_mc = 0;
         }
       }
-      
+
+      // When metal changes, refresh rate_per_gram (only if we're weight-based & not a linked inventory SKU)
+      if (field === 'metal_type') {
+        const r = rateForMetal(value as MetalType);
+        if (!item.product_id) {
+          newItem.rate_per_gram = r;
+        }
+      }
+
       return recalculate(newItem);
     });
     onChange(updated);
