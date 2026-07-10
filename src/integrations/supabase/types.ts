@@ -671,6 +671,7 @@ export type Database = {
           item_total: number
           mc_amount: number
           mc_per_gram: number | null
+          metal_type: string
           pricing_mode: string
           product_id: string | null
           quantity: number
@@ -696,6 +697,7 @@ export type Database = {
           item_total?: number
           mc_amount?: number
           mc_per_gram?: number | null
+          metal_type?: string
           pricing_mode?: string
           product_id?: string | null
           quantity?: number
@@ -721,6 +723,7 @@ export type Database = {
           item_total?: number
           mc_amount?: number
           mc_per_gram?: number | null
+          metal_type?: string
           pricing_mode?: string
           product_id?: string | null
           quantity?: number
