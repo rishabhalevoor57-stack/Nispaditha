@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CustomOrderItem } from '@/types/customOrder';
+import { CustomOrderItem, MetalType, METAL_TYPE_LABELS } from '@/types/customOrder';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InventoryProduct {
@@ -22,15 +22,32 @@ interface InventoryProduct {
   locked_by_custom_order_id?: string | null;
 }
 
+interface MetalRates {
+  silver: number;
+  gold_22k: number;
+  gold_18k: number;
+  gold_24k: number;
+}
+
 interface CustomOrderItemsTableProps {
   items: CustomOrderItem[];
   onChange: (items: CustomOrderItem[]) => void;
   silverRate: number;
+  metalRates?: MetalRates;
   readOnly?: boolean;
   orderId?: string;
 }
 
-export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, orderId }: CustomOrderItemsTableProps) => {
+export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates, readOnly, orderId }: CustomOrderItemsTableProps) => {
+  const rates: MetalRates = metalRates || { silver: silverRate, gold_22k: 0, gold_18k: 0, gold_24k: 0 };
+  const rateForMetal = (m?: MetalType): number => {
+    switch (m) {
+      case 'gold_18k': return rates.gold_18k;
+      case 'gold_22k': return rates.gold_22k;
+      case 'gold_24k': return rates.gold_24k;
+      default: return rates.silver;
+    }
+  };
   const [products, setProducts] = useState<InventoryProduct[]>([]);
   const [searchTerms, setSearchTerms] = useState<Record<number, string>>({});
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
