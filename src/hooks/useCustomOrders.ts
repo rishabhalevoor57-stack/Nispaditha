@@ -181,6 +181,7 @@ export const useCustomOrders = () => {
           quantity: item.quantity,
           expected_weight: item.expected_weight,
           pricing_mode: item.pricing_mode,
+          metal_type: (item as any).metal_type || 'silver',
           flat_price: item.flat_price,
           mc_per_gram: item.mc_per_gram,
           discount_on_mc: item.discount_on_mc,
