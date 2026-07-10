@@ -558,7 +558,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                     </TableCell>
                   </TableRow>
                   <TableRow key={`${index}-desc`} className="border-t-0">
-                    <TableCell colSpan={11} className="py-2 pl-4">
+                    <TableCell colSpan={12} className="py-2 pl-4">
                       <Input
                         placeholder="Description (optional) — notes, customisation, instructions..."
                         value={item.customization_notes || ''}
