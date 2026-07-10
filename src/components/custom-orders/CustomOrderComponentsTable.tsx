@@ -11,26 +11,19 @@ interface Props {
   silverRate?: number;
 }
 
-// Simple manual Components entry.
-// Unit types: Weight (weight_based), Qty (quantity), Strings (strings)
-// - Weight: Weight (g) + Rate/g + Unit Price
-// - Qty:    Qty Used + Unit Price
-// - Strings:Strings Used + Unit Price
-// Total = (weight * rate/g) + (units * unit_price)
+// Manual Components entry.
+// Units allowed: Qty | Strings (informational).
+// Weight (g) is always available as an optional reference field — not used for
+// stock deduction and does not affect inventory. It's for manufacturing notes.
+// Total = (units × unit price) + (weight × rate/g)  — weight portion is 0 if either is blank.
 const calcTotal = (c: CustomOrderComponent): number => {
-  const unit: ComponentUnit = (c.unit as ComponentUnit) || 'weight_based';
+  const unit: ComponentUnit = (c.unit as ComponentUnit) === 'strings' ? 'strings' : 'quantity';
   const unitPrice = Number(c.unit_price) || 0;
-  if (unit === 'weight_based') {
-    const wt = Number(c.weight_grams) || 0;
-    const rate = Number(c.rate_per_gram) || 0;
-    return Number((wt * rate + unitPrice).toFixed(2));
-  }
-  if (unit === 'quantity') {
-    const q = Number(c.quantity_used) || 0;
-    return Number((q * unitPrice).toFixed(2));
-  }
-  const s = Number(c.strings_used) || 0;
-  return Number((s * unitPrice).toFixed(2));
+  const units = unit === 'strings'
+    ? (Number(c.strings_used) || 0)
+    : (Number(c.quantity_used) || 0);
+  const weightTotal = (Number(c.weight_grams) || 0) * (Number(c.rate_per_gram) || 0);
+  return Number((units * unitPrice + weightTotal).toFixed(2));
 };
 
 export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 0 }: Props) => {
@@ -53,10 +46,10 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
         category: null,
         component_name: '',
         material: '',
-        unit: 'weight_based',
+        unit: 'quantity',
         weight_grams: 0,
         quantity: 1,
-        quantity_used: 0,
+        quantity_used: 1,
         strings_used: 0,
         unit_price: 0,
         rate_per_gram: silverRate || 0,
@@ -78,7 +71,8 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
       )}
 
       {components.map((c, idx) => {
-        const unit: ComponentUnit = (c.unit as ComponentUnit) || 'weight_based';
+        const rawUnit = (c.unit as any);
+        const unit: ComponentUnit = rawUnit === 'strings' ? 'strings' : 'quantity';
         return (
           <div key={idx} className="grid grid-cols-12 gap-2 items-end border rounded-md p-3 bg-muted/30">
             <div className="col-span-12 md:col-span-3 space-y-1">
@@ -94,61 +88,59 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
             <div className="col-span-6 md:col-span-2 space-y-1">
               <Label className="text-xs">Material</Label>
               <Input
-                placeholder="Silver / Pearl / ..."
+                placeholder="Silver / Pearl / Stone..."
                 value={c.material || ''}
                 onChange={(e) => updateRow(idx, { material: e.target.value })}
                 className="h-9 text-sm"
               />
             </div>
 
-            <div className="col-span-6 md:col-span-2 space-y-1">
+            <div className="col-span-6 md:col-span-1 space-y-1">
               <Label className="text-xs">Unit</Label>
               <Select value={unit} onValueChange={(v) => updateRow(idx, { unit: v as ComponentUnit })}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weight_based">Weight</SelectItem>
                   <SelectItem value="quantity">Qty</SelectItem>
                   <SelectItem value="strings">Strings</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {unit === 'weight_based' && (
-              <>
-                <div className="col-span-6 md:col-span-1 space-y-1">
-                  <Label className="text-xs">Wt (g)</Label>
-                  <Input type="number" min="0" step="0.001" value={c.weight_grams || ''}
-                    onChange={(e) => updateRow(idx, { weight_grams: parseFloat(e.target.value) || 0 })}
-                    className="h-9" />
-                </div>
-                <div className="col-span-6 md:col-span-1 space-y-1">
-                  <Label className="text-xs">Rate/g</Label>
-                  <Input type="number" min="0" step="0.01" value={c.rate_per_gram || ''}
-                    onChange={(e) => updateRow(idx, { rate_per_gram: parseFloat(e.target.value) || 0 })}
-                    className="h-9" />
-                </div>
-              </>
-            )}
-
-            {unit === 'quantity' && (
-              <div className="col-span-12 md:col-span-2 space-y-1">
-                <Label className="text-xs">Qty Used</Label>
+            {unit === 'quantity' ? (
+              <div className="col-span-6 md:col-span-1 space-y-1">
+                <Label className="text-xs">Qty</Label>
                 <Input type="number" min="0" step="1" value={c.quantity_used ?? ''}
                   onChange={(e) => updateRow(idx, { quantity_used: parseInt(e.target.value) || 0 })}
                   className="h-9" />
               </div>
-            )}
-
-            {unit === 'strings' && (
-              <div className="col-span-12 md:col-span-2 space-y-1">
-                <Label className="text-xs">Strings Used</Label>
+            ) : (
+              <div className="col-span-6 md:col-span-1 space-y-1">
+                <Label className="text-xs">Strings</Label>
                 <Input type="number" min="0" step="0.01" value={c.strings_used ?? ''}
                   onChange={(e) => updateRow(idx, { strings_used: parseFloat(e.target.value) || 0 })}
                   className="h-9" />
               </div>
             )}
 
-            <div className="col-span-6 md:col-span-2 space-y-1">
+            <div className="col-span-6 md:col-span-1 space-y-1">
+              <Label className="text-xs" title="Optional. For reference only — does not affect stock.">
+                Wt (g) <span className="text-muted-foreground">*</span>
+              </Label>
+              <Input type="number" min="0" step="0.001" value={c.weight_grams || ''}
+                onChange={(e) => updateRow(idx, { weight_grams: parseFloat(e.target.value) || 0 })}
+                className="h-9"
+                placeholder="opt" />
+            </div>
+
+            <div className="col-span-6 md:col-span-1 space-y-1">
+              <Label className="text-xs">Rate/g</Label>
+              <Input type="number" min="0" step="0.01" value={c.rate_per_gram || ''}
+                onChange={(e) => updateRow(idx, { rate_per_gram: parseFloat(e.target.value) || 0 })}
+                className="h-9"
+                placeholder="opt" />
+            </div>
+
+            <div className="col-span-6 md:col-span-1 space-y-1">
               <Label className="text-xs">Unit Price</Label>
               <Input type="number" min="0" step="0.01" value={c.unit_price || ''}
                 onChange={(e) => updateRow(idx, { unit_price: parseFloat(e.target.value) || 0 })}
@@ -177,9 +169,12 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
       </Button>
 
       {components.length > 0 && (
-        <div className="flex justify-end pt-3 text-sm border-t mt-2">
-          <span className="text-muted-foreground mr-2">Components Total:</span>
-          <span className="font-semibold">₹{totalCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+        <div className="flex justify-between items-center pt-3 text-xs border-t mt-2">
+          <span className="text-muted-foreground italic">* Weight is optional and for reference only — it does not deduct inventory.</span>
+          <div className="text-sm">
+            <span className="text-muted-foreground mr-2">Components Total:</span>
+            <span className="font-semibold">₹{totalCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+          </div>
         </div>
       )}
     </div>

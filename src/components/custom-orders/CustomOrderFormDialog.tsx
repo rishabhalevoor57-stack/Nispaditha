@@ -41,7 +41,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const { toast } = useToast();
   const { currentBranch, defaultBranch } = useBranch();
   const isMainBranch = !!currentBranch && !!defaultBranch && currentBranch.id === defaultBranch.id;
-  const { generateReference, getOrderWithItems, createOrder, updateOrder, silverRate } = useCustomOrders();
+  const { generateReference, getOrderWithItems, createOrder, updateOrder, silverRate, metalRates } = useCustomOrders();
 
   const [loading, setLoading] = useState(false);
   const [reference, setReference] = useState('');
@@ -288,6 +288,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         quantity: item.quantity,
         expected_weight: item.expected_weight,
         pricing_mode: item.pricing_mode,
+        metal_type: (item as any).metal_type || 'silver',
         flat_price: item.flat_price,
         mc_per_gram: item.mc_per_gram,
         discount_on_mc: item.discount_on_mc,
@@ -627,7 +628,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
               <p className="text-xs text-muted-foreground">Finished pieces being made for this order.</p>
             </CardHeader>
             <CardContent>
-              <CustomOrderItemsTable items={items} onChange={setItems} silverRate={silverRate} orderId={order?.id} />
+              <CustomOrderItemsTable items={items} onChange={setItems} silverRate={silverRate} metalRates={metalRates} orderId={order?.id} />
             </CardContent>
           </Card>
 

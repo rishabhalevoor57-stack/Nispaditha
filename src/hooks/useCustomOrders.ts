@@ -21,19 +21,26 @@ export const useCustomOrders = () => {
     },
   });
 
-  const { data: silverRate = 0 } = useQuery({
-    queryKey: ['silver-rate'],
+  const { data: metalRates = { silver: 0, gold_22k: 0, gold_18k: 0, gold_24k: 0 } } = useQuery({
+    queryKey: ['metal-rates'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('business_settings')
-        .select('silver_rate_per_gram')
+        .select('silver_rate_per_gram, gold_rate_per_gram')
         .limit(1)
         .single();
-
       if (error) throw error;
-      return data?.silver_rate_per_gram || 0;
+      const silver = Number(data?.silver_rate_per_gram) || 0;
+      const gold22 = Number(data?.gold_rate_per_gram) || 0;
+      return {
+        silver,
+        gold_22k: gold22,
+        gold_18k: Number((gold22 * (18 / 22)).toFixed(2)),
+        gold_24k: Number((gold22 * (24 / 22)).toFixed(2)),
+      };
     },
   });
+  const silverRate = metalRates.silver;
 
   const generateReference = async (): Promise<string> => {
     const { data, error } = await supabase.rpc('generate_custom_order_reference');
@@ -174,6 +181,7 @@ export const useCustomOrders = () => {
           quantity: item.quantity,
           expected_weight: item.expected_weight,
           pricing_mode: item.pricing_mode,
+          metal_type: (item as any).metal_type || 'silver',
           flat_price: item.flat_price,
           mc_per_gram: item.mc_per_gram,
           discount_on_mc: item.discount_on_mc,
@@ -281,6 +289,7 @@ export const useCustomOrders = () => {
     customOrders,
     isLoading,
     silverRate,
+    metalRates,
     generateReference,
     getOrderWithItems,
     createOrder,

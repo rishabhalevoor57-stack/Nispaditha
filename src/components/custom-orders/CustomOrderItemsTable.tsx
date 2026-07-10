@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CustomOrderItem } from '@/types/customOrder';
+import { CustomOrderItem, MetalType, METAL_TYPE_LABELS } from '@/types/customOrder';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InventoryProduct {
@@ -22,15 +22,32 @@ interface InventoryProduct {
   locked_by_custom_order_id?: string | null;
 }
 
+interface MetalRates {
+  silver: number;
+  gold_22k: number;
+  gold_18k: number;
+  gold_24k: number;
+}
+
 interface CustomOrderItemsTableProps {
   items: CustomOrderItem[];
   onChange: (items: CustomOrderItem[]) => void;
   silverRate: number;
+  metalRates?: MetalRates;
   readOnly?: boolean;
   orderId?: string;
 }
 
-export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, orderId }: CustomOrderItemsTableProps) => {
+export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates, readOnly, orderId }: CustomOrderItemsTableProps) => {
+  const rates: MetalRates = metalRates || { silver: silverRate, gold_22k: 0, gold_18k: 0, gold_24k: 0 };
+  const rateForMetal = (m?: MetalType): number => {
+    switch (m) {
+      case 'gold_18k': return rates.gold_18k;
+      case 'gold_22k': return rates.gold_22k;
+      case 'gold_24k': return rates.gold_24k;
+      default: return rates.silver;
+    }
+  };
   const [products, setProducts] = useState<InventoryProduct[]>([]);
   const [searchTerms, setSearchTerms] = useState<Record<number, string>>({});
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
@@ -139,10 +156,11 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
         quantity: 1,
         expected_weight: 0,
         pricing_mode: 'weight_based',
+        metal_type: 'silver',
         flat_price: 0,
         mc_per_gram: 0,
         discount_on_mc: 0,
-        rate_per_gram: silverRate,
+        rate_per_gram: rates.silver,
         base_price: 0,
         mc_amount: 0,
         discount: 0,
@@ -156,8 +174,8 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
   const updateItem = (index: number, field: keyof CustomOrderItem, value: string | number) => {
     const updated = items.map((item, i) => {
       if (i !== index) return item;
-      let newItem = { ...item, [field]: value };
-      
+      let newItem: CustomOrderItem = { ...item, [field]: value } as CustomOrderItem;
+
       if (field === 'pricing_mode') {
         if (value === 'flat_price') {
           newItem.mc_per_gram = 0;
@@ -165,7 +183,15 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
           newItem.discount_on_mc = 0;
         }
       }
-      
+
+      // When metal changes, refresh rate_per_gram (only if we're weight-based & not a linked inventory SKU)
+      if (field === 'metal_type') {
+        const r = rateForMetal(value as MetalType);
+        if (!item.product_id) {
+          newItem.rate_per_gram = r;
+        }
+      }
+
       return recalculate(newItem);
     });
     onChange(updated);
@@ -263,10 +289,11 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
   return (
     <div className="space-y-4">
       <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-[1180px]">
+        <Table className="min-w-[1280px]">
           <TableHeader>
             <TableRow className="bg-muted/30">
               <TableHead className="min-w-[200px]">SKU / Product</TableHead>
+              <TableHead className="min-w-[110px]">Metal</TableHead>
               <TableHead className="min-w-[110px]">Mode</TableHead>
               <TableHead className="min-w-[90px] text-center">Qty</TableHead>
               <TableHead className="min-w-[100px]">Weight(g)</TableHead>
@@ -282,7 +309,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                   No items added. Click "Add Item" to start.
                 </TableCell>
               </TableRow>
@@ -368,6 +395,26 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                             />
                           </div>
                         )}
+                      </div>
+                    </TableCell>
+
+                    {/* Metal */}
+                    <TableCell className="py-3">
+                      <Select
+                        value={(item.metal_type as MetalType) || 'silver'}
+                        onValueChange={(v) => updateItem(index, 'metal_type' as any, v)}
+                      >
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(METAL_TYPE_LABELS) as MetalType[]).map(m => (
+                            <SelectItem key={m} value={m}>{METAL_TYPE_LABELS[m]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        ₹{rateForMetal((item.metal_type as MetalType) || 'silver').toLocaleString('en-IN')}/g
                       </div>
                     </TableCell>
 
@@ -511,7 +558,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, readOnly, o
                     </TableCell>
                   </TableRow>
                   <TableRow key={`${index}-desc`} className="border-t-0">
-                    <TableCell colSpan={11} className="py-2 pl-4">
+                    <TableCell colSpan={12} className="py-2 pl-4">
                       <Input
                         placeholder="Description (optional) — notes, customisation, instructions..."
                         value={item.customization_notes || ''}
