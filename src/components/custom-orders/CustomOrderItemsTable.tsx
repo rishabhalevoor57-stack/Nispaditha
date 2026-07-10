@@ -289,10 +289,11 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
   return (
     <div className="space-y-4">
       <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-[1180px]">
+        <Table className="min-w-[1280px]">
           <TableHeader>
             <TableRow className="bg-muted/30">
               <TableHead className="min-w-[200px]">SKU / Product</TableHead>
+              <TableHead className="min-w-[110px]">Metal</TableHead>
               <TableHead className="min-w-[110px]">Mode</TableHead>
               <TableHead className="min-w-[90px] text-center">Qty</TableHead>
               <TableHead className="min-w-[100px]">Weight(g)</TableHead>
@@ -308,7 +309,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                   No items added. Click "Add Item" to start.
                 </TableCell>
               </TableRow>
