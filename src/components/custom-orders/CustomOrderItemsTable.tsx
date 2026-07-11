@@ -73,15 +73,12 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
   const recalculate = (item: CustomOrderItem): CustomOrderItem => {
     const isBeads = isBeadsCategory(item.category);
 
-    if (item.pricing_mode === 'flat_price' || isBeads) {
-      const grossPrice = isBeads
-        ? item.rate_per_gram * item.quantity
-        : item.flat_price * item.quantity;
-      
+    // Beads/pearls: strings × rate/g (kept as-is, this is the domain convention)
+    if (isBeads) {
+      const grossPrice = item.rate_per_gram * item.quantity;
       const discount = item.discount_type === 'percentage'
         ? grossPrice * (item.discount_value / 100)
         : item.discount_value;
-      
       return {
         ...item,
         base_price: grossPrice,
@@ -93,23 +90,29 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
       };
     }
 
-    // Weight-based (Normal mode)
-    const basePrice = item.expected_weight * item.rate_per_gram * item.quantity;
-    const grossMc = item.expected_weight * item.mc_per_gram * item.quantity;
-    const mcDiscount = grossMc * (item.discount_on_mc / 100);
-    const mcAmount = grossMc - mcDiscount;
-    const subtotal = basePrice + mcAmount;
-    
+    // For BOTH weight-based and flat modes, the line total is now:
+    //   Unit Price × Qty − Discount
+    // Weight, Rate/g and MC/g remain on the row as informational reference
+    // fields (visible on the order bill / invoice) but do NOT drive the total.
+    // This matches the "weight is reference only" rule for Custom Orders.
+    const unitPrice = Number(item.flat_price) || 0;
+    const qty = Number(item.quantity) || 1;
+    const grossPrice = unitPrice * qty;
+
     const discount = item.discount_type === 'percentage'
-      ? subtotal * (item.discount_value / 100)
+      ? grossPrice * (item.discount_value / 100)
       : item.discount_value;
-    
+
+    // Keep base_price / mc_amount populated for reference/reporting compatibility
+    const referenceGold = (Number(item.expected_weight) || 0) * (Number(item.rate_per_gram) || 0) * qty;
+    const referenceMc = (Number(item.expected_weight) || 0) * (Number(item.mc_per_gram) || 0) * qty;
+
     return {
       ...item,
-      base_price: basePrice,
-      mc_amount: mcAmount,
-      discount: Math.min(subtotal, discount),
-      item_total: Math.max(0, subtotal - Math.min(subtotal, discount)),
+      base_price: referenceGold,
+      mc_amount: referenceMc,
+      discount: Math.min(grossPrice, discount),
+      item_total: Math.max(0, grossPrice - Math.min(grossPrice, discount)),
     };
   };
 
