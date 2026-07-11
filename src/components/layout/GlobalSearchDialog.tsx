@@ -176,6 +176,24 @@ export function GlobalSearchDialog({ open, onOpenChange }: Props) {
             route: `/service-forms?search=${encodeURIComponent(s.receipt_number)}`,
           });
         });
+        (vd.data || []).forEach((v: any) => {
+          next.push({
+            id: `vd-${v.id}`,
+            type: 'Vendor',
+            title: v.name,
+            subtitle: v.phone || undefined,
+            route: `/vendors?search=${encodeURIComponent(v.name || v.phone || '')}`,
+          });
+        });
+        (rp.data || []).forEach((r: any) => {
+          next.push({
+            id: `rp-${r.id}`,
+            type: 'Repair',
+            title: `${r.sku || ''} — ${r.product_name || ''}`,
+            subtitle: r.client_name || undefined,
+            route: `/repair?search=${encodeURIComponent(r.sku || r.product_name || '')}`,
+          });
+        });
         setHits(next);
       })
       .finally(() => {
