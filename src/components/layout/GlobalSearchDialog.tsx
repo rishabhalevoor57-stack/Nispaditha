@@ -42,6 +42,8 @@ const ICONS: Record<Hit['type'], React.ComponentType<{ className?: string }>> = 
   'Custom Order': Hammer,
   Service: Wrench,
   'Pending Payment': IndianRupee,
+  Vendor: Truck,
+  Repair: Settings,
 };
 
 export function GlobalSearchDialog({ open, onOpenChange }: Props) {
