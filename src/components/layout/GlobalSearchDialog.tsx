@@ -18,11 +18,13 @@ import {
   Hammer,
   Wrench,
   IndianRupee,
+  Truck,
+  Settings,
 } from 'lucide-react';
 
 type Hit = {
   id: string;
-  type: 'Inventory' | 'Invoice' | 'Customer' | 'Custom Order' | 'Service' | 'Pending Payment';
+  type: 'Inventory' | 'Invoice' | 'Customer' | 'Custom Order' | 'Service' | 'Pending Payment' | 'Vendor' | 'Repair';
   title: string;
   subtitle?: string;
   route: string;
@@ -40,6 +42,8 @@ const ICONS: Record<Hit['type'], React.ComponentType<{ className?: string }>> = 
   'Custom Order': Hammer,
   Service: Wrench,
   'Pending Payment': IndianRupee,
+  Vendor: Truck,
+  Repair: Settings,
 };
 
 export function GlobalSearchDialog({ open, onOpenChange }: Props) {
@@ -103,8 +107,18 @@ export function GlobalSearchDialog({ open, onOpenChange }: Props) {
         .select('id, receipt_number, client_name, client_phone')
         .or(`receipt_number.ilike.${ilike},client_name.ilike.${ilike},client_phone.ilike.${ilike}`)
         .limit(8),
+      supabase
+        .from('suppliers')
+        .select('id, name, phone')
+        .or(`name.ilike.${ilike},phone.ilike.${ilike}`)
+        .limit(8),
+      supabase
+        .from('repair_items')
+        .select('id, sku, product_name, client_name')
+        .or(`sku.ilike.${ilike},product_name.ilike.${ilike},client_name.ilike.${ilike}`)
+        .limit(8),
     ])
-      .then(([prod, inv, cli, co, sv]) => {
+      .then(([prod, inv, cli, co, sv, vd, rp]) => {
         if (myId !== reqIdRef.current) return;
         const next: Hit[] = [];
 
@@ -160,6 +174,24 @@ export function GlobalSearchDialog({ open, onOpenChange }: Props) {
             title: s.receipt_number,
             subtitle: s.client_name || s.client_phone || undefined,
             route: `/service-forms?search=${encodeURIComponent(s.receipt_number)}`,
+          });
+        });
+        (vd.data || []).forEach((v: any) => {
+          next.push({
+            id: `vd-${v.id}`,
+            type: 'Vendor',
+            title: v.name,
+            subtitle: v.phone || undefined,
+            route: `/vendors?search=${encodeURIComponent(v.name || v.phone || '')}`,
+          });
+        });
+        (rp.data || []).forEach((r: any) => {
+          next.push({
+            id: `rp-${r.id}`,
+            type: 'Repair',
+            title: `${r.sku || ''} — ${r.product_name || ''}`,
+            subtitle: r.client_name || undefined,
+            route: `/repair?search=${encodeURIComponent(r.sku || r.product_name || '')}`,
           });
         });
         setHits(next);

@@ -238,25 +238,36 @@ const buildInvoiceData = (order: CustomOrder, items: CustomOrderItem[], componen
 };
 
 
-const buildItemsPayload = (invoiceId: string, lines: LineItemInput[]) => lines.map(l => ({
-  invoice_id: invoiceId,
-  product_id: l.product_id,
-  product_name: l.product_name,
-  category: l.category,
-  quantity: l.quantity,
-  weight_grams: l.weight_grams,
-  rate_per_gram: l.rate_per_gram,
-  gold_value: l.gold_value,
-  making_charges: l.making_charges,
-  discount: l.discount,
-  discounted_making: l.discounted_making,
-  subtotal: l.subtotal,
-  gst_percentage: 0,
-  gst_amount: 0,
-  total: l.subtotal,
-  mrp: l.mrp,
-  description: l.description,
-}));
+// IMPORTANT: To keep totals consistent between Custom Order and generated Invoice,
+// we roll ALL discount (per-item line discount + order-level flat discount) into
+// invoice.discount_amount and zero out the per-item discount on invoice_items rows.
+// The line's `subtotal` here is the GROSS pre-discount amount, so:
+//   sum(invoice_items.subtotal) = invoice.subtotal
+//   invoice.subtotal - invoice.discount_amount = taxable base
+// This avoids the double-counting bug where per-item discount was subtracted twice
+// (once in item.subtotal already post-discount, once again via invoice.discount_amount).
+const buildItemsPayload = (invoiceId: string, lines: LineItemInput[]) => lines.map(l => {
+  const grossSubtotal = (Number(l.subtotal) || 0) + (Number(l.discount) || 0);
+  return {
+    invoice_id: invoiceId,
+    product_id: l.product_id,
+    product_name: l.product_name,
+    category: l.category,
+    quantity: l.quantity,
+    weight_grams: l.weight_grams,
+    rate_per_gram: l.rate_per_gram,
+    gold_value: l.gold_value,
+    making_charges: l.making_charges,
+    discount: 0,
+    discounted_making: l.discounted_making,
+    subtotal: grossSubtotal,
+    gst_percentage: 0,
+    gst_amount: 0,
+    total: grossSubtotal,
+    mrp: Math.max(l.mrp, grossSubtotal),
+    description: l.description,
+  };
+});
 
 export async function syncCustomOrderInvoice(
   order: CustomOrder,

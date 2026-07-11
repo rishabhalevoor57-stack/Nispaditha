@@ -73,15 +73,12 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
   const recalculate = (item: CustomOrderItem): CustomOrderItem => {
     const isBeads = isBeadsCategory(item.category);
 
-    if (item.pricing_mode === 'flat_price' || isBeads) {
-      const grossPrice = isBeads
-        ? item.rate_per_gram * item.quantity
-        : item.flat_price * item.quantity;
-      
+    // Beads/pearls: strings × rate/g (kept as-is, this is the domain convention)
+    if (isBeads) {
+      const grossPrice = item.rate_per_gram * item.quantity;
       const discount = item.discount_type === 'percentage'
         ? grossPrice * (item.discount_value / 100)
         : item.discount_value;
-      
       return {
         ...item,
         base_price: grossPrice,
@@ -93,23 +90,29 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
       };
     }
 
-    // Weight-based (Normal mode)
-    const basePrice = item.expected_weight * item.rate_per_gram * item.quantity;
-    const grossMc = item.expected_weight * item.mc_per_gram * item.quantity;
-    const mcDiscount = grossMc * (item.discount_on_mc / 100);
-    const mcAmount = grossMc - mcDiscount;
-    const subtotal = basePrice + mcAmount;
-    
+    // For BOTH weight-based and flat modes, the line total is now:
+    //   Unit Price × Qty − Discount
+    // Weight, Rate/g and MC/g remain on the row as informational reference
+    // fields (visible on the order bill / invoice) but do NOT drive the total.
+    // This matches the "weight is reference only" rule for Custom Orders.
+    const unitPrice = Number(item.flat_price) || 0;
+    const qty = Number(item.quantity) || 1;
+    const grossPrice = unitPrice * qty;
+
     const discount = item.discount_type === 'percentage'
-      ? subtotal * (item.discount_value / 100)
+      ? grossPrice * (item.discount_value / 100)
       : item.discount_value;
-    
+
+    // Keep base_price / mc_amount populated for reference/reporting compatibility
+    const referenceGold = (Number(item.expected_weight) || 0) * (Number(item.rate_per_gram) || 0) * qty;
+    const referenceMc = (Number(item.expected_weight) || 0) * (Number(item.mc_per_gram) || 0) * qty;
+
     return {
       ...item,
-      base_price: basePrice,
-      mc_amount: mcAmount,
-      discount: Math.min(subtotal, discount),
-      item_total: Math.max(0, subtotal - Math.min(subtotal, discount)),
+      base_price: referenceGold,
+      mc_amount: referenceMc,
+      discount: Math.min(grossPrice, discount),
+      item_total: Math.max(0, grossPrice - Math.min(grossPrice, discount)),
     };
   };
 
@@ -130,7 +133,15 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
         pricing_mode: isBeads ? 'flat_price' : (pricingMode as 'weight_based' | 'flat_price'),
         rate_per_gram: pricingMode === 'weight_based' ? (product.price_per_gram || silverRate) : (isBeads ? product.selling_price : 0),
         mc_per_gram: (pricingMode === 'weight_based' && !isBeads) ? product.making_charges : 0,
-        flat_price: pricingMode === 'flat_price' && !isBeads ? product.selling_price : 0,
+        // Unit Price drives the total for both modes now. Seed from the product's
+        // selling_price/mrp (or weight × price_per_gram as a fallback) so the row
+        // starts with a sensible number that the user can override.
+        flat_price: isBeads
+          ? 0
+          : (product.selling_price
+              || product.mrp
+              || ((product.weight_grams || 0) * (product.price_per_gram || silverRate))
+              || 0),
         quantity: 1,
         discount_on_mc: 0,
         discount: 0,
@@ -296,11 +307,11 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
               <TableHead className="min-w-[110px]">Metal</TableHead>
               <TableHead className="min-w-[110px]">Mode</TableHead>
               <TableHead className="min-w-[90px] text-center">Qty</TableHead>
-              <TableHead className="min-w-[100px]">Weight(g)</TableHead>
-              <TableHead className="min-w-[110px]">Rate</TableHead>
-              <TableHead className="min-w-[100px]">MC/g</TableHead>
-              <TableHead className="min-w-[90px]">MC Disc%</TableHead>
-              <TableHead className="min-w-[110px]">Flat ₹</TableHead>
+              <TableHead className="min-w-[100px]" title="Reference only — does not affect price">Weight(g) *</TableHead>
+              <TableHead className="min-w-[110px]" title="Reference only — does not affect price">Rate *</TableHead>
+              <TableHead className="min-w-[100px]" title="Reference only — does not affect price">MC/g *</TableHead>
+              <TableHead className="min-w-[90px]" title="Reference only">MC Disc% *</TableHead>
+              <TableHead className="min-w-[110px]">Unit Price ₹</TableHead>
               <TableHead className="min-w-[140px]">Discount</TableHead>
               <TableHead className="min-w-[120px] text-right">Total</TableHead>
               <TableHead className="w-[44px]"></TableHead>
@@ -506,14 +517,14 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                       />
                     </TableCell>
 
-                    {/* Flat ₹ */}
+                    {/* Unit Price (drives the total in both Normal and Flat modes) */}
                     <TableCell className="py-3">
                       <Input
                         type="number"
                         min="0"
                         value={item.flat_price || ''}
                         onChange={(e) => updateItem(index, 'flat_price', parseFloat(e.target.value) || 0)}
-                        disabled={!isFlat || isBeads}
+                        disabled={isBeads}
                         className="h-9 text-sm disabled:opacity-40"
                         placeholder="0"
                       />
