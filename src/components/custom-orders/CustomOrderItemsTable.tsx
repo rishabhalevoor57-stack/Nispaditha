@@ -517,14 +517,14 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                       />
                     </TableCell>
 
-                    {/* Flat ₹ */}
+                    {/* Unit Price (drives the total in both Normal and Flat modes) */}
                     <TableCell className="py-3">
                       <Input
                         type="number"
                         min="0"
                         value={item.flat_price || ''}
                         onChange={(e) => updateItem(index, 'flat_price', parseFloat(e.target.value) || 0)}
-                        disabled={!isFlat || isBeads}
+                        disabled={isBeads}
                         className="h-9 text-sm disabled:opacity-40"
                         placeholder="0"
                       />
