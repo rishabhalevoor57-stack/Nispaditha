@@ -18,11 +18,13 @@ import {
   Hammer,
   Wrench,
   IndianRupee,
+  Truck,
+  Settings,
 } from 'lucide-react';
 
 type Hit = {
   id: string;
-  type: 'Inventory' | 'Invoice' | 'Customer' | 'Custom Order' | 'Service' | 'Pending Payment';
+  type: 'Inventory' | 'Invoice' | 'Customer' | 'Custom Order' | 'Service' | 'Pending Payment' | 'Vendor' | 'Repair';
   title: string;
   subtitle?: string;
   route: string;
