@@ -107,8 +107,18 @@ export function GlobalSearchDialog({ open, onOpenChange }: Props) {
         .select('id, receipt_number, client_name, client_phone')
         .or(`receipt_number.ilike.${ilike},client_name.ilike.${ilike},client_phone.ilike.${ilike}`)
         .limit(8),
+      supabase
+        .from('suppliers')
+        .select('id, name, phone')
+        .or(`name.ilike.${ilike},phone.ilike.${ilike}`)
+        .limit(8),
+      supabase
+        .from('repair_items')
+        .select('id, sku, product_name, client_name')
+        .or(`sku.ilike.${ilike},product_name.ilike.${ilike},client_name.ilike.${ilike}`)
+        .limit(8),
     ])
-      .then(([prod, inv, cli, co, sv]) => {
+      .then(([prod, inv, cli, co, sv, vd, rp]) => {
         if (myId !== reqIdRef.current) return;
         const next: Hit[] = [];
 
