@@ -133,7 +133,15 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
         pricing_mode: isBeads ? 'flat_price' : (pricingMode as 'weight_based' | 'flat_price'),
         rate_per_gram: pricingMode === 'weight_based' ? (product.price_per_gram || silverRate) : (isBeads ? product.selling_price : 0),
         mc_per_gram: (pricingMode === 'weight_based' && !isBeads) ? product.making_charges : 0,
-        flat_price: pricingMode === 'flat_price' && !isBeads ? product.selling_price : 0,
+        // Unit Price drives the total for both modes now. Seed from the product's
+        // selling_price/mrp (or weight × price_per_gram as a fallback) so the row
+        // starts with a sensible number that the user can override.
+        flat_price: isBeads
+          ? 0
+          : (product.selling_price
+              || product.mrp
+              || ((product.weight_grams || 0) * (product.price_per_gram || silverRate))
+              || 0),
         quantity: 1,
         discount_on_mc: 0,
         discount: 0,
