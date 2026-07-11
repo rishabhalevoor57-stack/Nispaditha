@@ -307,11 +307,11 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
               <TableHead className="min-w-[110px]">Metal</TableHead>
               <TableHead className="min-w-[110px]">Mode</TableHead>
               <TableHead className="min-w-[90px] text-center">Qty</TableHead>
-              <TableHead className="min-w-[100px]">Weight(g)</TableHead>
-              <TableHead className="min-w-[110px]">Rate</TableHead>
-              <TableHead className="min-w-[100px]">MC/g</TableHead>
-              <TableHead className="min-w-[90px]">MC Disc%</TableHead>
-              <TableHead className="min-w-[110px]">Flat ₹</TableHead>
+              <TableHead className="min-w-[100px]" title="Reference only — does not affect price">Weight(g) *</TableHead>
+              <TableHead className="min-w-[110px]" title="Reference only — does not affect price">Rate *</TableHead>
+              <TableHead className="min-w-[100px]" title="Reference only — does not affect price">MC/g *</TableHead>
+              <TableHead className="min-w-[90px]" title="Reference only">MC Disc% *</TableHead>
+              <TableHead className="min-w-[110px]">Unit Price ₹</TableHead>
               <TableHead className="min-w-[140px]">Discount</TableHead>
               <TableHead className="min-w-[120px] text-right">Total</TableHead>
               <TableHead className="w-[44px]"></TableHead>
