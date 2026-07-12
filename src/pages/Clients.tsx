@@ -16,8 +16,21 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Edit, Trash2, Phone, Mail, Download, User } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportRowsExcel, exportRowsPDF, type ExportColumn } from '@/utils/tableExport';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { ClientProfileDialog } from '@/components/clients/ClientProfileDialog';
+
+const clientExportColumns: ExportColumn[] = [
+  { header: 'Name', key: 'name' },
+  { header: 'Phone', key: 'phone', format: (c) => c.phone || '' },
+  { header: 'Email', key: 'email', format: (c) => c.email || '' },
+  { header: 'Address', key: 'address', format: (c) => c.address || '' },
+  { header: 'Total Purchases', key: 'total_purchases' },
+  { header: 'Outstanding', key: 'outstanding_balance' },
+  { header: 'Last Invoice', key: 'last_invoice_date', format: (c) => c.last_invoice_date ? new Date(c.last_invoice_date).toLocaleDateString('en-IN') : '' },
+];
+
 
 interface Client {
   id: string;
@@ -283,10 +296,24 @@ export default function Clients() {
         description="Manage your customer database"
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={downloadClientsCSV}>
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportRowsExcel(filteredClients, clientExportColumns, `clients_${new Date().toISOString().split('T')[0]}`, 'Clients')}>
+                  Excel (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportRowsPDF(filteredClients, clientExportColumns, 'Clients', `clients_${new Date().toISOString().split('T')[0]}`)}>
+                  PDF (.pdf)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={downloadClientsCSV}>CSV (.csv)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Dialog open={isDialogOpen} onOpenChange={(open) => {
               setIsDialogOpen(open);
               if (!open) {

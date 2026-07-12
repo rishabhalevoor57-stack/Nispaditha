@@ -36,12 +36,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [roles, setRoles] = useState<AppRole[]>([]);
 
   const fetchUserRoles = async (userId: string) => {
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
-    setRoles((data ?? []).map((r: any) => r.role as AppRole));
+    const [{ data: rolesData }, { data: profileData }] = await Promise.all([
+      supabase.from('user_roles').select('role').eq('user_id', userId),
+      supabase.from('profiles').select('is_active').eq('user_id', userId).maybeSingle(),
+    ]);
+    // Hard block: paused users get signed out immediately
+    if (profileData && (profileData as any).is_active === false) {
+      await supabase.auth.signOut();
+      setRoles([]);
+      if (typeof window !== 'undefined') {
+        alert('Your account has been paused. Please contact an administrator.');
+      }
+      return;
+    }
+    setRoles((rolesData ?? []).map((r: any) => r.role as AppRole));
   };
+
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
