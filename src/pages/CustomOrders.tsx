@@ -1,5 +1,20 @@
 import { useState, useMemo } from 'react';
-import { Plus, Hammer } from 'lucide-react';
+import { Plus, Hammer, Download } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportRowsExcel, exportRowsPDF, type ExportColumn } from '@/utils/tableExport';
+
+const customOrderExportColumns: ExportColumn[] = [
+  { header: 'Reference', key: 'reference_number' },
+  { header: 'Type', key: 'order_type', format: (o) => o.order_type === 'in_house' ? 'In-House' : 'Customer' },
+  { header: 'Client', key: 'client_name' },
+  { header: 'Phone', key: 'phone_number', format: (o) => o.phone_number || '' },
+  { header: 'Product', key: 'product_title', format: (o) => o.product_title || '' },
+  { header: 'SKU', key: 'product_sku', format: (o) => o.product_sku || '' },
+  { header: 'Status', key: 'status' },
+  { header: 'Total', key: 'total_amount' },
+  { header: 'Created', key: 'created_at', format: (o) => o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN') : '' },
+];
+
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/ui/page-header';
@@ -202,11 +217,30 @@ const CustomOrders = () => {
           title="Custom Orders (Job Work)"
           description="Track client-specific jewellery requirements — does not affect inventory until converted to invoice"
           actions={
-            <Button onClick={handleNew}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Custom Order
-            </Button>
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => exportRowsExcel(filtered, customOrderExportColumns, `custom_orders_${new Date().toISOString().split('T')[0]}`, 'Custom Orders')}>
+                    Excel (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportRowsPDF(filtered, customOrderExportColumns, 'Custom Orders', `custom_orders_${new Date().toISOString().split('T')[0]}`)}>
+                    PDF (.pdf)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button onClick={handleNew}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Custom Order
+              </Button>
+            </div>
           }
+
         />
 
         {/* Stats */}
