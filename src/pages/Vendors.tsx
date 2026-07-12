@@ -5,6 +5,8 @@ import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Edit, Trash2, Phone, Eye, Download, Hash } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportRowsExcel, exportRowsPDF, type ExportColumn } from '@/utils/tableExport';
 import { useVendors } from '@/hooks/useVendors';
 import type { Vendor, VendorFormData } from '@/hooks/useVendors';
 import { VendorFormDialog } from '@/components/vendors/VendorFormDialog';
@@ -12,6 +14,18 @@ import { VendorProfileDialog } from '@/components/vendors/VendorProfileDialog';
 import { VendorPaymentDialog } from '@/components/vendors/VendorPaymentDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+
+const vendorExportColumns: ExportColumn[] = [
+  { header: 'Code', key: 'vendor_code', format: (v) => v.vendor_code || '' },
+  { header: 'Name', key: 'name' },
+  { header: 'Phone', key: 'phone', format: (v) => v.phone || '' },
+  { header: 'Address', key: 'address', format: (v) => v.address || '' },
+  { header: 'Total Purchases', key: 'total_purchases' },
+  { header: 'Total Paid', key: 'total_paid' },
+  { header: 'Outstanding', key: 'outstanding_balance' },
+  { header: 'Last Purchase', key: 'last_purchase_date', format: (v) => v.last_purchase_date ? new Date(v.last_purchase_date).toLocaleDateString('en-IN') : '' },
+];
+
 
 export default function Vendors() {
   const {
@@ -159,10 +173,24 @@ export default function Vendors() {
         description="Manage your suppliers and track payments"
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={downloadCSV}>
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportRowsExcel(vendors, vendorExportColumns, `vendors_${new Date().toISOString().split('T')[0]}`, 'Vendors')}>
+                  Excel (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportRowsPDF(vendors, vendorExportColumns, 'Vendors', `vendors_${new Date().toISOString().split('T')[0]}`)}>
+                  PDF (.pdf)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={downloadCSV}>CSV (.csv)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button className="btn-gold" onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" />
               Add Vendor
