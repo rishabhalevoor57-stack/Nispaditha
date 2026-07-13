@@ -148,6 +148,7 @@ export function CreateInvoiceDialog({
   const goldRate = businessSettings?.gold_rate_per_gram || 0;
   const silverRate = businessSettings?.silver_rate_per_gram || 95;
   const defaultRate = (() => {
+    if (metalRate === 'gold_24k') return goldRate * (24 / 22);
     if (metalRate === 'gold_22k') return goldRate;
     if (metalRate === 'gold_18k') return goldRate * (18 / 22);
     if (metalRate === 'silver') return silverRate;
@@ -158,6 +159,7 @@ export function CreateInvoiceDialog({
   const metalRateLabel = (() => {
     const fmtRate = (r: number) =>
       new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(r || 0);
+    if (metalRate === 'gold_24k') return `Gold 24K Rate: ₹ ${fmtRate(goldRate * (24 / 22))}/g`;
     if (metalRate === 'gold_22k') return `Gold 22K Rate: ₹ ${fmtRate(goldRate)}/g`;
     if (metalRate === 'gold_18k') return `Gold 18K Rate: ₹ ${fmtRate(goldRate * (18 / 22))}/g`;
     if (metalRate === 'silver') return `Silver Rate: ₹ ${fmtRate(silverRate)}/g`;
@@ -211,6 +213,10 @@ export function CreateInvoiceDialog({
       setPaymentMode(inv.payment_mode || 'cash');
       setGstPct(Number(inv.gst_percentage) || 3);
       setGstMode(((inv as any).gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
+      const savedMetal = (inv as any).metal_type as string | undefined;
+      if (savedMetal && ['silver','gold_18k','gold_22k','gold_24k'].includes(savedMetal)) {
+        setMetalRate(savedMetal as any);
+      }
       setRoundOff(Number(inv.round_off) || 0);
       setStoreCreditsUsed(Number(inv.store_credits_used) || 0);
       setClientSource((inv as any).client_source || 'walk_in');
@@ -455,6 +461,7 @@ export function CreateInvoiceDialog({
         gst_percentage: gstPct,
         gst_mode: gstMode,
         round_off: roundOff,
+        metal_type: metalRate === 'none' ? 'silver' : metalRate,
       };
 
       let invoice: any;
@@ -647,6 +654,7 @@ export function CreateInvoiceDialog({
         gst_percentage: gstPct,
         gst_mode: gstMode,
         round_off: roundOff,
+        metal_type: metalRate === 'none' ? 'silver' : metalRate,
       };
 
       let invoice: any;

@@ -25,6 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { MetalTypeSelect } from '@/components/shared/MetalTypeSelect';
 
 interface Client { id: string; name: string; phone: string | null; }
 interface Vendor { id: string; name: string; }
@@ -61,6 +62,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const [components, setComponents] = useState<CustomOrderComponent[]>([]);
   const [gstPercentage, setGstPercentage] = useState<number>(3);
   const [gstMode, setGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
+  const [metalType, setMetalType] = useState<'silver' | 'gold_18k' | 'gold_22k' | 'gold_24k'>('silver');
   const [makingCharges, setMakingCharges] = useState(0);
   const [labourCharges, setLabourCharges] = useState(0);
   const [polishingCharges, setPolishingCharges] = useState(0);
@@ -182,6 +184,8 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setFlatDiscount(full.flat_discount || 0);
         setGstPercentage(Number(full.gst_percentage) || 3);
         setGstMode((full.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
+        const savedMetal = (full.metal_type as string | undefined) || 'silver';
+        setMetalType(['silver','gold_18k','gold_22k','gold_24k'].includes(savedMetal) ? savedMetal as any : 'silver');
         setMakingCharges(Number(full.making_charges) || 0);
         setLabourCharges(Number(full.labour_charges) || 0);
         setPolishingCharges(Number(full.polishing_charges) || 0);
@@ -212,7 +216,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setStatus('draft');
         setDesignCharges(0); setAdditionalCharge(0);
         setAdditionalChargeLabel('Additional Charge');
-        setFlatDiscount(0); setGstPercentage(3); setGstMode('exclusive');
+        setFlatDiscount(0); setGstPercentage(3); setGstMode('exclusive'); setMetalType('silver');
         setMakingCharges(0); setLabourCharges(0); setPolishingCharges(0); setRepairCharges(0);
         setExtraCharges([]); setCustomerMaterials([]);
         setNotes(''); setItems([]); setComponents([]);
@@ -254,6 +258,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         flat_discount: flatDiscount,
         gst_percentage: gstPercentage,
         gst_mode: gstMode,
+        metal_type: metalType,
         making_charges: makingCharges,
         labour_charges: labourCharges,
         polishing_charges: polishingCharges,
@@ -389,7 +394,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Order Information</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="space-y-2">
                 <Label>Reference #</Label>
                 <Input value={reference} readOnly className="bg-muted" />
@@ -429,6 +434,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                   </SelectContent>
                 </Select>
               </div>
+              <MetalTypeSelect value={metalType} onChange={setMetalType} label="Metal Type" />
             </CardContent>
           </Card>
 

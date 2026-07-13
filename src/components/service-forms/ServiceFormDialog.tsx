@@ -19,6 +19,8 @@ import { ClientSearchBox } from '@/components/invoice/ClientSearchBox';
 import { supabase } from '@/integrations/supabase/client';
 import { SERVICE_TYPE_OPTIONS, ServiceForm } from '@/types/serviceForm';
 import { downloadServiceReceipt } from '@/utils/serviceReceiptPdf';
+import { MetalTypeSelect } from '@/components/shared/MetalTypeSelect';
+import { MetalType } from '@/lib/metalTypes';
 
 interface Props {
   open: boolean;
@@ -40,6 +42,7 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
   const [fromOurShop, setFromOurShop] = useState(false);
   const [originalInvoiceNo, setOriginalInvoiceNo] = useState('');
   const [material, setMaterial] = useState('Silver');
+  const [metalType, setMetalType] = useState<MetalType>('silver');
   const [weight, setWeight] = useState<number>(0);
   const [condition, setCondition] = useState('Good');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -69,6 +72,8 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
       setFromOurShop(serviceForm.from_our_shop);
       setOriginalInvoiceNo(serviceForm.original_invoice_no || '');
       setMaterial(serviceForm.material || 'Silver');
+      const savedMetal = (serviceForm as any).metal_type as string | undefined;
+      setMetalType((savedMetal && ['silver','gold_18k','gold_22k','gold_24k'].includes(savedMetal)) ? savedMetal as MetalType : 'silver');
       setWeight(serviceForm.weight_grams || 0);
       setCondition(serviceForm.condition_on_receipt || 'Good');
       setServiceTypes(serviceForm.service_types || []);
@@ -79,7 +84,7 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
     } else {
       setClientId(null); setClientName(''); setClientPhone('');
       setItemDescription(''); setFromOurShop(false); setOriginalInvoiceNo('');
-      setMaterial('Silver'); setWeight(0); setCondition('Good'); setPhotoFile(null);
+      setMaterial('Silver'); setMetalType('silver'); setWeight(0); setCondition('Good'); setPhotoFile(null);
       setServiceTypes([]); setOtherServiceText(''); setServiceNotes('');
       setEstimatedDelivery(undefined); setEstimatedCost(0);
     }
@@ -104,6 +109,7 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
             from_our_shop: fromOurShop,
             original_invoice_no: originalInvoiceNo || null,
             material,
+            metal_type: metalType,
             weight_grams: weight,
             condition_on_receipt: condition,
             service_types: serviceTypes,
@@ -124,6 +130,7 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
           from_our_shop: fromOurShop,
           original_invoice_no: originalInvoiceNo || null,
           material,
+          metal_type: metalType,
           weight_grams: weight,
           condition_on_receipt: condition,
           photo_url: null,
@@ -189,7 +196,8 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
                   <div className="space-y-1"><Label>Original Invoice No</Label><Input value={originalInvoiceNo} onChange={(e) => setOriginalInvoiceNo(e.target.value)} /></div>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <MetalTypeSelect value={metalType} onChange={setMetalType} label="Metal Type" />
                 <div className="space-y-1">
                   <Label>Material</Label>
                   <Select value={material} onValueChange={setMaterial}>

@@ -771,6 +771,7 @@ export type Database = {
           inventory_product_id: string | null
           labour_charges: number
           making_charges: number
+          metal_type: string | null
           notes: string | null
           order_date: string
           order_type: string
@@ -814,6 +815,7 @@ export type Database = {
           inventory_product_id?: string | null
           labour_charges?: number
           making_charges?: number
+          metal_type?: string | null
           notes?: string | null
           order_date?: string
           order_type?: string
@@ -857,6 +859,7 @@ export type Database = {
           inventory_product_id?: string | null
           labour_charges?: number
           making_charges?: number
+          metal_type?: string | null
           notes?: string | null
           order_date?: string
           order_type?: string
@@ -1043,6 +1046,7 @@ export type Database = {
           id: string
           invoice_id: string
           making_charges: number
+          metal_type: string | null
           mrp: number
           product_id: string | null
           product_name: string
@@ -1064,6 +1068,7 @@ export type Database = {
           id?: string
           invoice_id: string
           making_charges?: number
+          metal_type?: string | null
           mrp?: number
           product_id?: string | null
           product_name: string
@@ -1085,6 +1090,7 @@ export type Database = {
           id?: string
           invoice_id?: string
           making_charges?: number
+          metal_type?: string | null
           mrp?: number
           product_id?: string | null
           product_name?: string
@@ -1170,6 +1176,7 @@ export type Database = {
           id: string
           invoice_date: string
           invoice_number: string
+          metal_type: string | null
           notes: string | null
           paid_at: string | null
           payment_amount_1: number
@@ -1210,6 +1217,7 @@ export type Database = {
           id?: string
           invoice_date?: string
           invoice_number: string
+          metal_type?: string | null
           notes?: string | null
           paid_at?: string | null
           payment_amount_1?: number
@@ -1250,6 +1258,7 @@ export type Database = {
           id?: string
           invoice_date?: string
           invoice_number?: string
+          metal_type?: string | null
           notes?: string | null
           paid_at?: string | null
           payment_amount_1?: number
@@ -2250,6 +2259,7 @@ export type Database = {
           id: string
           item_description: string
           material: string | null
+          metal_type: string | null
           original_invoice_no: string | null
           other_service_text: string | null
           photo_url: string | null
@@ -2277,6 +2287,7 @@ export type Database = {
           id?: string
           item_description: string
           material?: string | null
+          metal_type?: string | null
           original_invoice_no?: string | null
           other_service_text?: string | null
           photo_url?: string | null
@@ -2304,6 +2315,7 @@ export type Database = {
           id?: string
           item_description?: string
           material?: string | null
+          metal_type?: string | null
           original_invoice_no?: string | null
           other_service_text?: string | null
           photo_url?: string | null

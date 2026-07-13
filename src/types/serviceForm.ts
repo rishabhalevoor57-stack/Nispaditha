@@ -40,6 +40,7 @@ export interface ServiceForm {
   from_our_shop: boolean;
   original_invoice_no: string | null;
   material: string | null;
+  metal_type?: string | null;
   weight_grams: number;
   condition_on_receipt: string | null;
   photo_url: string | null;
