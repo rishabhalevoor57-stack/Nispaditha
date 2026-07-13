@@ -433,6 +433,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                   </SelectContent>
                 </Select>
               </div>
+              <MetalTypeSelect value={metalType} onChange={setMetalType} label="Metal Type" />
             </CardContent>
           </Card>
 
