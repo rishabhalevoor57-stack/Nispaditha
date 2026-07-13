@@ -457,6 +457,7 @@ export function CreateInvoiceDialog({
         gst_percentage: gstPct,
         gst_mode: gstMode,
         round_off: roundOff,
+        metal_type: metalRate === 'none' ? 'silver' : metalRate,
       };
 
       let invoice: any;
