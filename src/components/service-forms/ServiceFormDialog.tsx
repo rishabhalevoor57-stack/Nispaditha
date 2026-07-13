@@ -42,6 +42,7 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
   const [fromOurShop, setFromOurShop] = useState(false);
   const [originalInvoiceNo, setOriginalInvoiceNo] = useState('');
   const [material, setMaterial] = useState('Silver');
+  const [metalType, setMetalType] = useState<MetalType>('silver');
   const [weight, setWeight] = useState<number>(0);
   const [condition, setCondition] = useState('Good');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
