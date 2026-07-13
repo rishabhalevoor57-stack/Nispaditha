@@ -196,7 +196,8 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
                   <div className="space-y-1"><Label>Original Invoice No</Label><Input value={originalInvoiceNo} onChange={(e) => setOriginalInvoiceNo(e.target.value)} /></div>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <MetalTypeSelect value={metalType} onChange={setMetalType} label="Metal Type" />
                 <div className="space-y-1">
                   <Label>Material</Label>
                   <Select value={material} onValueChange={setMaterial}>
