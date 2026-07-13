@@ -84,7 +84,7 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
     } else {
       setClientId(null); setClientName(''); setClientPhone('');
       setItemDescription(''); setFromOurShop(false); setOriginalInvoiceNo('');
-      setMaterial('Silver'); setWeight(0); setCondition('Good'); setPhotoFile(null);
+      setMaterial('Silver'); setMetalType('silver'); setWeight(0); setCondition('Good'); setPhotoFile(null);
       setServiceTypes([]); setOtherServiceText(''); setServiceNotes('');
       setEstimatedDelivery(undefined); setEstimatedCost(0);
     }
