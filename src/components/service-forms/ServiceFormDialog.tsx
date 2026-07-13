@@ -109,6 +109,7 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
             from_our_shop: fromOurShop,
             original_invoice_no: originalInvoiceNo || null,
             material,
+            metal_type: metalType,
             weight_grams: weight,
             condition_on_receipt: condition,
             service_types: serviceTypes,
