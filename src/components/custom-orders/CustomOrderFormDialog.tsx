@@ -183,6 +183,8 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setFlatDiscount(full.flat_discount || 0);
         setGstPercentage(Number(full.gst_percentage) || 3);
         setGstMode((full.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
+        const savedMetal = (full.metal_type as string | undefined) || 'silver';
+        setMetalType(['silver','gold_18k','gold_22k','gold_24k'].includes(savedMetal) ? savedMetal as any : 'silver');
         setMakingCharges(Number(full.making_charges) || 0);
         setLabourCharges(Number(full.labour_charges) || 0);
         setPolishingCharges(Number(full.polishing_charges) || 0);
