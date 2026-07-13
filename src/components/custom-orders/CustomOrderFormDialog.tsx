@@ -25,6 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { MetalTypeSelect } from '@/components/shared/MetalTypeSelect';
 
 interface Client { id: string; name: string; phone: string | null; }
 interface Vendor { id: string; name: string; }
