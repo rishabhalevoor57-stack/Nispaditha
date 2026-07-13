@@ -215,7 +215,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         setStatus('draft');
         setDesignCharges(0); setAdditionalCharge(0);
         setAdditionalChargeLabel('Additional Charge');
-        setFlatDiscount(0); setGstPercentage(3); setGstMode('exclusive');
+        setFlatDiscount(0); setGstPercentage(3); setGstMode('exclusive'); setMetalType('silver');
         setMakingCharges(0); setLabourCharges(0); setPolishingCharges(0); setRepairCharges(0);
         setExtraCharges([]); setCustomerMaterials([]);
         setNotes(''); setItems([]); setComponents([]);
