@@ -19,6 +19,8 @@ import { ClientSearchBox } from '@/components/invoice/ClientSearchBox';
 import { supabase } from '@/integrations/supabase/client';
 import { SERVICE_TYPE_OPTIONS, ServiceForm } from '@/types/serviceForm';
 import { downloadServiceReceipt } from '@/utils/serviceReceiptPdf';
+import { MetalTypeSelect } from '@/components/shared/MetalTypeSelect';
+import { MetalType } from '@/lib/metalTypes';
 
 interface Props {
   open: boolean;
