@@ -257,6 +257,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         flat_discount: flatDiscount,
         gst_percentage: gstPercentage,
         gst_mode: gstMode,
+        metal_type: metalType,
         making_charges: makingCharges,
         labour_charges: labourCharges,
         polishing_charges: polishingCharges,
