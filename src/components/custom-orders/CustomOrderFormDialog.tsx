@@ -61,6 +61,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const [components, setComponents] = useState<CustomOrderComponent[]>([]);
   const [gstPercentage, setGstPercentage] = useState<number>(3);
   const [gstMode, setGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
+  const [metalType, setMetalType] = useState<'silver' | 'gold_18k' | 'gold_22k' | 'gold_24k'>('silver');
   const [makingCharges, setMakingCharges] = useState(0);
   const [labourCharges, setLabourCharges] = useState(0);
   const [polishingCharges, setPolishingCharges] = useState(0);
