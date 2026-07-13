@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-export type MetalRateOption = 'gold_22k' | 'gold_18k' | 'silver' | 'none';
+export type MetalRateOption = 'gold_24k' | 'gold_22k' | 'gold_18k' | 'silver' | 'none';
 
 interface MetalRateToggleProps {
   value: MetalRateOption;
@@ -13,6 +13,7 @@ const fmt = (n: number) =>
   new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(n || 0);
 
 const OPTIONS: { key: MetalRateOption; label: string }[] = [
+  { key: 'gold_24k', label: 'Gold 24K' },
   { key: 'gold_22k', label: 'Gold 22K' },
   { key: 'gold_18k', label: 'Gold 18K' },
   { key: 'silver', label: 'Silver' },
@@ -21,6 +22,7 @@ const OPTIONS: { key: MetalRateOption; label: string }[] = [
 
 export function MetalRateToggle({ value, onChange, goldRate, silverRate }: MetalRateToggleProps) {
   const rateLabel = (() => {
+    if (value === 'gold_24k') return `Gold 24K: ₹ ${fmt(goldRate * (24 / 22))}/g (from software)`;
     if (value === 'gold_22k') return `Gold 22K: ₹ ${fmt(goldRate)}/g (from software)`;
     if (value === 'gold_18k') return `Gold 18K: ₹ ${fmt(goldRate * (18 / 22))}/g (from software)`;
     if (value === 'silver') return `Silver: ₹ ${fmt(silverRate)}/g (from software)`;
