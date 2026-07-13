@@ -393,7 +393,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Order Information</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="space-y-2">
                 <Label>Reference #</Label>
                 <Input value={reference} readOnly className="bg-muted" />
