@@ -72,6 +72,8 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
       setFromOurShop(serviceForm.from_our_shop);
       setOriginalInvoiceNo(serviceForm.original_invoice_no || '');
       setMaterial(serviceForm.material || 'Silver');
+      const savedMetal = (serviceForm as any).metal_type as string | undefined;
+      setMetalType((savedMetal && ['silver','gold_18k','gold_22k','gold_24k'].includes(savedMetal)) ? savedMetal as MetalType : 'silver');
       setWeight(serviceForm.weight_grams || 0);
       setCondition(serviceForm.condition_on_receipt || 'Good');
       setServiceTypes(serviceForm.service_types || []);
