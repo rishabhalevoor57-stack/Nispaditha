@@ -137,6 +137,49 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
     }
   }, [grandTotalExGst, isInHouse, productSellingManual]);
 
+  // Resolve the live per-gram rate for the currently selected order metal
+  const currentMetalRate = useMemo(() => {
+    switch (metalType) {
+      case 'gold_18k': return metalRates.gold_18k || 0;
+      case 'gold_22k': return metalRates.gold_22k || 0;
+      case 'gold_24k': return metalRates.gold_24k || 0;
+      default:         return metalRates.silver   || 0;
+    }
+  }, [metalType, metalRates]);
+
+  // When user switches Metal (Silver → Gold 22K, etc.) overwrite the per-gram
+  // rate on every component row and every item row that is NOT linked to an
+  // inventory SKU — matches the "auto-fetch dashboard rate" ERP rule.
+  useEffect(() => {
+    if (!open) return;
+    if (!currentMetalRate) return;
+    setComponents(prev => {
+      if (prev.length === 0) return prev;
+      let dirty = false;
+      const next = prev.map(c => {
+        if (Number(c.rate_per_gram) === currentMetalRate) return c;
+        dirty = true;
+        const weightTotal = (Number(c.weight_grams) || 0) * currentMetalRate;
+        const unit = (c as any).unit === 'strings' ? 'strings' : 'quantity';
+        const units = unit === 'strings' ? (Number(c.strings_used) || 0) : (Number(c.quantity_used) || 0);
+        const total = Number(((Number(c.unit_price) || 0) * units + weightTotal).toFixed(2));
+        return { ...c, rate_per_gram: currentMetalRate, total };
+      });
+      return dirty ? next : prev;
+    });
+    setItems(prev => {
+      if (prev.length === 0) return prev;
+      let dirty = false;
+      const next = prev.map(it => {
+        if (it.product_id) return it; // don't overwrite an inventory-linked SKU
+        if (Number(it.rate_per_gram) === currentMetalRate) return it;
+        dirty = true;
+        return { ...it, metal_type: metalType, rate_per_gram: currentMetalRate };
+      });
+      return dirty ? next : prev;
+    });
+  }, [currentMetalRate, metalType, open]);
+
   // Fetch clients / vendors / categories
   useEffect(() => {
     if (!open) return;
