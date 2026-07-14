@@ -746,7 +746,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
               <p className="text-xs text-muted-foreground">Weight-based components use today's silver rate. Beads / pearls counted separately by strings or pieces.</p>
             </CardHeader>
             <CardContent>
-              <CustomOrderComponentsTable components={components} onChange={setComponents} silverRate={silverRate} />
+              <CustomOrderComponentsTable components={components} onChange={setComponents} silverRate={currentMetalRate} />
             </CardContent>
           </Card>
 
