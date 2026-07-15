@@ -423,9 +423,6 @@ export function InvoicePreviewModal({
                     <span style={num}>{`${RUPEE} ${fmt(Math.abs(roundOff))}`}</span>
                   </div>
                 )}
-                {storeCreditsUsed > 0 && (
-                  <div className="flex justify-between" style={{ color: GREEN }}><span>Store Credits Redeemed</span><span style={num}>{`\u2212 ${money(storeCreditsUsed)}`}</span></div>
-                )}
               </div>
             </div>
 
