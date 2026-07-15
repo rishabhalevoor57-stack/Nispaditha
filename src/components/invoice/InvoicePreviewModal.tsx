@@ -467,7 +467,7 @@ export function InvoicePreviewModal({
                     className="rounded px-3 py-2 flex items-center justify-between"
                     style={{ border: `1px solid ${PURPLE_BORDER}` }}
                   >
-                    <span className="text-[10.5px] text-gray-700">Store Credits Redeemed</span>
+                    <span className="text-[10.5px] text-gray-700">Paid via Store Credits</span>
                     <span className="font-bold" style={{ ...num, color: GREEN, minWidth: 90, textAlign: 'right' }}>
                       {`\u2212 ${money(storeCreditsUsed)}`}
                     </span>
