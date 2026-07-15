@@ -425,13 +425,16 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const grossTotalWithRound = isInclusive
     ? (data.totals.subtotal || 0) + roundOff
     : (data.totals.grandTotal || 0) + roundOff;
-  // Store credits reduce the grand total (not counted again as payment).
-  const grandTotalWithRound = Math.max(0, grossTotalWithRound - storeCreditsUsed);
+  // Grand Total is the tax-invoice total. Store credits are a payment method,
+  // NOT a tax deduction — they only appear in the Payments section.
+  const grandTotalWithRound = grossTotalWithRound;
   const breakdown = data.paymentBreakdown || [];
   const breakdownTotal = breakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
-  let balanceDue = Math.round((grandTotalWithRound - cashPaid) * 100) / 100;
+  const paidIncludingCredits = cashPaid + storeCreditsUsed;
+  let balanceDue = Math.round((grandTotalWithRound - paidIncludingCredits) * 100) / 100;
   if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
+
 
   doc.setFontSize(9);
   doc.setFont(FONT, 'normal');
