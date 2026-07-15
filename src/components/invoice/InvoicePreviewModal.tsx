@@ -124,8 +124,6 @@ export function InvoicePreviewModal({
   const isOverpaid = paidTotal > grandTotal + 0.05 && grandTotal >= 0;
   const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
 
-  const isOverpaid = paidTotal > grandTotal + 0.05 && grandTotal >= 0;
-  const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
 
   const num: React.CSSProperties = {
     whiteSpace: 'nowrap',
