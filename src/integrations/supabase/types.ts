@@ -749,6 +749,56 @@ export type Database = {
           },
         ]
       }
+      custom_order_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          custom_order_id: string
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_mode: string
+          reference_number: string
+          transferred_to_invoice_payment_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          custom_order_id: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_mode?: string
+          reference_number: string
+          transferred_to_invoice_payment_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          custom_order_id?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_mode?: string
+          reference_number?: string
+          transferred_to_invoice_payment_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_order_payments_custom_order_id_fkey"
+            columns: ["custom_order_id"]
+            isOneToOne: false
+            referencedRelation: "custom_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_orders: {
         Row: {
           additional_charge: number
@@ -1178,6 +1228,7 @@ export type Database = {
           invoice_number: string
           metal_type: string | null
           notes: string | null
+          order_discount: number
           paid_at: string | null
           payment_amount_1: number
           payment_amount_2: number
@@ -1219,6 +1270,7 @@ export type Database = {
           invoice_number: string
           metal_type?: string | null
           notes?: string | null
+          order_discount?: number
           paid_at?: string | null
           payment_amount_1?: number
           payment_amount_2?: number
@@ -1260,6 +1312,7 @@ export type Database = {
           invoice_number?: string
           metal_type?: string | null
           notes?: string | null
+          order_discount?: number
           paid_at?: string | null
           payment_amount_1?: number
           payment_amount_2?: number
@@ -2842,6 +2895,7 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: undefined
       }
+      generate_advance_reference: { Args: never; Returns: string }
       generate_custom_order_reference: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_melting_number: { Args: never; Returns: string }

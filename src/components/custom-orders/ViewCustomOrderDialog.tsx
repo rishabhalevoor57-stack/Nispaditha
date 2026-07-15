@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { FileText, Printer, Download } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,6 +9,10 @@ import { Separator } from '@/components/ui/separator';
 import { CustomOrder, CustomOrderItem, CustomOrderComponent, CUSTOM_ORDER_STATUS_LABELS, CUSTOM_ORDER_STATUS_COLORS } from '@/types/customOrder';
 import { useCustomOrders } from '@/hooks/useCustomOrders';
 import { printCustomOrderDeliveryBill, downloadCustomOrderDeliveryBill } from '@/utils/customOrderDeliveryPdf';
+import { useCustomOrderPayments } from '@/hooks/useCustomOrderPayments';
+import { CustomOrderPaymentDialog } from './CustomOrderPaymentDialog';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
+
 
 
 interface ViewCustomOrderDialogProps {
@@ -21,10 +25,13 @@ interface ViewCustomOrderDialogProps {
 export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInvoice }: ViewCustomOrderDialogProps) => {
 
   const { getOrderWithItems } = useCustomOrders();
+  const isAdmin = useIsAdmin();
   const [items, setItems] = useState<CustomOrderItem[]>([]);
   const [components, setComponents] = useState<CustomOrderComponent[]>([]);
   const [fullOrder, setFullOrder] = useState<CustomOrder | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const { payments: advancePayments, totalPaid: advanceTotal, deletePayment } = useCustomOrderPayments(order?.id);
 
   useEffect(() => {
     const load = async () => {
@@ -45,11 +52,13 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
 
   if (!order) return null;
   const o = fullOrder || order;
+  const balanceRemaining = Math.max(0, (Number(o.total_amount) || 0) - advanceTotal);
 
   const componentsTotal = components.reduce((s, c) => s + (Number(c.total) || 0), 0);
   const itemsTotal = items.reduce((s, i) => s + i.item_total, 0);
   const customerMaterials = ((o as any).customer_materials || []) as Array<{ name: string; quantity?: number; weight_grams?: number; description?: string }>;
   const extraCharges = ((o as any).extra_charges || []) as Array<{ label: string; amount: number }>;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -67,17 +76,18 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => printCustomOrderDeliveryBill({ order: o, items, components })}
+                onClick={() => printCustomOrderDeliveryBill({ order: o, items, components, advancePayments })}
               >
                 <Printer className="h-4 w-4 mr-1.5" /> Print Order Bill
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => downloadCustomOrderDeliveryBill({ order: o, items, components })}
+                onClick={() => downloadCustomOrderDeliveryBill({ order: o, items, components, advancePayments })}
               >
                 <Download className="h-4 w-4 mr-1.5" /> Download PDF
               </Button>
+
               {!o.converted_to_invoice_id && o.status !== 'cancelled' && onGenerateInvoice && (
                 <Button variant="default" size="sm" onClick={() => onGenerateInvoice(o, items, components)}>
                   <FileText className="h-4 w-4 mr-1.5" />
@@ -245,9 +255,58 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
             </CardContent>
           </Card>
 
+          {/* Advance Payments */}
+          <Card>
+            <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium">Advance Payments</CardTitle>
+              {!o.converted_to_invoice_id && (
+                <Button size="sm" variant="outline" onClick={() => setShowPaymentDialog(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Add Advance
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {advancePayments.length === 0 ? (
+                <p className="text-muted-foreground text-center py-2 text-sm">No advance recorded yet</p>
+              ) : (
+                <>
+                  {advancePayments.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between border-b pb-1.5 last:border-0">
+                      <div>
+                        <p className="font-medium capitalize">
+                          {p.reference_number} — via {p.payment_mode.replace(/_/g, ' ')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(p.payment_date), 'dd/MM/yyyy')}{p.notes ? ` • ${p.notes}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">₹{Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        {isAdmin && !o.converted_to_invoice_id && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deletePayment.mutate(p.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <Separator />
+                  <div className="flex justify-between font-semibold">
+                    <span>Total Advance Paid</span>
+                    <span>₹{advanceTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-primary font-bold">
+                    <span>Balance Remaining</span>
+                    <span>₹{balanceRemaining.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           {o.converted_to_invoice_id && (
             <div className="p-3 rounded-lg bg-primary/10 text-sm">
-              ✅ Converted to Invoice
+              ✅ Converted to Invoice — advance payments transferred
             </div>
           )}
 
@@ -258,7 +317,16 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
             </Card>
           )}
         </div>
+
+        <CustomOrderPaymentDialog
+          open={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          customOrderId={o.id}
+          orderReference={o.reference_number}
+          balanceRemaining={balanceRemaining}
+        />
       </DialogContent>
     </Dialog>
   );
 };
+

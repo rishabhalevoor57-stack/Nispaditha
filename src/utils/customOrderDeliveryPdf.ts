@@ -2,21 +2,32 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import type { CustomOrder, CustomOrderItem, CustomOrderComponent } from '@/types/customOrder';
+import type { CustomOrderPayment } from '@/hooks/useCustomOrderPayments';
 
 interface DeliveryBillContext {
   order: CustomOrder;
   items: CustomOrderItem[];
   components: CustomOrderComponent[];
+  advancePayments?: CustomOrderPayment[];
   advancePaid?: number;
   paymentMode?: string;
 }
+
 
 const money = (n: number) =>
   'Rs. ' + new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n) || 0);
 
 export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF => {
-  const { order, items, components, advancePaid = 0, paymentMode = '-' } = ctx;
+  const { order, items, components, advancePayments = [] } = ctx;
+  const totalAdvance = advancePayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const advancePaid = totalAdvance > 0 ? totalAdvance : (ctx.advancePaid || 0);
+  const paymentMode = advancePayments.length === 1
+    ? advancePayments[0].payment_mode.replace(/_/g, ' ').toUpperCase()
+    : advancePayments.length > 1
+      ? 'Multiple'
+      : (ctx.paymentMode || '-');
   const doc = new jsPDF();
+
 
   // Purple header band
   doc.setFillColor(126, 58, 242);
@@ -150,9 +161,18 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
     ]);
   }
   summaryRows.push(['Grand Total', money(grandTotal)]);
-  summaryRows.push(['Advance Paid', money(advancePaid)]);
+  if (advancePayments.length > 0) {
+    advancePayments.forEach((p) => {
+      const modeLabel = p.payment_mode.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      summaryRows.push([`Advance Paid via ${modeLabel} (${p.reference_number})`, money(Number(p.amount) || 0)]);
+    });
+    summaryRows.push(['Total Advance Paid', money(advancePaid)]);
+  } else {
+    summaryRows.push(['Advance Paid', money(advancePaid)]);
+    summaryRows.push(['Payment Mode', paymentMode || '-']);
+  }
   summaryRows.push(['Balance Remaining', money(balance)]);
-  summaryRows.push(['Payment Mode', paymentMode || '-']);
+
 
   autoTable(doc, {
     startY: y,

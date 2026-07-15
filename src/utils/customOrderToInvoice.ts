@@ -358,23 +358,44 @@ export async function convertCustomOrderToInvoice(
   // 3. Build invoice line items, totals, and full custom-order detail payload
   const invoiceData = buildInvoiceData(order, items, components);
 
-  // 6. Insert invoice
+  // 4. Fetch any advance payments recorded on the custom order
+  const { data: advances = [] } = await (supabase
+    .from('custom_order_payments' as any)
+    .select('*')
+    .eq('custom_order_id', order.id)
+    .order('payment_date', { ascending: true }) as any) as unknown as {
+    data: Array<{ id: string; amount: number; payment_mode: string; payment_date: string; reference_number: string; notes: string | null }>;
+  };
+
+  const advancesArr = advances || [];
+  const cashAdvances = advancesArr.filter(p => p.payment_mode !== 'store_credit');
+  const creditAdvances = advancesArr.filter(p => p.payment_mode === 'store_credit');
+  const cashAdvanceTotal = cashAdvances.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const creditAdvanceTotal = creditAdvances.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const totalAdvanceApplied = cashAdvanceTotal + creditAdvanceTotal;
+  const balanceAfterAdvances = Math.max(0, invoiceData.grandTotal - totalAdvanceApplied);
+  const paymentStatus = balanceAfterAdvances <= 0.05
+    ? 'paid'
+    : totalAdvanceApplied > 0 ? 'partial' : 'pending';
+
+  // 5. Insert invoice
   const invoicePayload = {
     invoice_number: invoiceNumber,
     client_id: clientId,
     invoice_date: new Date().toISOString().split('T')[0],
     subtotal: invoiceData.subtotalForInvoice,
     discount_amount: invoiceData.discount,
+    order_discount: Number(order.flat_discount) || 0,
     gst_amount: invoiceData.gstAmount,
     grand_total: invoiceData.grandTotal,
-    advance_paid: 0,
-    store_credits_used: 0,
-    payment_status: 'pending',
-    payment_mode: finalize ? 'cash' : null,
-    total_paid: 0,
-    balance_due: invoiceData.grandTotal,
+    advance_paid: cashAdvanceTotal,
+    store_credits_used: creditAdvanceTotal,
+    payment_status: paymentStatus,
+    payment_mode: cashAdvances[0]?.payment_mode || (finalize ? 'cash' : null),
+    total_paid: cashAdvanceTotal,
+    balance_due: balanceAfterAdvances,
     notes: invoiceData.notes,
-    status: finalize ? 'sent' : 'draft',
+    status: finalize ? (balanceAfterAdvances <= 0.05 ? 'paid' : 'sent') : 'draft',
     gst_percentage: invoiceData.pct,
     gst_mode: invoiceData.gstMode,
     round_off: 0,
@@ -389,7 +410,7 @@ export async function convertCustomOrderToInvoice(
     .single();
   if (invErr || !invoice) throw invErr || new Error('Failed to create invoice');
 
-  // 7. Insert invoice items
+  // 6. Insert invoice items
   const itemsPayload = buildItemsPayload((invoice as { id: string }).id, invoiceData.lines);
 
   const { data: insertedItems, error: itemsErr } = await supabase
@@ -397,10 +418,35 @@ export async function convertCustomOrderToInvoice(
     .insert(itemsPayload)
     .select('id');
   if (itemsErr || !insertedItems || insertedItems.length === 0) {
-    // Rollback the orphan invoice so the user can retry cleanly
     await supabase.from('invoices').delete().eq('id', (invoice as { id: string }).id);
     console.error('[convertCustomOrderToInvoice] items insert failed', itemsErr, { count: itemsPayload.length, sample: itemsPayload[0] });
     throw itemsErr || new Error('Could not save invoice line items — invoice rolled back. Please try again.');
+  }
+
+  // 7. Transfer each advance payment into invoice_payments — preserving ADV- reference in notes
+  if (advancesArr.length > 0) {
+    for (const adv of advancesArr) {
+      const { data: payment, error: payErr } = await (supabase
+        .from('invoice_payments')
+        .insert({
+          invoice_id: (invoice as { id: string }).id,
+          amount: adv.amount,
+          payment_mode: adv.payment_mode,
+          payment_date: adv.payment_date,
+          receipt_number: adv.reference_number, // keep ADV-000045 as the receipt reference
+          notes: `Advance from ${order.reference_number}${adv.notes ? ` — ${adv.notes}` : ''}`,
+        } as never)
+        .select('id')
+        .single() as any);
+      if (payErr) {
+        console.error('[convertCustomOrderToInvoice] advance transfer failed', payErr);
+      } else if (payment?.id) {
+        await (supabase
+          .from('custom_order_payments' as any)
+          .update({ transferred_to_invoice_payment_id: payment.id } as any)
+          .eq('id', adv.id) as any);
+      }
+    }
   }
 
   // 8. Mark the custom order as converted
@@ -415,3 +461,4 @@ export async function convertCustomOrderToInvoice(
     clientId,
   };
 }
+

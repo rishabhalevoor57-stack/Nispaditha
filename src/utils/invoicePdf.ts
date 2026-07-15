@@ -425,13 +425,16 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const grossTotalWithRound = isInclusive
     ? (data.totals.subtotal || 0) + roundOff
     : (data.totals.grandTotal || 0) + roundOff;
-  // Store credits reduce the grand total (not counted again as payment).
-  const grandTotalWithRound = Math.max(0, grossTotalWithRound - storeCreditsUsed);
+  // Grand Total is the tax-invoice total. Store credits are a payment method,
+  // NOT a tax deduction — they only appear in the Payments section.
+  const grandTotalWithRound = grossTotalWithRound;
   const breakdown = data.paymentBreakdown || [];
   const breakdownTotal = breakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
-  let balanceDue = Math.round((grandTotalWithRound - cashPaid) * 100) / 100;
+  const paidIncludingCredits = cashPaid + storeCreditsUsed;
+  let balanceDue = Math.round((grandTotalWithRound - paidIncludingCredits) * 100) / 100;
   if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
+
 
   doc.setFontSize(9);
   doc.setFont(FONT, 'normal');
@@ -480,13 +483,6 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     yPos += rowGap;
   }
 
-  if (storeCreditsUsed > 0) {
-    doc.setTextColor(39, 120, 60);
-    doc.text('Store Credits Redeemed', totalsX, yPos);
-    doc.text(`- ${money(storeCreditsUsed)}`, valueX, yPos, { align: 'right' });
-    doc.setTextColor(60, 60, 60);
-    yPos += rowGap;
-  }
   yPos += 2;
 
   // ================== GRAND TOTAL BAND ==================
@@ -503,10 +499,11 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(0, 0, 0);
 
   // ================== STATUS DETERMINATION ==================
-  const paidTotal = cashPaid; // credits already deducted from grand total
-  const isPaidFull = grandTotalWithRound >= 0 && balanceDue === 0 && (paidTotal > 0 || storeCreditsUsed > 0);
+  const paidTotal = paidIncludingCredits;
+  const isPaidFull = grandTotalWithRound >= 0 && balanceDue === 0 && paidTotal > 0;
   const isOverpaid = paidTotal > grandTotalWithRound + 0.05;
   const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
+
 
   // Reserve space for footer + signature + status section
   const footerH = 11;
@@ -541,7 +538,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.setTextColor(80, 80, 80);
     doc.setFont(FONT, 'normal');
     doc.setFontSize(9);
-    doc.text('Store Credits Redeemed', rightX + 3, rightInnerY + 5.7);
+    doc.text('Paid via Store Credits', rightX + 3, rightInnerY + 5.7);
     doc.setFont(FONT, 'bold');
     doc.setFontSize(10);
     doc.setTextColor(...GREEN_PAID);
