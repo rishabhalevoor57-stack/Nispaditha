@@ -255,9 +255,58 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
             </CardContent>
           </Card>
 
+          {/* Advance Payments */}
+          <Card>
+            <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium">Advance Payments</CardTitle>
+              {!o.converted_to_invoice_id && (
+                <Button size="sm" variant="outline" onClick={() => setShowPaymentDialog(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Add Advance
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {advancePayments.length === 0 ? (
+                <p className="text-muted-foreground text-center py-2 text-sm">No advance recorded yet</p>
+              ) : (
+                <>
+                  {advancePayments.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between border-b pb-1.5 last:border-0">
+                      <div>
+                        <p className="font-medium capitalize">
+                          {p.reference_number} — via {p.payment_mode.replace(/_/g, ' ')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(p.payment_date), 'dd/MM/yyyy')}{p.notes ? ` • ${p.notes}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">₹{Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        {isAdmin && !o.converted_to_invoice_id && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deletePayment.mutate(p.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <Separator />
+                  <div className="flex justify-between font-semibold">
+                    <span>Total Advance Paid</span>
+                    <span>₹{advanceTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-primary font-bold">
+                    <span>Balance Remaining</span>
+                    <span>₹{balanceRemaining.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           {o.converted_to_invoice_id && (
             <div className="p-3 rounded-lg bg-primary/10 text-sm">
-              ✅ Converted to Invoice
+              ✅ Converted to Invoice — advance payments transferred
             </div>
           )}
 
@@ -268,7 +317,16 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
             </Card>
           )}
         </div>
+
+        <CustomOrderPaymentDialog
+          open={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          customOrderId={o.id}
+          orderReference={o.reference_number}
+          balanceRemaining={balanceRemaining}
+        />
       </DialogContent>
     </Dialog>
   );
 };
+
