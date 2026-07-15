@@ -111,15 +111,19 @@ export function InvoicePreviewModal({
   const grossTotal = isInclusive
     ? (totals.subtotal || 0) + roundOff
     : (totals.grandTotal || 0) + roundOff;
-  // Store credits are treated as a deduction from the grand total, not as a payment.
-  const grandTotal = Math.max(0, grossTotal - storeCreditsUsed);
+  // Grand Total is the tax-invoice total. Store credits are a payment method,
+  // NOT a tax deduction — they only appear in the Payments section below.
+  const grandTotal = grossTotal;
   const breakdownTotal = paymentBreakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashOrUpiPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
-  const paidTotal = cashOrUpiPaid; // credits already deducted from grand total
+  const paidTotal = cashOrUpiPaid + storeCreditsUsed;
   let balanceDue = Math.round((grandTotal - paidTotal) * 100) / 100;
   if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
 
-  const isPaidFull = grandTotal > 0 && balanceDue === 0 && (paidTotal > 0 || storeCreditsUsed > 0);
+  const isPaidFull = grandTotal > 0 && balanceDue === 0 && paidTotal > 0;
+  const isOverpaid = paidTotal > grandTotal + 0.05 && grandTotal >= 0;
+  const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
+
   const isOverpaid = paidTotal > grandTotal + 0.05 && grandTotal >= 0;
   const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
 
