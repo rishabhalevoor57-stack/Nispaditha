@@ -161,9 +161,18 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
     ]);
   }
   summaryRows.push(['Grand Total', money(grandTotal)]);
-  summaryRows.push(['Advance Paid', money(advancePaid)]);
+  if (advancePayments.length > 0) {
+    advancePayments.forEach((p) => {
+      const modeLabel = p.payment_mode.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      summaryRows.push([`Advance Paid via ${modeLabel} (${p.reference_number})`, money(Number(p.amount) || 0)]);
+    });
+    summaryRows.push(['Total Advance Paid', money(advancePaid)]);
+  } else {
+    summaryRows.push(['Advance Paid', money(advancePaid)]);
+    summaryRows.push(['Payment Mode', paymentMode || '-']);
+  }
   summaryRows.push(['Balance Remaining', money(balance)]);
-  summaryRows.push(['Payment Mode', paymentMode || '-']);
+
 
   autoTable(doc, {
     startY: y,
