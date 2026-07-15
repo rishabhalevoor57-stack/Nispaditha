@@ -483,13 +483,6 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     yPos += rowGap;
   }
 
-  if (storeCreditsUsed > 0) {
-    doc.setTextColor(39, 120, 60);
-    doc.text('Store Credits Redeemed', totalsX, yPos);
-    doc.text(`- ${money(storeCreditsUsed)}`, valueX, yPos, { align: 'right' });
-    doc.setTextColor(60, 60, 60);
-    yPos += rowGap;
-  }
   yPos += 2;
 
   // ================== GRAND TOTAL BAND ==================
@@ -506,10 +499,11 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(0, 0, 0);
 
   // ================== STATUS DETERMINATION ==================
-  const paidTotal = cashPaid; // credits already deducted from grand total
-  const isPaidFull = grandTotalWithRound >= 0 && balanceDue === 0 && (paidTotal > 0 || storeCreditsUsed > 0);
+  const paidTotal = paidIncludingCredits;
+  const isPaidFull = grandTotalWithRound >= 0 && balanceDue === 0 && paidTotal > 0;
   const isOverpaid = paidTotal > grandTotalWithRound + 0.05;
   const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
+
 
   // Reserve space for footer + signature + status section
   const footerH = 11;
