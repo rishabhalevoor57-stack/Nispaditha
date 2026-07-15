@@ -2,14 +2,17 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import type { CustomOrder, CustomOrderItem, CustomOrderComponent } from '@/types/customOrder';
+import type { CustomOrderPayment } from '@/hooks/useCustomOrderPayments';
 
 interface DeliveryBillContext {
   order: CustomOrder;
   items: CustomOrderItem[];
   components: CustomOrderComponent[];
+  advancePayments?: CustomOrderPayment[];
   advancePaid?: number;
   paymentMode?: string;
 }
+
 
 const money = (n: number) =>
   'Rs. ' + new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n) || 0);
