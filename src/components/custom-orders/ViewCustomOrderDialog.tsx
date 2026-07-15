@@ -76,17 +76,18 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => printCustomOrderDeliveryBill({ order: o, items, components })}
+                onClick={() => printCustomOrderDeliveryBill({ order: o, items, components, advancePayments })}
               >
                 <Printer className="h-4 w-4 mr-1.5" /> Print Order Bill
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => downloadCustomOrderDeliveryBill({ order: o, items, components })}
+                onClick={() => downloadCustomOrderDeliveryBill({ order: o, items, components, advancePayments })}
               >
                 <Download className="h-4 w-4 mr-1.5" /> Download PDF
               </Button>
+
               {!o.converted_to_invoice_id && o.status !== 'cancelled' && onGenerateInvoice && (
                 <Button variant="default" size="sm" onClick={() => onGenerateInvoice(o, items, components)}>
                   <FileText className="h-4 w-4 mr-1.5" />
