@@ -18,8 +18,16 @@ const money = (n: number) =>
   'Rs. ' + new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n) || 0);
 
 export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF => {
-  const { order, items, components, advancePaid = 0, paymentMode = '-' } = ctx;
+  const { order, items, components, advancePayments = [] } = ctx;
+  const totalAdvance = advancePayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const advancePaid = totalAdvance > 0 ? totalAdvance : (ctx.advancePaid || 0);
+  const paymentMode = advancePayments.length === 1
+    ? advancePayments[0].payment_mode.replace(/_/g, ' ').toUpperCase()
+    : advancePayments.length > 1
+      ? 'Multiple'
+      : (ctx.paymentMode || '-');
   const doc = new jsPDF();
+
 
   // Purple header band
   doc.setFillColor(126, 58, 242);
