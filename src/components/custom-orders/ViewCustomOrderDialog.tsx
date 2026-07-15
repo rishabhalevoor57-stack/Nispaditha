@@ -25,10 +25,13 @@ interface ViewCustomOrderDialogProps {
 export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInvoice }: ViewCustomOrderDialogProps) => {
 
   const { getOrderWithItems } = useCustomOrders();
+  const isAdmin = useIsAdmin();
   const [items, setItems] = useState<CustomOrderItem[]>([]);
   const [components, setComponents] = useState<CustomOrderComponent[]>([]);
   const [fullOrder, setFullOrder] = useState<CustomOrder | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const { payments: advancePayments, totalPaid: advanceTotal, deletePayment } = useCustomOrderPayments(order?.id);
 
   useEffect(() => {
     const load = async () => {
@@ -49,11 +52,13 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
 
   if (!order) return null;
   const o = fullOrder || order;
+  const balanceRemaining = Math.max(0, (Number(o.total_amount) || 0) - advanceTotal);
 
   const componentsTotal = components.reduce((s, c) => s + (Number(c.total) || 0), 0);
   const itemsTotal = items.reduce((s, i) => s + i.item_total, 0);
   const customerMaterials = ((o as any).customer_materials || []) as Array<{ name: string; quantity?: number; weight_grams?: number; description?: string }>;
   const extraCharges = ((o as any).extra_charges || []) as Array<{ label: string; amount: number }>;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
