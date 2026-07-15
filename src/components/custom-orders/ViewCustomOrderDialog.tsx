@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { FileText, Printer, Download } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,6 +9,10 @@ import { Separator } from '@/components/ui/separator';
 import { CustomOrder, CustomOrderItem, CustomOrderComponent, CUSTOM_ORDER_STATUS_LABELS, CUSTOM_ORDER_STATUS_COLORS } from '@/types/customOrder';
 import { useCustomOrders } from '@/hooks/useCustomOrders';
 import { printCustomOrderDeliveryBill, downloadCustomOrderDeliveryBill } from '@/utils/customOrderDeliveryPdf';
+import { useCustomOrderPayments } from '@/hooks/useCustomOrderPayments';
+import { CustomOrderPaymentDialog } from './CustomOrderPaymentDialog';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
+
 
 
 interface ViewCustomOrderDialogProps {
