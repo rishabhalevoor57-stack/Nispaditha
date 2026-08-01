@@ -34,20 +34,29 @@ export const useStockValuation = () => {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  // Fetch all products with categories
+  // Fetch all in-stock, non-deleted products (paginated past the 1000-row API cap)
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['products-for-valuation'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, sku, weight_grams, quantity, category_id, categories(name)')
-        .gt('quantity', 0);
-
-      if (error) throw error;
-      return data as ProductForValuation[];
+      const PAGE = 1000;
+      let all: ProductForValuation[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, name, sku, weight_grams, quantity, category_id, categories(name)')
+          .is('deleted_at', null)
+          .gt('quantity', 0)
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        all = all.concat((data || []) as ProductForValuation[]);
+        if (!data || data.length < PAGE) break;
+      }
+      return all;
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
 
   // Calculate category-wise stock valuation
   const categoryData: CategoryStockData[] = (() => {
