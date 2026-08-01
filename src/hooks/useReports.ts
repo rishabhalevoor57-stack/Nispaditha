@@ -76,17 +76,27 @@ export const useReports = () => {
     },
   });
 
-  // Products with categories
+  // Products with categories (active only, fully paginated past the 1000-row API cap)
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['report-products'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, categories(name)');
-      if (error) throw error;
-      return data || [];
+      const PAGE = 1000;
+      let all: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*, categories(name)')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        all = all.concat(data || []);
+        if (!data || data.length < PAGE) break;
+      }
+      return all;
     },
   });
+
 
   // Clients
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
@@ -166,11 +176,11 @@ export const useReports = () => {
     return Object.entries(map).map(([category, data]) => ({ category, ...data }));
   }, [invoices]);
 
-  // Category-wise stock value
+  // Category-wise stock value (in-stock items only, current qty × current rate)
   const categoryStockData = useMemo(() => {
     const silverRate = settings?.silver_rate_per_gram || 0;
     const map: Record<string, { items: number; qty: number; weight: number; value: number }> = {};
-    products.forEach((p: any) => {
+    products.filter((p: any) => (p.quantity || 0) > 0).forEach((p: any) => {
       const cat = p.categories?.name || 'Uncategorized';
       if (!map[cat]) map[cat] = { items: 0, qty: 0, weight: 0, value: 0 };
       map[cat].items += 1;
@@ -180,6 +190,7 @@ export const useReports = () => {
     });
     return Object.entries(map).map(([category, data]) => ({ category, ...data }));
   }, [products, settings]);
+
 
   // Top selling products
   const topSellingProducts = useMemo(() => {
@@ -243,17 +254,35 @@ export const useReports = () => {
       .sort((a, b) => b.balance - a.balance);
   }, [clients]);
 
-  // Inventory reports
+  // Inventory reports — low stock excludes zero-quantity items (those are "out of stock")
   const lowStockItems = useMemo(() => {
     return products
-      .filter((p: any) => p.quantity <= p.low_stock_alert)
+      .filter((p: any) => (p.quantity || 0) > 0 && p.quantity <= p.low_stock_alert)
       .map((p: any) => ({ name: p.name, sku: p.sku, quantity: p.quantity, alert: p.low_stock_alert, category: p.categories?.name }));
   }, [products]);
 
+  const outOfStockItems = useMemo(() => {
+    return products
+      .filter((p: any) => (p.quantity || 0) <= 0)
+      .map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        category: p.categories?.name || null,
+        weight: Number(p.weight_grams || 0),
+        lastUpdated: p.updated_at,
+      }))
+      .sort((a, b) => (b.lastUpdated || '').localeCompare(a.lastUpdated || ''));
+  }, [products]);
+
+  // Stock value = current quantity × current weight × live rate
   const totalStockValue = useMemo(() => {
     const silverRate = settings?.silver_rate_per_gram || 0;
-    return products.reduce((s: number, p: any) => s + Number(p.weight_grams || 0) * (p.quantity || 0) * silverRate, 0);
+    return products
+      .filter((p: any) => (p.quantity || 0) > 0)
+      .reduce((s: number, p: any) => s + Number(p.weight_grams || 0) * (p.quantity || 0) * silverRate, 0);
   }, [products, settings]);
+
 
   // Custom order reports
   const customOrderStats = useMemo(() => {
@@ -293,7 +322,9 @@ export const useReports = () => {
     repeatCustomers,
     outstandingClients,
     lowStockItems,
+    outOfStockItems,
     totalStockValue,
+
     products,
     customOrderStats,
     customOrdersByStatus,
