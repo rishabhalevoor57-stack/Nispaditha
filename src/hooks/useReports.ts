@@ -253,17 +253,34 @@ export const useReports = () => {
       .sort((a, b) => b.balance - a.balance);
   }, [clients]);
 
-  // Inventory reports
+  // Inventory reports — low stock excludes zero-quantity items (those are "out of stock")
   const lowStockItems = useMemo(() => {
     return products
-      .filter((p: any) => p.quantity <= p.low_stock_alert)
+      .filter((p: any) => (p.quantity || 0) > 0 && p.quantity <= p.low_stock_alert)
       .map((p: any) => ({ name: p.name, sku: p.sku, quantity: p.quantity, alert: p.low_stock_alert, category: p.categories?.name }));
   }, [products]);
 
+  const outOfStockItems = useMemo(() => {
+    return products
+      .filter((p: any) => (p.quantity || 0) <= 0)
+      .map((p: any) => ({
+        name: p.name,
+        sku: p.sku,
+        category: p.categories?.name || null,
+        weight: Number(p.weight_grams || 0),
+        lastUpdated: p.updated_at,
+      }))
+      .sort((a, b) => (b.lastUpdated || '').localeCompare(a.lastUpdated || ''));
+  }, [products]);
+
+  // Stock value = current quantity × current weight × live rate
   const totalStockValue = useMemo(() => {
     const silverRate = settings?.silver_rate_per_gram || 0;
-    return products.reduce((s: number, p: any) => s + Number(p.weight_grams || 0) * (p.quantity || 0) * silverRate, 0);
+    return products
+      .filter((p: any) => (p.quantity || 0) > 0)
+      .reduce((s: number, p: any) => s + Number(p.weight_grams || 0) * (p.quantity || 0) * silverRate, 0);
   }, [products, settings]);
+
 
   // Custom order reports
   const customOrderStats = useMemo(() => {

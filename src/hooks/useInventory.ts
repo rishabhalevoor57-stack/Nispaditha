@@ -469,6 +469,8 @@ export function useInventory() {
     totalPages,
     itemsPerPage,
     lowStockProducts,
+    outOfStockProducts,
+
     createProduct,
     updateProduct,
     deleteProduct,

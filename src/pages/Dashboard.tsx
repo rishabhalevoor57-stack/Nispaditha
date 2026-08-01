@@ -95,7 +95,7 @@ export default function Dashboard() {
         .select('id, name, sku, quantity, low_stock_alert')
         .is('deleted_at', null) as any);
 
-      const lowStockFiltered = (allProducts as any[] | null)?.filter((p: any) => p.quantity <= p.low_stock_alert) || [];
+      const lowStockFiltered = (allProducts as any[] | null)?.filter((p: any) => p.quantity > 0 && p.quantity <= p.low_stock_alert) || [];
 
       const { count: clientCount } = await b(supabase
         .from('clients')
