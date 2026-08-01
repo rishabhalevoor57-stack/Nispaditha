@@ -176,11 +176,11 @@ export const useReports = () => {
     return Object.entries(map).map(([category, data]) => ({ category, ...data }));
   }, [invoices]);
 
-  // Category-wise stock value
+  // Category-wise stock value (in-stock items only, current qty × current rate)
   const categoryStockData = useMemo(() => {
     const silverRate = settings?.silver_rate_per_gram || 0;
     const map: Record<string, { items: number; qty: number; weight: number; value: number }> = {};
-    products.forEach((p: any) => {
+    products.filter((p: any) => (p.quantity || 0) > 0).forEach((p: any) => {
       const cat = p.categories?.name || 'Uncategorized';
       if (!map[cat]) map[cat] = { items: 0, qty: 0, weight: 0, value: 0 };
       map[cat].items += 1;
@@ -190,6 +190,7 @@ export const useReports = () => {
     });
     return Object.entries(map).map(([category, data]) => ({ category, ...data }));
   }, [products, settings]);
+
 
   // Top selling products
   const topSellingProducts = useMemo(() => {
@@ -320,7 +321,9 @@ export const useReports = () => {
     repeatCustomers,
     outstandingClients,
     lowStockItems,
+    outOfStockItems,
     totalStockValue,
+
     products,
     customOrderStats,
     customOrdersByStatus,
