@@ -76,17 +76,27 @@ export const useReports = () => {
     },
   });
 
-  // Products with categories
+  // Products with categories (active only, fully paginated past the 1000-row API cap)
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['report-products'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, categories(name)');
-      if (error) throw error;
-      return data || [];
+      const PAGE = 1000;
+      let all: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*, categories(name)')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        all = all.concat(data || []);
+        if (!data || data.length < PAGE) break;
+      }
+      return all;
     },
   });
+
 
   // Clients
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
