@@ -6,6 +6,7 @@ import { formatCurrency, exportToExcel, exportToPDF } from '@/utils/reportExport
 import { DataTable } from '@/components/ui/data-table';
 
 interface OutOfStockItem {
+  id: string;
   name: string;
   sku: string;
   category: string | null;

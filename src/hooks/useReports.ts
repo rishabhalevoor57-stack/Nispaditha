@@ -265,6 +265,7 @@ export const useReports = () => {
     return products
       .filter((p: any) => (p.quantity || 0) <= 0)
       .map((p: any) => ({
+        id: p.id,
         name: p.name,
         sku: p.sku,
         category: p.categories?.name || null,
