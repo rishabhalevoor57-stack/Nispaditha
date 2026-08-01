@@ -17,7 +17,7 @@ export default function Reports() {
     categorySalesData, categoryStockData,
     topSellingProducts, lowSellingProducts,
     topCustomers, repeatCustomers, outstandingClients,
-    lowStockItems, totalStockValue, products,
+    lowStockItems, outOfStockItems, totalStockValue, products,
     customOrderStats, customOrdersByStatus, customOrders,
     invoices,
   } = useReports();
@@ -71,7 +71,7 @@ export default function Reports() {
           </TabsContent>
 
           <TabsContent value="inventory">
-            <InventoryReport products={products} lowStockItems={lowStockItems} totalStockValue={totalStockValue} />
+            <InventoryReport products={products} lowStockItems={lowStockItems} outOfStockItems={outOfStockItems} totalStockValue={totalStockValue} />
           </TabsContent>
 
           <TabsContent value="custom-orders">
