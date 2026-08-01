@@ -135,9 +135,15 @@ export function useInventory() {
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
+  // Low stock = still has stock but at/below the alert level. Zero-qty items are "out of stock".
   const lowStockProducts = useMemo(() => {
-    return products.filter(p => p.quantity <= p.low_stock_alert && p.status === 'in_stock');
+    return products.filter(p => p.quantity > 0 && p.quantity <= p.low_stock_alert && p.status === 'in_stock');
   }, [products]);
+
+  const outOfStockProducts = useMemo(() => {
+    return products.filter(p => p.quantity <= 0);
+  }, [products]);
+
 
   const isDuplicateAllowedCategory = (categoryId: string | null | undefined): boolean => {
     if (!categoryId) return false;
