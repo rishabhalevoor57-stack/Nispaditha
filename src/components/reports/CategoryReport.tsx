@@ -32,7 +32,7 @@ export const CategoryReport = ({ categorySalesData, categoryStockData }: Categor
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Category Reports</h3>
         <div className="flex gap-2">
@@ -42,13 +42,13 @@ export const CategoryReport = ({ categorySalesData, categoryStockData }: Categor
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         <Card>
           <CardHeader><CardTitle className="text-base">Category-wise Sales</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie data={categorySalesData} dataKey="sales" nameKey="category" cx="50%" cy="50%" outerRadius={100} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+            <ResponsiveContainer width="100%" height={420}>
+              <PieChart margin={{ top: 16, right: 24, bottom: 16, left: 24 }}>
+                <Pie data={categorySalesData} dataKey="sales" nameKey="category" cx="50%" cy="50%" outerRadius={140} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {categorySalesData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
@@ -61,11 +61,11 @@ export const CategoryReport = ({ categorySalesData, categoryStockData }: Categor
         <Card>
           <CardHeader><CardTitle className="text-base">Category-wise Stock Value</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={420}>
               <BarChart data={categoryStockData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="category" width={100} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                <YAxis type="category" dataKey="category" width={140} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }} />
                 <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
@@ -74,7 +74,7 @@ export const CategoryReport = ({ categorySalesData, categoryStockData }: Categor
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         <Card>
           <CardHeader><CardTitle className="text-base">Sales by Category</CardTitle></CardHeader>
           <CardContent><DataTable data={categorySalesData} columns={salesColumns} emptyMessage="No sales data" /></CardContent>
