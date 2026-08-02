@@ -90,21 +90,28 @@ export default function Dashboard() {
         .select('amount')
         .gte('expense_date', startOfMonth.toISOString().split('T')[0]) as any);
 
-      const { data: allProducts } = await b(supabase
-        .from('products')
-        .select('id, name, sku, quantity, low_stock_alert')
-        .is('deleted_at', null) as any);
+      // Single source of truth: pull every active product (paginated past the 1000-row cap)
+      const PAGE = 1000;
+      let allProducts: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data } = await b(supabase
+          .from('products')
+          .select('id, name, sku, quantity, low_stock_alert')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1) as any);
+        allProducts = allProducts.concat((data as any[]) || []);
+        if (!data || (data as any[]).length < PAGE) break;
+      }
 
-      const lowStockFiltered = (allProducts as any[] | null)?.filter((p: any) => p.quantity > 0 && p.quantity <= p.low_stock_alert) || [];
+      const lowStockFiltered = allProducts.filter((p: any) => p.quantity > 0 && p.quantity <= p.low_stock_alert);
+      const inStockProducts = allProducts.filter((p: any) => (p.quantity || 0) > 0);
+      const outOfStockProducts = allProducts.filter((p: any) => (p.quantity || 0) <= 0);
 
       const { count: clientCount } = await b(supabase
         .from('clients')
         .select('*', { count: 'exact', head: true }) as any);
 
-      const { count: productCount } = await b(supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true })
-        .is('deleted_at', null) as any);
 
       const { data: recent } = await b(supabase
         .from('invoices')
