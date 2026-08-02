@@ -338,6 +338,7 @@ export const useReports = () => {
     lowStockItems,
     outOfStockItems,
     totalStockValue,
+    inventoryStats,
 
     products,
     customOrderStats,
