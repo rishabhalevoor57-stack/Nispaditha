@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
-import { Plus, FileSpreadsheet, Download } from 'lucide-react';
+import { Plus, FileSpreadsheet, Download, Package, PackageX, Layers, Scale } from 'lucide-react';
+import { StatCard } from '@/components/ui/stat-card';
 import { exportToExcel, exportToPDF } from '@/utils/reportExport';
 import {
   DropdownMenu,
@@ -34,6 +35,7 @@ export default function Inventory() {
     totalPages,
     itemsPerPage,
     lowStockProducts,
+    inventoryStats,
     createProduct,
     updateProduct,
     deleteProduct,
@@ -160,6 +162,14 @@ export default function Inventory() {
           </div>
         }
       />
+
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <StatCard title="Products In Stock" value={inventoryStats.currentProducts} icon={Package} variant="default" />
+        <StatCard title="Total Quantity" value={inventoryStats.totalQuantity} icon={Layers} variant="default" />
+        <StatCard title="Total Weight (g)" value={inventoryStats.totalWeight.toFixed(2)} icon={Scale} variant="default" />
+        <StatCard title="Out of Stock" value={inventoryStats.outOfStockCount} icon={PackageX} variant={inventoryStats.outOfStockCount > 0 ? 'warning' : 'default'} />
+        <StatCard title="Total SKUs Ever Created" value={inventoryStats.lifetimeSkus} icon={Package} variant="default" />
+      </div>
 
       <LowStockAlert products={lowStockProducts} />
 
