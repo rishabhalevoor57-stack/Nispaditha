@@ -58,6 +58,8 @@ export default function Dashboard() {
     lowStockCount: 0,
     totalClients: 0,
     totalProducts: 0,
+    outOfStockCount: 0,
+    lifetimeSkus: 0,
   });
   const [recentInvoices, setRecentInvoices] = useState<RecentInvoice[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
