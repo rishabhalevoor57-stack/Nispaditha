@@ -255,12 +255,35 @@ export default function Dashboard() {
           variant="default"
         />
         <StatCard
-          title="Total Products"
+          title="Products In Stock"
           value={stats.totalProducts}
           icon={Package}
           variant="default"
         />
       </div>
+
+      {/* Inventory analytics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <StatCard
+          title="Out of Stock"
+          value={stats.outOfStockCount}
+          icon={AlertTriangle}
+          variant={stats.outOfStockCount > 0 ? 'warning' : 'default'}
+        />
+        <StatCard
+          title="Total SKUs Ever Created"
+          value={stats.lifetimeSkus}
+          icon={Package}
+          variant="default"
+        />
+        <StatCard
+          title="Low Stock Items"
+          value={stats.lowStockCount}
+          icon={AlertTriangle}
+          variant={stats.lowStockCount > 0 ? 'warning' : 'default'}
+        />
+      </div>
+
 
       {/* GST & Sales Summary */}
       <div className="mb-8">
