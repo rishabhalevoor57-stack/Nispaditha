@@ -29,6 +29,8 @@ interface DashboardStats {
   lowStockCount: number;
   totalClients: number;
   totalProducts: number;
+  outOfStockCount: number;
+  lifetimeSkus: number;
 }
 
 interface RecentInvoice {
