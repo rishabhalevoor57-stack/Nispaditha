@@ -126,7 +126,10 @@ export default function Dashboard() {
         totalExpenses: monthlyExpenses?.reduce((sum, exp) => sum + Number(exp.amount), 0) || 0,
         lowStockCount: lowStockFiltered.length,
         totalClients: clientCount || 0,
-        totalProducts: productCount || 0,
+        totalProducts: inStockProducts.length,
+        outOfStockCount: outOfStockProducts.length,
+        lifetimeSkus: allProducts.length,
+
       });
 
       setLowStockProducts(lowStockFiltered.slice(0, 5));
