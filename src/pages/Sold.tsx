@@ -73,6 +73,8 @@ export default function Sold() {
   const [products, setProducts] = useState<ProductLite[]>([]);
   const [productSearch, setProductSearch] = useState('');
   const [selected, setSelected] = useState<ProductLite | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     sold_date: new Date().toISOString().slice(0, 10),
     product_name: '',
@@ -213,26 +215,34 @@ export default function Sold() {
     fetchData();
   }, []);
 
+  // Server-side search so every active SKU is reachable (no 200-row preload cap)
   useEffect(() => {
     if (!dialogOpen) return;
-    (async () => {
+    const term = productSearch.trim();
+    if (term.length < 2) {
+      setProducts([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      const like = `%${term}%`;
       const { data } = await supabase
         .from('products')
         .select('id, sku, name, weight_grams, selling_price, quantity')
         .is('deleted_at', null)
+        .or(`sku.ilike.${like},name.ilike.${like},description.ilike.${like}`)
         .order('name')
-        .limit(200);
-      setProducts((data || []) as ProductLite[]);
-    })();
-  }, [dialogOpen]);
+        .limit(25);
+      if (!cancelled) {
+        setProducts((data || []) as ProductLite[]);
+        setSearching(false);
+      }
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [productSearch, dialogOpen]);
 
-  const filteredProducts = useMemo(() => {
-    if (!productSearch.trim()) return [];
-    const q = productSearch.toLowerCase();
-    return products
-      .filter((p) => p.sku.toLowerCase().includes(q) || p.name.toLowerCase().includes(q))
-      .slice(0, 12);
-  }, [productSearch, products]);
+  const filteredProducts = products;
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
@@ -276,19 +286,71 @@ export default function Sold() {
   const pickProduct = (p: ProductLite) => {
     setSelected(p);
     setProductSearch('');
-    setForm((f) => ({
-      ...f,
-      product_name: p.name,
-      sku: p.sku,
-      weight_grams: p.weight_grams || 0,
-      total: p.selling_price || 0,
-    }));
+    setProducts([]);
+    setForm((f) => {
+      const qty = Math.min(Math.max(f.quantity || 1, 1), Math.max(p.quantity || 1, 1));
+      return {
+        ...f,
+        product_name: p.name,
+        sku: p.sku,
+        quantity: qty,
+        weight_grams: Number(((p.weight_grams || 0) * qty).toFixed(3)),
+        total: Number(((p.selling_price || 0) * qty).toFixed(2)),
+      };
+    });
   };
+
+  const changeQuantity = (qty: number) => {
+    const safeQty = Math.max(1, qty || 1);
+    setForm((f) => {
+      if (!selected) return { ...f, quantity: safeQty };
+      return {
+        ...f,
+        quantity: safeQty,
+        weight_grams: Number(((selected.weight_grams || 0) * safeQty).toFixed(3)),
+        total: Number(((selected.selling_price || 0) * safeQty).toFixed(2)),
+      };
+    });
+  };
+
+  const stockError = selected && form.quantity > (selected.quantity || 0)
+    ? `Only ${selected.quantity} pcs in stock for ${selected.sku}`
+    : null;
 
   const handleAdd = async () => {
     if (!form.product_name.trim()) {
       toast({ title: 'Product name required', variant: 'destructive' });
       return;
+    }
+    if (form.quantity < 1) {
+      toast({ title: 'Quantity must be at least 1', variant: 'destructive' });
+      return;
+    }
+    if (form.total <= 0) {
+      toast({ title: 'Sale value must be greater than zero', variant: 'destructive' });
+      return;
+    }
+    if (form.sold_date > new Date().toISOString().slice(0, 10)) {
+      toast({ title: 'Sold date cannot be in the future', variant: 'destructive' });
+      return;
+    }
+    if (stockError) {
+      toast({ title: 'Insufficient stock', description: stockError, variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    // Re-check live stock right before writing so two users cannot oversell
+    if (selected) {
+      const { data: fresh } = await supabase
+        .from('products')
+        .select('quantity')
+        .eq('id', selected.id)
+        .maybeSingle();
+      if ((fresh?.quantity ?? 0) < form.quantity) {
+        setSaving(false);
+        toast({ title: 'Insufficient stock', description: `Only ${fresh?.quantity ?? 0} pcs left`, variant: 'destructive' });
+        return;
+      }
     }
     const { error } = await supabase.from('manual_sold_items' as any).insert({
       sold_date: form.sold_date,
@@ -301,14 +363,16 @@ export default function Sold() {
       client_name: form.client_name || null,
       notes: form.notes || null,
     });
+    setSaving(false);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return;
     }
-    toast({ title: 'Sold entry added', description: selected ? 'Inventory stock reduced' : undefined });
+    toast({ title: 'Sold entry added', description: selected ? 'Inventory stock reduced' : 'Recorded without an inventory link' });
     setDialogOpen(false);
     resetForm();
     fetchData();
+    window.dispatchEvent(new Event('inventory:refresh'));
   };
 
   const handleDelete = async (manualId: string) => {
@@ -316,14 +380,15 @@ export default function Sold() {
       toast({ title: 'Admin only', variant: 'destructive' });
       return;
     }
-    if (!confirm('Delete this sold entry? This will NOT affect inventory or financials.')) return;
+    if (!confirm('Delete this manual sold entry? Any inventory linked to it will be restored.')) return;
     const { error } = await supabase.from('manual_sold_items' as any).delete().eq('id', manualId);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return;
     }
-    toast({ title: 'Sold entry removed' });
+    toast({ title: 'Sold entry removed', description: 'Linked inventory stock restored' });
     fetchData();
+    window.dispatchEvent(new Event('inventory:refresh'));
   };
 
   const handleHide = async (row: SoldRow) => {
