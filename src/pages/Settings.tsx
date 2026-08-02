@@ -10,9 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTypesOfWork } from '@/hooks/useTypesOfWork';
-import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle, Pencil, Check, X, Hammer, Shield, HardDrive } from 'lucide-react';
+import { Building, FileText, Tags, Loader2, Trash2, AlertTriangle, Pencil, Check, X, Hammer, Shield, HardDrive, Monitor, ShieldCheck } from 'lucide-react';
 import { UserManagement } from '@/components/settings/UserManagement';
 import { BackupRestore } from '@/components/settings/BackupRestore';
+import { DataVerification } from '@/components/settings/DataVerification';
+import { DisplaySettings } from '@/components/settings/DisplaySettings';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import {
   AlertDialog,
@@ -264,6 +266,16 @@ export default function Settings() {
             <Hammer className="w-4 h-4" />
             Type of Work
           </TabsTrigger>
+          <TabsTrigger value="display" className="flex items-center gap-2">
+            <Monitor className="w-4 h-4" />
+            Display
+          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="verification" className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4" />
+              Verification
+            </TabsTrigger>
+          )}
           {isAdmin && (
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
@@ -573,6 +585,14 @@ export default function Settings() {
             <UserManagement />
           </TabsContent>
         )}
+
+        <TabsContent value="display">
+          <DisplaySettings />
+        </TabsContent>
+
+        {isAdmin && <TabsContent value="verification">
+          <DataVerification />
+        </TabsContent>}
 
         {/* Backup & Restore Tab */}
         {isAdmin && <TabsContent value="backup">
