@@ -14,15 +14,31 @@ interface OutOfStockItem {
   lastUpdated: string | null;
 }
 
+interface InventoryStats {
+  currentProducts: number;
+  outOfStockCount: number;
+  lifetimeSkus: number;
+  totalQuantity: number;
+  totalWeight: number;
+}
+
 interface InventoryReportProps {
   products: any[];
+  inventoryStats?: InventoryStats;
   lowStockItems: { name: string; sku: string; quantity: number; alert: number; category: string | null }[];
   outOfStockItems?: OutOfStockItem[];
   totalStockValue: number;
 }
 
-export const InventoryReport = ({ products, lowStockItems, outOfStockItems = [], totalStockValue }: InventoryReportProps) => {
+export const InventoryReport = ({ products, inventoryStats, lowStockItems, outOfStockItems = [], totalStockValue }: InventoryReportProps) => {
   const inStockProducts = products.filter((p: any) => (p.quantity || 0) > 0);
+  const stats: InventoryStats = inventoryStats ?? {
+    currentProducts: inStockProducts.length,
+    outOfStockCount: products.length - inStockProducts.length,
+    lifetimeSkus: products.length,
+    totalQuantity: inStockProducts.reduce((s: number, p: any) => s + (p.quantity || 0), 0),
+    totalWeight: inStockProducts.reduce((s: number, p: any) => s + Number(p.weight_grams || 0) * (p.quantity || 0), 0),
+  };
 
   const stockColumns = [
     { key: 'sku', header: 'SKU' },
@@ -80,10 +96,17 @@ export const InventoryReport = ({ products, lowStockItems, outOfStockItems = [],
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard title="Total Products" value={products.length} icon={Package} variant="default" />
+        <StatCard title="Products In Stock" value={stats.currentProducts} icon={Package} variant="default" />
         <StatCard title="Low Stock Items" value={lowStockItems.length} icon={AlertTriangle} variant={lowStockItems.length > 0 ? 'warning' : 'default'} />
         <StatCard title="Out of Stock" value={outOfStockItems.length} icon={PackageX} variant={outOfStockItems.length > 0 ? 'warning' : 'default'} />
         <StatCard title="Total Stock Value" value={formatCurrency(totalStockValue)} icon={IndianRupee} variant="gold" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard title="Total Quantity" value={stats.totalQuantity} icon={Package} variant="default" />
+        <StatCard title="Total Weight (g)" value={stats.totalWeight.toFixed(2)} icon={Package} variant="default" />
+        <StatCard title="Total SKUs Ever Created" value={stats.lifetimeSkus} icon={Package} variant="default" />
+        <StatCard title="Out of Stock SKUs" value={stats.outOfStockCount} icon={PackageX} variant="default" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

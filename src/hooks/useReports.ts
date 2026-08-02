@@ -283,6 +283,20 @@ export const useReports = () => {
       .reduce((s: number, p: any) => s + Number(p.weight_grams || 0) * (p.quantity || 0) * silverRate, 0);
   }, [products, settings]);
 
+  // Single source of truth for inventory counts (one SKU = one product)
+  const inventoryStats = useMemo(() => {
+    const inStock = products.filter((p: any) => (p.quantity || 0) > 0);
+    const outOfStock = products.filter((p: any) => (p.quantity || 0) <= 0);
+    return {
+      inStockProducts: inStock,
+      currentProducts: inStock.length,
+      outOfStockCount: outOfStock.length,
+      lifetimeSkus: products.length,
+      totalQuantity: inStock.reduce((s: number, p: any) => s + (p.quantity || 0), 0),
+      totalWeight: inStock.reduce((s: number, p: any) => s + Number(p.weight_grams || 0) * (p.quantity || 0), 0),
+    };
+  }, [products]);
+
 
   // Custom order reports
   const customOrderStats = useMemo(() => {
@@ -324,6 +338,7 @@ export const useReports = () => {
     lowStockItems,
     outOfStockItems,
     totalStockValue,
+    inventoryStats,
 
     products,
     customOrderStats,

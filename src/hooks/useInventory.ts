@@ -144,6 +144,18 @@ export function useInventory() {
     return products.filter(p => p.quantity <= 0);
   }, [products]);
 
+  // Single source of truth: current inventory = active SKUs with quantity > 0
+  const inventoryStats = useMemo(() => {
+    const inStock = products.filter(p => (p.quantity || 0) > 0);
+    return {
+      currentProducts: inStock.length,
+      lifetimeSkus: products.length,
+      outOfStockCount: products.length - inStock.length,
+      totalQuantity: inStock.reduce((s, p) => s + (p.quantity || 0), 0),
+      totalWeight: inStock.reduce((s, p) => s + Number(p.weight_grams || 0) * (p.quantity || 0), 0),
+    };
+  }, [products]);
+
 
   const isDuplicateAllowedCategory = (categoryId: string | null | undefined): boolean => {
     if (!categoryId) return false;
@@ -470,6 +482,7 @@ export function useInventory() {
     itemsPerPage,
     lowStockProducts,
     outOfStockProducts,
+    inventoryStats,
 
     createProduct,
     updateProduct,
