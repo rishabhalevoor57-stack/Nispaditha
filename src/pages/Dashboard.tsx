@@ -68,6 +68,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboardData();
+    const handler = () => fetchDashboardData();
+    window.addEventListener('inventory:refresh', handler);
+    return () => window.removeEventListener('inventory:refresh', handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branch.filterId]);
 
