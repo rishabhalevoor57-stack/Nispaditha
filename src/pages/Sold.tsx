@@ -429,11 +429,15 @@ export default function Sold() {
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       className="pl-8"
-                      placeholder="Search SKU or name..."
+                      placeholder="Search SKU, name or description..."
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
                     />
                   </div>
+                  {searching && <p className="text-xs text-muted-foreground mt-1">Searching inventory...</p>}
+                  {!searching && productSearch.trim().length >= 2 && filteredProducts.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">No matching product — you can still enter it manually below.</p>
+                  )}
                   {filteredProducts.length > 0 && (
                     <div className="border rounded-md mt-1 max-h-48 overflow-auto">
                       {filteredProducts.map((p) => (
@@ -460,7 +464,7 @@ export default function Sold() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Date</Label>
-                    <Input type="date" value={form.sold_date} onChange={(e) => setForm({ ...form, sold_date: e.target.value })} />
+                    <Input type="date" max={new Date().toISOString().slice(0, 10)} value={form.sold_date} onChange={(e) => setForm({ ...form, sold_date: e.target.value })} />
                   </div>
                   <div>
                     <Label>SKU</Label>
@@ -476,7 +480,7 @@ export default function Sold() {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <Label>Qty</Label>
-                    <Input type="number" min={1} value={form.quantity} onChange={(e) => setForm({ ...form, quantity: parseInt(e.target.value) || 1 })} />
+                    <Input type="number" min={1} value={form.quantity} onChange={(e) => changeQuantity(parseInt(e.target.value) || 1)} />
                   </div>
                   <div>
                     <Label>Weight (g)</Label>
@@ -487,6 +491,10 @@ export default function Sold() {
                     <Input type="number" step="0.01" value={form.total} onChange={(e) => setForm({ ...form, total: parseFloat(e.target.value) || 0 })} />
                   </div>
                 </div>
+
+                {stockError && (
+                  <p className="text-sm text-destructive">{stockError}</p>
+                )}
 
                 <div>
                   <Label>Client Name</Label>
@@ -499,7 +507,7 @@ export default function Sold() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleAdd}>Add</Button>
+                <Button onClick={handleAdd} disabled={saving || !!stockError}>{saving ? 'Saving...' : 'Add'}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
