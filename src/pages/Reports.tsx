@@ -44,8 +44,8 @@ export default function Reports() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
         </div>
       ) : (
-        <Tabs defaultValue="sales" className="space-y-6">
-          <TabsList className="bg-muted/50 p-1">
+        <Tabs defaultValue="sales" className="space-y-8 w-full">
+          <TabsList className="bg-muted/50 p-1 flex-wrap h-auto">
             <TabsTrigger value="sales">Sales</TabsTrigger>
             <TabsTrigger value="category">Category</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
@@ -54,27 +54,27 @@ export default function Reports() {
             <TabsTrigger value="custom-orders">Custom Orders</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="sales">
+          <TabsContent value="sales" className="w-full min-w-0">
             <SalesReport salesStats={salesStats} dailySalesData={dailySalesData} monthlySalesData={monthlySalesData} invoices={invoices} />
           </TabsContent>
 
-          <TabsContent value="category">
+          <TabsContent value="category" className="w-full min-w-0">
             <CategoryReport categorySalesData={categorySalesData} categoryStockData={categoryStockData} />
           </TabsContent>
 
-          <TabsContent value="products">
+          <TabsContent value="products" className="w-full min-w-0">
             <ProductReport topSellingProducts={topSellingProducts} lowSellingProducts={lowSellingProducts} />
           </TabsContent>
 
-          <TabsContent value="customers">
+          <TabsContent value="customers" className="w-full min-w-0">
             <CustomerReport topCustomers={topCustomers} repeatCustomers={repeatCustomers} outstandingClients={outstandingClients} />
           </TabsContent>
 
-          <TabsContent value="inventory">
+          <TabsContent value="inventory" className="w-full min-w-0">
             <InventoryReport products={products} inventoryStats={inventoryStats} lowStockItems={lowStockItems} outOfStockItems={outOfStockItems} totalStockValue={totalStockValue} />
           </TabsContent>
 
-          <TabsContent value="custom-orders">
+          <TabsContent value="custom-orders" className="w-full min-w-0">
             <CustomOrderReport customOrderStats={customOrderStats} customOrdersByStatus={customOrdersByStatus} customOrders={customOrders} />
           </TabsContent>
         </Tabs>
