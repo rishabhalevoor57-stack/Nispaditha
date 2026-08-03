@@ -45,7 +45,7 @@ export const SalesReport = ({ salesStats, dailySalesData, monthlySalesData, invo
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Sales Overview</h3>
         <div className="flex gap-2">
@@ -58,19 +58,19 @@ export const SalesReport = ({ salesStats, dailySalesData, monthlySalesData, invo
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Total Sales" value={formatCurrency(salesStats.totalSales)} icon={IndianRupee} variant="gold" />
         <StatCard title="Total Invoices" value={salesStats.totalInvoices} icon={FileText} variant="default" />
         <StatCard title="Items Sold" value={salesStats.itemsSold} icon={ShoppingBag} variant="success" />
         <StatCard title="Weight Sold" value={`${salesStats.weightSold.toFixed(1)}g`} icon={Weight} variant="default" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 2xl:grid-cols-2 gap-8">
         <Card>
           <CardHeader><CardTitle className="text-base">Daily Sales</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dailySalesData}>
+            <ResponsiveContainer width="100%" height={380}>
+              <BarChart data={dailySalesData} margin={{ top: 12, right: 24, bottom: 8, left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="date" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
                 <YAxis tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
@@ -84,8 +84,8 @@ export const SalesReport = ({ salesStats, dailySalesData, monthlySalesData, invo
         <Card>
           <CardHeader><CardTitle className="text-base">Monthly Trend</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlySalesData}>
+            <ResponsiveContainer width="100%" height={380}>
+              <LineChart data={monthlySalesData} margin={{ top: 12, right: 24, bottom: 8, left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="month" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
                 <YAxis tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />

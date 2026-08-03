@@ -46,9 +46,9 @@ export const CategoryReport = ({ categorySalesData, categoryStockData }: Categor
         <Card>
           <CardHeader><CardTitle className="text-base">Category-wise Sales</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={420}>
+            <ResponsiveContainer width="100%" height={460}>
               <PieChart margin={{ top: 16, right: 24, bottom: 16, left: 24 }}>
-                <Pie data={categorySalesData} dataKey="sales" nameKey="category" cx="50%" cy="50%" outerRadius={140} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={categorySalesData} dataKey="sales" nameKey="category" cx="50%" cy="50%" outerRadius={160} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {categorySalesData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
@@ -61,7 +61,7 @@ export const CategoryReport = ({ categorySalesData, categoryStockData }: Categor
         <Card>
           <CardHeader><CardTitle className="text-base">Category-wise Stock Value</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={420}>
+            <ResponsiveContainer width="100%" height={460}>
               <BarChart data={categoryStockData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />

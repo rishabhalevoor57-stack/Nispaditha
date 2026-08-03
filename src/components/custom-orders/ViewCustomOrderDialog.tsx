@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { FileText, Printer, Download, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ interface ViewCustomOrderDialogProps {
 
 export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInvoice }: ViewCustomOrderDialogProps) => {
 
+  const navigate = useNavigate();
   const { getOrderWithItems } = useCustomOrders();
   const isAdmin = useIsAdmin();
   const [items, setItems] = useState<CustomOrderItem[]>([]);
@@ -87,6 +89,16 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
               >
                 <Download className="h-4 w-4 mr-1.5" /> Download PDF
               </Button>
+
+              {o.converted_to_invoice_id && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigate('/invoices', { state: { editDraftId: o.converted_to_invoice_id } })}
+                >
+                  <FileText className="h-4 w-4 mr-1.5" /> Open GST Invoice
+                </Button>
+              )}
 
               {!o.converted_to_invoice_id && o.status !== 'cancelled' && onGenerateInvoice && (
                 <Button variant="default" size="sm" onClick={() => onGenerateInvoice(o, items, components)}>

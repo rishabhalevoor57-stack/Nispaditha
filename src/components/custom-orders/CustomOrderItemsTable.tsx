@@ -187,13 +187,6 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
       if (i !== index) return item;
       let newItem: CustomOrderItem = { ...item, [field]: value } as CustomOrderItem;
 
-      if (field === 'pricing_mode') {
-        if (value === 'flat_price') {
-          newItem.mc_per_gram = 0;
-          newItem.mc_amount = 0;
-          newItem.discount_on_mc = 0;
-        }
-      }
 
       // When metal changes, refresh rate_per_gram (only if we're weight-based & not a linked inventory SKU)
       if (field === 'metal_type') {
@@ -276,7 +269,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                       </TableCell>
                       <TableCell className="text-right">₹{item.rate_per_gram.toLocaleString('en-IN')}</TableCell>
                       <TableCell className="text-right">
-                        {item.pricing_mode === 'weight_based' && !isBeads ? `₹${item.mc_per_gram}` : '-'}
+                        {item.mc_per_gram ? `₹${item.mc_per_gram}` : '-'}
                       </TableCell>
                       <TableCell className="text-right">
                         {item.discount > 0 ? `₹${item.discount.toLocaleString('en-IN')}` : '-'}
@@ -497,8 +490,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                         step="0.01"
                         value={item.mc_per_gram || ''}
                         onChange={(e) => updateItem(index, 'mc_per_gram', parseFloat(e.target.value) || 0)}
-                        disabled={isFlat}
-                        className="h-9 text-sm disabled:opacity-40"
+                        className="h-9 text-sm"
                         placeholder="0"
                       />
                     </TableCell>
@@ -511,8 +503,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                         max="100"
                         value={item.discount_on_mc || ''}
                         onChange={(e) => updateItem(index, 'discount_on_mc', parseFloat(e.target.value) || 0)}
-                        disabled={isFlat}
-                        className="h-9 text-sm disabled:opacity-40"
+                        className="h-9 text-sm"
                         placeholder="0"
                       />
                     </TableCell>
