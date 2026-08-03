@@ -3016,6 +3016,10 @@ export type Database = {
         }
         Returns: Json
       }
+      recalc_client_totals: {
+        Args: { p_client_id: string }
+        Returns: undefined
+      }
       send_custom_order_to_inventory: {
         Args: { p_custom_order_id: string; p_final_quantity?: number }
         Returns: string
