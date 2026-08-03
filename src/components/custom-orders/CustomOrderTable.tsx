@@ -88,9 +88,22 @@ export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onCancel, o
                 <TableCell>
                   {isInHouse ? (
                     order.inventory_product_id ? (
-                      <Badge variant="outline" className="text-success border-success/30 bg-success/10">
-                        <PackagePlus className="h-3 w-3 mr-1" /> In Stock
-                      </Badge>
+                      <div className="space-y-0.5">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/inventory?search=${encodeURIComponent(order.product_sku || '')}`)}
+                          className="font-mono text-xs text-primary underline underline-offset-2 hover:opacity-80"
+                          title="Open inventory record"
+                        >
+                          {order.product_sku || 'View SKU'}
+                        </button>
+                        <div className="text-xs text-muted-foreground max-w-[160px] truncate">
+                          {order.product_title || '-'}
+                        </div>
+                        <Badge variant="outline" className="text-success border-success/30 bg-success/10">
+                          <PackagePlus className="h-3 w-3 mr-1" /> In Stock
+                        </Badge>
+                      </div>
                     ) : (
                       <span className="text-muted-foreground text-sm">Not stocked</span>
                     )
@@ -102,6 +115,7 @@ export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onCancel, o
                     <span className="text-muted-foreground text-sm">-</span>
                   )}
                 </TableCell>
+
                 <TableCell>
                   <div className="flex items-center justify-end gap-1">
                     <Button variant="ghost" size="icon" onClick={() => onView(order)}><Eye className="h-4 w-4" /></Button>
