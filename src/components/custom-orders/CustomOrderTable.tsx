@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { Edit, Eye, Trash2, FileText, PackagePlus, Factory, User, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,7 @@ interface CustomOrderTableProps {
 
 export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onCancel, onStatusChange, onSendToInventory }: CustomOrderTableProps) => {
 
+  const navigate = useNavigate();
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
 
