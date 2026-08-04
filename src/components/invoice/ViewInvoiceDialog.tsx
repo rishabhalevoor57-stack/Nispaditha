@@ -976,7 +976,9 @@ export function ViewInvoiceDialog({
                   customerName={invoice.clients?.name || 'Walk-in Customer'}
                   customerPhone={invoice.clients?.phone || ''}
                   businessSettings={businessSettings}
+                  storeCreditsUsed={Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0}
                 />
+
 
                 {/* Notes */}
                 {invoice.notes && (
