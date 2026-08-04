@@ -212,18 +212,21 @@ const buildInvoiceData = (order: CustomOrder, items: CustomOrderItem[], componen
   const gstMode = order.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive';
   let gstAmount = 0;
   let grandTotal = 0;
-  let subtotalForInvoice = grossSubtotal;
+  // Store subtotal as the POST-discount taxable base, exactly like normal invoices,
+  // so every consumer can rely on:  MRP = subtotal + discount_amount
+  //                                 grand = subtotal (+ gst when exclusive) + round_off
+  const subtotalForInvoice = taxableBase;
   if (gstMode === 'inclusive') {
     const divisor = 1 + pct / 100;
     const taxable = divisor > 0 ? taxableBase / divisor : taxableBase;
     gstAmount = Math.max(0, taxableBase - taxable);
     grandTotal = taxableBase;
-    subtotalForInvoice = taxable + totalDiscount;
   } else {
     gstAmount = taxableBase * (pct / 100);
     grandTotal = taxableBase + gstAmount;
-    subtotalForInvoice = grossSubtotal;
   }
+  void grossSubtotal;
+
   return {
     lines,
     details,
