@@ -92,10 +92,14 @@ export function InvoicePreviewModal({
   paymentBreakdown = [],
   metalRateLabel,
   gstMode = 'exclusive',
+  orderDiscount = 0,
 }: InvoicePreviewModalProps) {
   if (!businessSettings) return null;
 
   const isInclusive = gstMode === 'inclusive';
+  const orderDisc = Math.min(Math.max(0, orderDiscount), totals.discountAmount || 0);
+  const itemDiscount = Math.max(0, (totals.discountAmount || 0) - orderDisc);
+
   const customOrderDetails = getCustomOrderDetailsFromNotes(notes);
   const showCustomOrderDetails = hasCustomOrderDetails(customOrderDetails);
   const cleanNotes = stripCustomOrderPayload(notes);
