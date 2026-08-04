@@ -418,15 +418,17 @@ export async function convertCustomOrderToInvoice(
     store_credits_used: creditAdvanceTotal,
     payment_status: paymentStatus,
     payment_mode: cashAdvances[0]?.payment_mode || (finalize ? 'cash' : null),
-    total_paid: cashAdvanceTotal,
+    total_paid: totalAdvanceApplied,
     balance_due: balanceAfterAdvances,
     notes: invoiceData.notes,
     status: finalize ? (balanceAfterAdvances <= 0.05 ? 'paid' : 'sent') : 'draft',
     gst_percentage: invoiceData.pct,
     gst_mode: invoiceData.gstMode,
+    metal_type: (order as any).metal_type || null,
     round_off: 0,
     created_by: opts.createdBy || null,
     client_source: 'custom_order',
+
   };
 
   const { data: invoice, error: invErr } = await supabase
