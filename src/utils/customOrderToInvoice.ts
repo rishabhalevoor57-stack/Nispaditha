@@ -282,21 +282,44 @@ export async function syncCustomOrderInvoice(
   const invoiceId = order.converted_to_invoice_id;
   const invoiceData = buildInvoiceData(order, items, components);
 
+  // Preserve payments already recorded against this invoice so re-syncing the
+  // custom order never wipes advances / store credits from the balance.
+  const { data: existingInv } = await supabase
+    .from('invoices')
+    .select('store_credits_used, round_off')
+    .eq('id', invoiceId)
+    .maybeSingle();
+  const { data: payRows } = await supabase
+    .from('invoice_payments')
+    .select('amount')
+    .eq('invoice_id', invoiceId);
+  const roundOff = Number((existingInv as any)?.round_off) || 0;
+  const credits = Number((existingInv as any)?.store_credits_used) || 0;
+  const paid = (payRows || []).reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+  const grandWithRound = Math.round((invoiceData.grandTotal + roundOff) * 100) / 100;
+  const balance = Math.max(0, Math.round((grandWithRound - paid - credits) * 100) / 100);
+
   const { error: updateErr } = await supabase
     .from('invoices')
     .update({
       subtotal: invoiceData.subtotalForInvoice,
       discount_amount: invoiceData.discount,
+      order_discount: Number(order.flat_discount) || 0,
       gst_amount: invoiceData.gstAmount,
-      grand_total: invoiceData.grandTotal,
-      balance_due: invoiceData.grandTotal,
+      grand_total: grandWithRound,
+      total_paid: paid + credits,
+      advance_paid: paid,
+      balance_due: balance,
+      payment_status: balance <= 0.05 ? 'paid' : (paid + credits) > 0 ? 'partial' : 'pending',
       notes: invoiceData.notes,
       gst_percentage: invoiceData.pct,
       gst_mode: invoiceData.gstMode,
+      metal_type: (order as any).metal_type || null,
       client_source: 'custom_order',
     } as never)
     .eq('id', invoiceId);
   if (updateErr) throw updateErr;
+
 
   const { error: deleteErr } = await supabase
     .from('invoice_items')
