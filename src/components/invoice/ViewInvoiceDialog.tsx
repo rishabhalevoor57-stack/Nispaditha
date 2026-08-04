@@ -1216,6 +1216,8 @@ export function ViewInvoiceDialog({
           showMakingCharges={isAdmin}
           metalRateLabel={buildMetalRateLabel()}
           gstMode={invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'}
+          orderDiscount={Number((invoice as unknown as { order_discount?: number }).order_discount) || 0}
+
         />
       )}
     </>
