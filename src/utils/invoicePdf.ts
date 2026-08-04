@@ -31,6 +31,8 @@ interface InvoicePdfData {
   cancellationReason?: string | null;
   metalRateLabel?: string;
   gstMode?: 'exclusive' | 'inclusive';
+  orderDiscount?: number;
+
 }
 
 const PURPLE: [number, number, number] = [74, 32, 96];
