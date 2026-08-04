@@ -408,11 +408,22 @@ export function InvoicePreviewModal({
               <div className="w-80 text-[11.5px] space-y-1">
                 <div className="flex justify-between text-[13px] font-bold">
                   <span>MRP (Total)</span>
-                  <span style={num}>{money(isInclusive ? Math.max(0, totals.subtotal - totals.gstAmount) : totals.subtotal + totals.discountAmount)}</span>
+                  <span style={num}>{money((totals.subtotal || 0) + (totals.discountAmount || 0))}</span>
                 </div>
-                {!isInclusive && totals.discountAmount > 0 && (
+                {itemDiscount > 0 && (
                   <div className="flex justify-between" style={{ color: '#b91c1c' }}>
-                    <span>{'\u2212 Discount'}</span><span style={num}>{`\u2212 ${money(totals.discountAmount)}`}</span>
+                    <span>{orderDisc > 0 ? '\u2212 Item Discount' : '\u2212 Discount'}</span>
+                    <span style={num}>{`\u2212 ${money(itemDiscount)}`}</span>
+                  </div>
+                )}
+                {orderDisc > 0 && (
+                  <div className="flex justify-between" style={{ color: '#b91c1c' }}>
+                    <span>{'\u2212 Order Discount'}</span><span style={num}>{`\u2212 ${money(orderDisc)}`}</span>
+                  </div>
+                )}
+                {isInclusive && (totals.gstAmount || 0) > 0 && (
+                  <div className="flex justify-between" style={{ color: '#b91c1c' }}>
+                    <span>{'\u2212 GST Included'}</span><span style={num}>{`\u2212 ${money(totals.gstAmount)}`}</span>
                   </div>
                 )}
                 <div className="flex justify-between"><span className="text-gray-600">CGST @ {(gstPercentage / 2).toFixed(2)}%</span><span style={num}>{money(cgst)}</span></div>
@@ -425,6 +436,7 @@ export function InvoicePreviewModal({
                 )}
               </div>
             </div>
+
 
 
 
