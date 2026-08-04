@@ -7,6 +7,8 @@ interface InvoiceTotalsSectionProps {
   gstPercentage?: number;
   roundOff?: number;
   gstMode?: GstMode;
+  /** Order-level discount (e.g. carried over from a custom order). Part of totals.discountAmount. */
+  orderDiscount?: number;
 }
 
 const formatCurrency = (amount: number) => {
@@ -23,14 +25,14 @@ export function InvoiceTotalsSection({
   gstPercentage = 3,
   roundOff = 0,
   gstMode = 'exclusive',
+  orderDiscount = 0,
 }: InvoiceTotalsSectionProps) {
   const isInclusive = gstMode === 'inclusive';
-  // In inclusive mode the entered selling price already contains GST.
-  // MRP (Total) shown = taxable value (price before GST extraction).
-  // In exclusive mode MRP (Total) = gross (subtotal + discount) before GST is added on top.
-  const mrpTotal = isInclusive
-    ? Math.max(0, totals.subtotal - totals.gstAmount)
-    : totals.subtotal + totals.discountAmount;
+  // MRP (Total) is always the gross pre-discount value: subtotal (post-discount) + discount.
+  // Inclusive mode additionally shows the GST that is baked inside that price.
+  const mrpTotal = totals.subtotal + totals.discountAmount;
+  const orderDisc = Math.min(Math.max(0, orderDiscount), totals.discountAmount);
+  const itemDisc = Math.max(0, totals.discountAmount - orderDisc);
   const cgst = totals.gstAmount / 2;
   const sgst = totals.gstAmount / 2;
   // Inclusive: GST is inside the price; grand total = subtotal + roundOff (no GST on top).
@@ -45,10 +47,22 @@ export function InvoiceTotalsSection({
         <span>MRP (Total)</span>
         <span className="tabular-nums">{formatCurrency(mrpTotal)}</span>
       </div>
-      {!isInclusive && isAdmin && totals.discountAmount > 0 && (
+      {isAdmin && itemDisc > 0 && (
         <div className="flex justify-between text-destructive font-medium">
-          <span>− Discount</span>
-          <span className="tabular-nums">−{formatCurrency(totals.discountAmount)}</span>
+          <span>{orderDisc > 0 ? '− Item Discount' : '− Discount'}</span>
+          <span className="tabular-nums">−{formatCurrency(itemDisc)}</span>
+        </div>
+      )}
+      {isAdmin && orderDisc > 0 && (
+        <div className="flex justify-between text-destructive font-medium">
+          <span>− Order Discount</span>
+          <span className="tabular-nums">−{formatCurrency(orderDisc)}</span>
+        </div>
+      )}
+      {isInclusive && totals.gstAmount > 0 && (
+        <div className="flex justify-between text-destructive">
+          <span>− GST Included</span>
+          <span className="tabular-nums">−{formatCurrency(totals.gstAmount)}</span>
         </div>
       )}
       <div className="flex justify-between">
