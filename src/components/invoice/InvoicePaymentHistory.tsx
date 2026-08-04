@@ -64,7 +64,16 @@ export function InvoicePaymentHistory({ invoiceId, grandTotal, storeCreditsUsed 
             </div>
           </div>
         ))}
+        {credits > 0 && (
+          <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
+            <div>
+              <p className="font-medium">₹ {credits.toFixed(2)} · STORE CREDITS</p>
+              <p className="text-xs text-muted-foreground">Redeemed from store wallet</p>
+            </div>
+          </div>
+        )}
       </div>
+
       <div className="flex justify-between border-t pt-3 text-sm items-center flex-wrap gap-2">
         <span>Total Paid: <span className="font-semibold text-green-600">₹ {totalPaid.toFixed(2)}</span></span>
         {isFullyPaid ? (
