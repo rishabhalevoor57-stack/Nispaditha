@@ -611,6 +611,8 @@ export function ViewInvoiceDialog({
       roundOff: Number(invoice.round_off) || 0,
       metalRateLabel: buildMetalRateLabel(),
       gstMode: invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive',
+      orderDiscount: Number((invoice as unknown as { order_discount?: number }).order_discount) || 0,
+
     }, isAdmin);
   };
 
@@ -637,6 +639,8 @@ export function ViewInvoiceDialog({
       roundOff: Number(invoice.round_off) || 0,
       metalRateLabel: buildMetalRateLabel(),
       gstMode: invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive',
+      orderDiscount: Number((invoice as unknown as { order_discount?: number }).order_discount) || 0,
+
     }, isAdmin);
   };
 
@@ -972,7 +976,9 @@ export function ViewInvoiceDialog({
                   customerName={invoice.clients?.name || 'Walk-in Customer'}
                   customerPhone={invoice.clients?.phone || ''}
                   businessSettings={businessSettings}
+                  storeCreditsUsed={Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0}
                 />
+
 
                 {/* Notes */}
                 {invoice.notes && (
@@ -1210,6 +1216,8 @@ export function ViewInvoiceDialog({
           showMakingCharges={isAdmin}
           metalRateLabel={buildMetalRateLabel()}
           gstMode={invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'}
+          orderDiscount={Number((invoice as unknown as { order_discount?: number }).order_discount) || 0}
+
         />
       )}
     </>

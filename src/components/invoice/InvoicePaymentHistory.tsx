@@ -18,9 +18,11 @@ interface Props {
   customerName: string;
   customerPhone?: string;
   businessSettings: unknown;
+  /** Store credits redeemed on this invoice — counted as paid. */
+  storeCreditsUsed?: number;
 }
 
-export function InvoicePaymentHistory({ invoiceId, grandTotal }: Props) {
+export function InvoicePaymentHistory({ invoiceId, grandTotal, storeCreditsUsed = 0 }: Props) {
   const [rows, setRows] = useState<PaymentRow[]>([]);
 
   useEffect(() => {
@@ -33,13 +35,15 @@ export function InvoicePaymentHistory({ invoiceId, grandTotal }: Props) {
       .then(({ data }) => setRows((data || []) as PaymentRow[]));
   }, [invoiceId]);
 
-  if (rows.length === 0) return null;
+  const credits = Math.max(0, Number(storeCreditsUsed) || 0);
+  if (rows.length === 0 && credits <= 0) return null;
 
-  const totalPaid = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const totalPaid = rows.reduce((s, r) => s + Number(r.amount || 0), 0) + credits;
   const rawBalance = Math.round((grandTotal - totalPaid) * 100) / 100;
   const balance = Math.abs(rawBalance) <= 0.05 ? 0 : Math.max(0, rawBalance);
   const excess = rawBalance < -0.05 ? Math.abs(rawBalance) : 0;
   const isFullyPaid = balance === 0 && totalPaid > 0;
+
 
   return (
     <div className="rounded-lg border p-4 space-y-3">
@@ -60,7 +64,16 @@ export function InvoicePaymentHistory({ invoiceId, grandTotal }: Props) {
             </div>
           </div>
         ))}
+        {credits > 0 && (
+          <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
+            <div>
+              <p className="font-medium">₹ {credits.toFixed(2)} · STORE CREDITS</p>
+              <p className="text-xs text-muted-foreground">Redeemed from store wallet</p>
+            </div>
+          </div>
+        )}
       </div>
+
       <div className="flex justify-between border-t pt-3 text-sm items-center flex-wrap gap-2">
         <span>Total Paid: <span className="font-semibold text-green-600">₹ {totalPaid.toFixed(2)}</span></span>
         {isFullyPaid ? (
