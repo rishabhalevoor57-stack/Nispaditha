@@ -36,6 +36,8 @@ interface InvoicePreviewModalProps {
   paymentBreakdown?: PaymentBreakdownEntry[];
   metalRateLabel?: string;
   gstMode?: 'exclusive' | 'inclusive';
+  orderDiscount?: number;
+
 }
 
 const PURPLE = '#4a2060';
