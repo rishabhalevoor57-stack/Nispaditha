@@ -28,11 +28,27 @@ export const CompleteServiceDialog = ({ open, onOpenChange, serviceForm, onCompl
 
   if (!serviceForm) return null;
 
-  const gstPercent = 5;
+  const gstPercent = Number(serviceForm.gst_percentage ?? 3);
   const baseAmount = Number((charge / (1 + gstPercent / 100)).toFixed(2));
   const gstAmount = Number((charge - baseAmount).toFixed(2));
   const cgst = Number((gstAmount / 2).toFixed(2));
   const sgst = Number((gstAmount / 2).toFixed(2));
+
+  const resolveClientId = async (): Promise<string | null> => {
+    if (serviceForm.client_id) return serviceForm.client_id;
+    const phone = (serviceForm.client_phone || '').trim();
+    const name = (serviceForm.client_name || '').trim() || 'Walk-in Customer';
+    if (phone) {
+      const { data: existing } = await supabase.from('clients').select('id').eq('phone', phone).maybeSingle();
+      if (existing?.id) return existing.id;
+    }
+    const { data: created } = await supabase
+      .from('clients')
+      .insert({ name, phone: phone || null } as never)
+      .select('id')
+      .single();
+    return (created as { id: string } | null)?.id || null;
+  };
 
   const handleComplete = async () => {
     setLoading(true);
@@ -41,6 +57,8 @@ export const CompleteServiceDialog = ({ open, onOpenChange, serviceForm, onCompl
       const { data: invNum, error: invNumErr } = await supabase.rpc('generate_invoice_number');
       if (invNumErr) throw invNumErr;
 
+      const clientId = await resolveClientId();
+
       const services = [...(serviceForm.service_types || [])];
       if (serviceForm.other_service_text) services.push(serviceForm.other_service_text);
       const description = `Service: ${services.join(', ')} — ${serviceForm.item_description}`;
@@ -48,8 +66,9 @@ export const CompleteServiceDialog = ({ open, onOpenChange, serviceForm, onCompl
       // Create invoice
       const { data: invoice, error: invErr } = await supabase.from('invoices').insert({
         invoice_number: invNum as string,
-        client_id: serviceForm.client_id,
-        invoice_date: format(new Date(), 'yyyy-MM-dd'),
+        client_id: clientId,
+        invoice_date: (serviceForm.service_date as string) || format(new Date(), 'yyyy-MM-dd'),
+
         subtotal: baseAmount,
         discount_amount: 0,
         gst_percentage: gstPercent,
