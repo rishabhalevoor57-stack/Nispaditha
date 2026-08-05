@@ -52,6 +52,8 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
   const [serviceNotes, setServiceNotes] = useState('');
   const [estimatedDelivery, setEstimatedDelivery] = useState<Date | undefined>();
   const [estimatedCost, setEstimatedCost] = useState<number>(0);
+  const [serviceDate, setServiceDate] = useState<Date>(new Date());
+  const [gstPercent, setGstPercent] = useState<number>(3);
 
   const [loading, setLoading] = useState(false);
 
@@ -81,12 +83,15 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
       setServiceNotes(serviceForm.service_notes || '');
       setEstimatedDelivery(serviceForm.estimated_delivery_date ? new Date(serviceForm.estimated_delivery_date) : undefined);
       setEstimatedCost(serviceForm.estimated_cost || 0);
+      setServiceDate((serviceForm as any).service_date ? new Date(`${(serviceForm as any).service_date}T00:00:00`) : new Date(serviceForm.created_at));
+      setGstPercent(Number((serviceForm as any).gst_percentage ?? 3));
     } else {
       setClientId(null); setClientName(''); setClientPhone('');
       setItemDescription(''); setFromOurShop(false); setOriginalInvoiceNo('');
       setMaterial('Silver'); setMetalType('silver'); setWeight(0); setCondition('Good'); setPhotoFile(null);
       setServiceTypes([]); setOtherServiceText(''); setServiceNotes('');
       setEstimatedDelivery(undefined); setEstimatedCost(0);
+      setServiceDate(new Date()); setGstPercent(3);
     }
   }, [open, serviceForm]);
 
@@ -117,6 +122,8 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
             service_notes: serviceNotes || null,
             estimated_delivery_date: estimatedDelivery ? format(estimatedDelivery, 'yyyy-MM-dd') : null,
             estimated_cost: estimatedCost,
+            service_date: format(serviceDate, 'yyyy-MM-dd'),
+            gst_percentage: gstPercent,
           },
           photoFile,
         });
@@ -139,6 +146,8 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
           service_notes: serviceNotes || null,
           estimated_delivery_date: estimatedDelivery ? format(estimatedDelivery, 'yyyy-MM-dd') : null,
           estimated_cost: estimatedCost,
+          service_date: format(serviceDate, 'yyyy-MM-dd'),
+          gst_percentage: gstPercent,
           status: 'received',
           created_by: user?.id || null,
           photoFile,
@@ -266,6 +275,29 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
                   </Popover>
                 </div>
                 <div className="space-y-1"><Label>Estimated Cost (₹)</Label><Input type="number" value={estimatedCost || ''} onChange={(e) => setEstimatedCost(parseFloat(e.target.value) || 0)} /></div>
+                <div className="space-y-1">
+                  <Label>Build Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(serviceDate, 'PPP')}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={serviceDate} onSelect={(d) => d && setServiceDate(d)} initialFocus className={cn('p-3 pointer-events-auto')} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-1">
+                  <Label>GST %</Label>
+                  <Select value={String(gstPercent)} onValueChange={(v) => setGstPercent(Number(v))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[0, 3, 5, 12, 18].map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>

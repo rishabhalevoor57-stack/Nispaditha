@@ -408,59 +408,110 @@ export function useInventory() {
           };
         });
 
-      // Filter out duplicate SKUs: check against existing DB products AND within the import batch
-      const existingSkus = new Set(products.map(p => p.sku));
-      const seenSkus = new Set<string>();
-      const skippedSkus: string[] = [];
-
-      const deduplicatedProducts = validProducts.filter(p => {
-        const categoryId = p.category_id;
-        const isAllowed = isDuplicateAllowedCategory(categoryId);
-
-        // Check against existing products in DB
-        if (!isAllowed && existingSkus.has(p.sku)) {
-          skippedSkus.push(p.sku);
-          return false;
+      // Existing products indexed by SKU for merge / conflict detection
+      const existingBySku = new Map<string, { id: string; name: string; weight_grams: number; quantity: number }>();
+      products.forEach(p => {
+        if (!existingBySku.has(p.sku)) {
+          existingBySku.set(p.sku, { id: p.id, name: p.name, weight_grams: Number(p.weight_grams) || 0, quantity: Number(p.quantity) || 0 });
         }
-
-        // Check within the current import batch
-        if (!isAllowed && seenSkus.has(p.sku)) {
-          skippedSkus.push(p.sku);
-          return false;
-        }
-
-        seenSkus.add(p.sku);
-        return true;
       });
 
-      if (skippedSkus.length > 0) {
-        toast({ title: `Skipped ${skippedSkus.length} duplicate SKU(s)`, description: `Duplicates: ${skippedSkus.slice(0, 5).join(', ')}${skippedSkus.length > 5 ? '...' : ''}. Only Necklace Set & Pendant Set allow duplicates.` });
+      const sameItem = (a: { name: string; weight_grams: number }, b: { name: string; weight_grams: number }) =>
+        a.name.trim().toLowerCase() === b.name.trim().toLowerCase() &&
+        Math.abs((Number(a.weight_grams) || 0) - (Number(b.weight_grams) || 0)) < 0.001;
+
+      const mergeTargets = new Map<string, { id: string; sku: string; addQty: number; baseQty: number }>();
+      const blocked: string[] = [];
+      const seenInBatch = new Map<string, { name: string; weight_grams: number }>();
+      const toInsert: typeof validProducts = [];
+
+      validProducts.forEach(p => {
+        const isAllowed = isDuplicateAllowedCategory(p.category_id);
+
+        if (!isAllowed) {
+          const existing = existingBySku.get(p.sku);
+          if (existing) {
+            if (sameItem(existing, p)) {
+              // Same SKU + Name + Weight → increase quantity only
+              const t = mergeTargets.get(p.sku) || { id: existing.id, sku: p.sku, addQty: 0, baseQty: existing.quantity };
+              t.addQty += Number(p.quantity) || 0;
+              mergeTargets.set(p.sku, t);
+            } else {
+              blocked.push(`${p.sku} (existing ${existing.weight_grams}g "${existing.name}" vs imported ${p.weight_grams}g "${p.name}")`);
+            }
+            return;
+          }
+
+          const seen = seenInBatch.get(p.sku);
+          if (seen) {
+            if (sameItem(seen, p)) {
+              const target = toInsert.find(x => x.sku === p.sku);
+              if (target) target.quantity += Number(p.quantity) || 0;
+            } else {
+              blocked.push(`${p.sku} (duplicate SKU with different name/weight inside the file)`);
+            }
+            return;
+          }
+          seenInBatch.set(p.sku, { name: p.name, weight_grams: p.weight_grams });
+        }
+
+        toInsert.push(p);
+      });
+
+      if (blocked.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: `${blocked.length} row(s) blocked — SKU exists with a different weight/name`,
+          description: `${blocked.slice(0, 3).join('; ')}${blocked.length > 3 ? ` … and ${blocked.length - 3} more` : ''}. These must be created as separate inventory items with unique SKUs.`,
+        });
       }
 
-      if (deduplicatedProducts.length === 0) {
-        toast({ variant: 'destructive', title: 'No valid products', description: 'All products were duplicates or missing SKU/Name.' });
+      if (toInsert.length === 0 && mergeTargets.size === 0) {
+        toast({ variant: 'destructive', title: 'Nothing imported', description: 'All rows were blocked or missing SKU/Name.' });
         return false;
       }
 
-      // Process in batches of 50
+      // Process inserts in batches of 50
       const BATCH_SIZE = 50;
       let imported = 0;
 
-      for (let i = 0; i < deduplicatedProducts.length; i += BATCH_SIZE) {
-        const batch = deduplicatedProducts.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
+        const batch = toInsert.slice(i, i + BATCH_SIZE);
         const { error } = await supabase.from('products').insert(batch);
         if (error) throw error;
 
         imported += batch.length;
-        onProgress?.(imported, deduplicatedProducts.length);
+        onProgress?.(imported, toInsert.length);
 
         // Yield to UI thread
         await new Promise(resolve => setTimeout(resolve, 50));
       }
 
-      toast({ title: `${imported} products imported successfully` });
+      // Apply quantity merges for identical SKU + Name + Weight
+      let merged = 0;
+      for (const t of mergeTargets.values()) {
+        if (t.addQty <= 0) continue;
+        const { error } = await supabase
+          .from('products')
+          .update({ quantity: t.baseQty + t.addQty })
+          .eq('id', t.id);
+        if (error) throw error;
+        await supabase.from('stock_history').insert({
+          product_id: t.id,
+          quantity_change: t.addQty,
+          type: 'in',
+          reason: 'Bulk import — quantity merged into existing SKU',
+        } as never);
+        merged += 1;
+      }
+
+      toast({
+        title: `${imported} product(s) imported${merged ? `, ${merged} SKU(s) merged` : ''}`,
+        description: blocked.length ? `${blocked.length} row(s) blocked due to weight/name mismatch.` : undefined,
+      });
       fetchProducts();
       return true;
+
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'An error occurred';
       toast({ variant: 'destructive', title: 'Import failed', description: message });

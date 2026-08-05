@@ -108,8 +108,16 @@ export const CategoryStockValuation = () => {
               <p className="text-lg font-bold">{formatWeight(totals.totalWeight)}</p>
             </div>
             <div className="bg-primary/10 rounded-lg p-3 text-center border border-primary/20">
-              <p className="text-xs text-muted-foreground">Total Stock Value</p>
+              <p className="text-xs text-muted-foreground">Metal Stock Value</p>
               <p className="text-lg font-bold text-primary">{formatCurrency(totals.totalStockValue)}</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <p className="text-xs text-muted-foreground">Purchase Value</p>
+              <p className="text-lg font-bold">{formatCurrency(totals.totalPurchaseValue)}</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <p className="text-xs text-muted-foreground">List Price Value</p>
+              <p className="text-lg font-bold">{formatCurrency(totals.totalListValue)}</p>
             </div>
           </div>
 

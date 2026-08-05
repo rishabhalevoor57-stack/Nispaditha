@@ -8,6 +8,8 @@ export interface CategoryStockData {
   totalQuantity: number;
   totalWeight: number;
   stockValue: number;
+  purchaseValue: number;
+  listValue: number;
 }
 
 export interface ProductForValuation {
@@ -16,6 +18,8 @@ export interface ProductForValuation {
   sku: string;
   weight_grams: number;
   quantity: number;
+  purchase_price: number | null;
+  selling_price: number | null;
   category_id: string | null;
   categories: { name: string } | null;
 }
@@ -43,7 +47,7 @@ export const useStockValuation = () => {
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
           .from('products')
-          .select('id, name, sku, weight_grams, quantity, category_id, categories(name)')
+          .select('id, name, sku, weight_grams, quantity, purchase_price, selling_price, category_id, categories(name)')
           .is('deleted_at', null)
           .gt('quantity', 0)
           .order('created_at', { ascending: false })
@@ -74,6 +78,8 @@ export const useStockValuation = () => {
           totalQuantity: 0,
           totalWeight: 0,
           stockValue: 0,
+          purchaseValue: 0,
+          listValue: 0,
         });
       }
 
@@ -85,6 +91,8 @@ export const useStockValuation = () => {
       category.totalQuantity += product.quantity;
       category.totalWeight += itemWeight;
       category.stockValue += itemValue;
+      category.purchaseValue += (Number(product.purchase_price) || 0) * product.quantity;
+      category.listValue += (Number(product.selling_price) || 0) * product.quantity;
     });
 
     return Array.from(categoryMap.values()).sort((a, b) => b.stockValue - a.stockValue);
@@ -97,8 +105,10 @@ export const useStockValuation = () => {
       totalQuantity: acc.totalQuantity + cat.totalQuantity,
       totalWeight: acc.totalWeight + cat.totalWeight,
       totalStockValue: acc.totalStockValue + cat.stockValue,
+      totalPurchaseValue: acc.totalPurchaseValue + cat.purchaseValue,
+      totalListValue: acc.totalListValue + cat.listValue,
     }),
-    { totalItems: 0, totalQuantity: 0, totalWeight: 0, totalStockValue: 0 }
+    { totalItems: 0, totalQuantity: 0, totalWeight: 0, totalStockValue: 0, totalPurchaseValue: 0, totalListValue: 0 }
   );
 
   // Get products by category

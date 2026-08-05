@@ -374,6 +374,19 @@ export async function convertCustomOrderToInvoice(
 ): Promise<ConvertResult> {
   const finalize = !!opts.finalize;
 
+  // 0. Guard against duplicate conversion — never create a second invoice for the same order
+  if ((order as any).converted_to_invoice_id) {
+    const { data: existing } = await supabase
+      .from('invoices')
+      .select('id, invoice_number, client_id')
+      .eq('id', (order as any).converted_to_invoice_id)
+      .maybeSingle();
+    if (existing) {
+      const e = existing as { id: string; invoice_number: string; client_id: string | null };
+      return { invoiceId: e.id, invoiceNumber: e.invoice_number, clientId: e.client_id };
+    }
+  }
+
   // 1. Generate invoice number
   const { data: invoiceNumber, error: numErr } = await supabase.rpc('generate_invoice_number');
   if (numErr || !invoiceNumber) throw numErr || new Error('Could not generate invoice number');
@@ -393,7 +406,8 @@ export async function convertCustomOrderToInvoice(
     data: Array<{ id: string; amount: number; payment_mode: string; payment_date: string; reference_number: string; notes: string | null }>;
   };
 
-  const advancesArr = advances || [];
+  // Only advances that have not already been pushed into an invoice payment
+  const advancesArr = (advances || []).filter(a => !(a as any).transferred_to_invoice_payment_id);
   const cashAdvances = advancesArr.filter(p => p.payment_mode !== 'store_credit');
   const creditAdvances = advancesArr.filter(p => p.payment_mode === 'store_credit');
   const cashAdvanceTotal = cashAdvances.reduce((s, p) => s + (Number(p.amount) || 0), 0);
@@ -453,7 +467,9 @@ export async function convertCustomOrderToInvoice(
 
   // 7. Transfer each advance payment into invoice_payments — preserving ADV- reference in notes
   if (advancesArr.length > 0) {
-    for (const adv of advancesArr) {
+    // Store-credit advances are already represented by invoices.store_credits_used —
+    // inserting them as payments too would double-count them.
+    for (const adv of advancesArr.filter(a => a.payment_mode !== 'store_credit')) {
       const { data: payment, error: payErr } = await (supabase
         .from('invoice_payments')
         .insert({

@@ -50,6 +50,8 @@ export interface ServiceForm {
   estimated_delivery_date: string | null;
   estimated_cost: number;
   final_cost: number;
+  service_date?: string;
+  gst_percentage?: number;
   status: ServiceFormStatus;
   completed_invoice_id: string | null;
   completed_at: string | null;
