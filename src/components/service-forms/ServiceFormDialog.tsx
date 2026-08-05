@@ -83,12 +83,15 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
       setServiceNotes(serviceForm.service_notes || '');
       setEstimatedDelivery(serviceForm.estimated_delivery_date ? new Date(serviceForm.estimated_delivery_date) : undefined);
       setEstimatedCost(serviceForm.estimated_cost || 0);
+      setServiceDate((serviceForm as any).service_date ? new Date(`${(serviceForm as any).service_date}T00:00:00`) : new Date(serviceForm.created_at));
+      setGstPercent(Number((serviceForm as any).gst_percentage ?? 3));
     } else {
       setClientId(null); setClientName(''); setClientPhone('');
       setItemDescription(''); setFromOurShop(false); setOriginalInvoiceNo('');
       setMaterial('Silver'); setMetalType('silver'); setWeight(0); setCondition('Good'); setPhotoFile(null);
       setServiceTypes([]); setOtherServiceText(''); setServiceNotes('');
       setEstimatedDelivery(undefined); setEstimatedCost(0);
+      setServiceDate(new Date()); setGstPercent(3);
     }
   }, [open, serviceForm]);
 
