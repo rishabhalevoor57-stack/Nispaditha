@@ -52,8 +52,8 @@ export function MeltingFormDialog({ open, onOpenChange, onSubmit, prefill }: Pro
   }, [open, prefill]);
 
   const totals = useMemo(() => {
-    const gross = items.reduce((s, i) => s + Number(i.gross_weight || 0), 0);
-    const fine = items.reduce((s, i) => s + (Number(i.gross_weight || 0) * Number(i.purity || 0)) / 100, 0);
+    const gross = items.reduce((s, i) => s + Number(i.gross_weight || 0) * Number(i.quantity || 1), 0);
+    const fine = items.reduce((s, i) => s + (Number(i.gross_weight || 0) * Number(i.quantity || 1) * Number(i.purity || 0)) / 100, 0);
     const avgPurity = gross > 0 ? (fine / gross) * 100 : 0;
     const loss = (fine * Number(entry.melting_loss_percent || 0)) / 100;
     const recovered = fine - loss;
