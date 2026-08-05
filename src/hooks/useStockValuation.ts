@@ -16,6 +16,8 @@ export interface ProductForValuation {
   sku: string;
   weight_grams: number;
   quantity: number;
+  purchase_price: number | null;
+  selling_price: number | null;
   category_id: string | null;
   categories: { name: string } | null;
 }
