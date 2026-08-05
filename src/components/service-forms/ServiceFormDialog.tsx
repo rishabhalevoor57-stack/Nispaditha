@@ -52,6 +52,8 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
   const [serviceNotes, setServiceNotes] = useState('');
   const [estimatedDelivery, setEstimatedDelivery] = useState<Date | undefined>();
   const [estimatedCost, setEstimatedCost] = useState<number>(0);
+  const [serviceDate, setServiceDate] = useState<Date>(new Date());
+  const [gstPercent, setGstPercent] = useState<number>(3);
 
   const [loading, setLoading] = useState(false);
 
