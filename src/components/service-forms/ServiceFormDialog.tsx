@@ -275,6 +275,29 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
                   </Popover>
                 </div>
                 <div className="space-y-1"><Label>Estimated Cost (₹)</Label><Input type="number" value={estimatedCost || ''} onChange={(e) => setEstimatedCost(parseFloat(e.target.value) || 0)} /></div>
+                <div className="space-y-1">
+                  <Label>Build Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(serviceDate, 'PPP')}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={serviceDate} onSelect={(d) => d && setServiceDate(d)} initialFocus className={cn('p-3 pointer-events-auto')} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-1">
+                  <Label>GST %</Label>
+                  <Select value={String(gstPercent)} onValueChange={(v) => setGstPercent(Number(v))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[0, 3, 5, 12, 18].map((p) => <SelectItem key={p} value={String(p)}>{p}%</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
