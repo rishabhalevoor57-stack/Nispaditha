@@ -160,8 +160,8 @@ export const CompleteServiceDialog = ({ open, onOpenChange, serviceForm, onCompl
           </div>
           <div className="text-sm space-y-1 bg-muted p-3 rounded-md">
             <div>Base Amount: ₹{baseAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-            <div>CGST (2.5%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-            <div>SGST (2.5%): ₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+            <div>CGST ({(gstPercent / 2).toFixed(2)}%): ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+            <div>SGST ({(gstPercent / 2).toFixed(2)}%): ₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
             <div className="font-semibold pt-1 border-t">Total: ₹{charge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
           </div>
           <div className="space-y-2">
