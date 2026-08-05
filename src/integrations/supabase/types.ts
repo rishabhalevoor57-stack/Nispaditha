@@ -2309,6 +2309,7 @@ export type Database = {
           estimated_delivery_date: string | null
           final_cost: number
           from_our_shop: boolean
+          gst_percentage: number
           id: string
           item_description: string
           material: string | null
@@ -2317,6 +2318,7 @@ export type Database = {
           other_service_text: string | null
           photo_url: string | null
           receipt_number: string
+          service_date: string
           service_notes: string | null
           service_types: string[]
           status: string
@@ -2337,6 +2339,7 @@ export type Database = {
           estimated_delivery_date?: string | null
           final_cost?: number
           from_our_shop?: boolean
+          gst_percentage?: number
           id?: string
           item_description: string
           material?: string | null
@@ -2345,6 +2348,7 @@ export type Database = {
           other_service_text?: string | null
           photo_url?: string | null
           receipt_number: string
+          service_date?: string
           service_notes?: string | null
           service_types?: string[]
           status?: string
@@ -2365,6 +2369,7 @@ export type Database = {
           estimated_delivery_date?: string | null
           final_cost?: number
           from_our_shop?: boolean
+          gst_percentage?: number
           id?: string
           item_description?: string
           material?: string | null
@@ -2373,6 +2378,7 @@ export type Database = {
           other_service_text?: string | null
           photo_url?: string | null
           receipt_number?: string
+          service_date?: string
           service_notes?: string | null
           service_types?: string[]
           status?: string

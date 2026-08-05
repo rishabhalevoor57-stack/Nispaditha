@@ -1,0 +1,3 @@
+ALTER TABLE public.service_forms
+  ADD COLUMN IF NOT EXISTS gst_percentage numeric NOT NULL DEFAULT 3,
+  ADD COLUMN IF NOT EXISTS service_date date NOT NULL DEFAULT CURRENT_DATE;
