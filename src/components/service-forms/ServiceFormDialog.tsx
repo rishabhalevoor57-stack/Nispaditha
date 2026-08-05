@@ -146,6 +146,8 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
           service_notes: serviceNotes || null,
           estimated_delivery_date: estimatedDelivery ? format(estimatedDelivery, 'yyyy-MM-dd') : null,
           estimated_cost: estimatedCost,
+          service_date: format(serviceDate, 'yyyy-MM-dd'),
+          gst_percentage: gstPercent,
           status: 'received',
           created_by: user?.id || null,
           photoFile,
