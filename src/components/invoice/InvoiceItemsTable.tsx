@@ -219,11 +219,11 @@ export function InvoiceItemsTable({
                         {isFlat ? '-' : (
                           <Input
                             type="number"
-                            min="0"
-                            step="0.01"
                             value={item.weight_grams}
-                            onChange={(e) => handleWeightChange(index, parseFloat(e.target.value) || 0)}
-                            className="w-20 h-8 text-right"
+                            readOnly
+                            tabIndex={-1}
+                            title="Weight is locked on GST invoices"
+                            className="w-20 h-8 text-right bg-muted/60 cursor-not-allowed"
                           />
                         )}
                       </td>
