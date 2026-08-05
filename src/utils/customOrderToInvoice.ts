@@ -378,11 +378,12 @@ export async function convertCustomOrderToInvoice(
   if ((order as any).converted_to_invoice_id) {
     const { data: existing } = await supabase
       .from('invoices')
-      .select('*')
+      .select('id, invoice_number, client_id')
       .eq('id', (order as any).converted_to_invoice_id)
       .maybeSingle();
     if (existing) {
-      return { invoice: existing as any, invoiceId: (existing as any).id } as ConvertResult;
+      const e = existing as { id: string; invoice_number: string; client_id: string | null };
+      return { invoiceId: e.id, invoiceNumber: e.invoice_number, clientId: e.client_id };
     }
   }
 
