@@ -5,6 +5,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance'; // money-tolerance
 import { FileText } from 'lucide-react';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
 import { getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
@@ -127,7 +128,7 @@ export function InvoicePreviewModal({
   if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
 
   const isPaidFull = grandTotal > 0 && balanceDue === 0 && paidTotal > 0;
-  const isOverpaid = paidTotal > grandTotal + 0.05 && grandTotal >= 0;
+  const isOverpaid = paidTotal > grandTotal + PAYMENT_TOLERANCE && grandTotal >= 0;
   const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
 
 

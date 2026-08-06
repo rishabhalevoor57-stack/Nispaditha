@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance'; // money-tolerance
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BlankZeroInput } from '@/components/ui/blank-zero-input';
@@ -1126,9 +1127,9 @@ export function ViewInvoiceDialog({
                           {(() => {
                             const gt = (editTotals.grandTotal || 0) + (Number(editRoundOff) || 0);
                             const paid = Number(editPaidAmount) || 0;
-                            const bal = Math.max(0, gt - paid);
-                            const excess = Math.max(0, paid - gt);
-                            const status = paid <= 0 ? 'PENDING' : (gt - paid <= 0.05 ? 'PAID' : 'PARTIAL');
+                            const bal = gt - paid <= PAYMENT_TOLERANCE ? 0 : gt - paid;
+                            const excess = paid - gt > PAYMENT_TOLERANCE ? paid - gt : 0;
+                            const status = paid <= 0 ? 'PENDING' : (gt - paid <= PAYMENT_TOLERANCE ? 'PAID' : 'PARTIAL');
                             return (
                               <div className="w-full bg-muted/40 rounded-md p-3 text-sm space-y-1">
                                 <div className="flex justify-between"><span className="text-muted-foreground">Balance Due</span><span className="text-amber-600 font-semibold">{formatCurrency(bal)}</span></div>
