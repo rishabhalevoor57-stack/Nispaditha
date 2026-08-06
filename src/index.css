@@ -306,3 +306,51 @@
     @apply bg-muted-foreground/30;
   }
 }
+
+/* ============================================================
+   GLOBAL DENSITY LAYER
+   Trims ~15–20% of vertical whitespace across every page, modal
+   and table without touching typography, branding or colours.
+   ============================================================ */
+@layer base {
+  /* Page shell */
+  main > .container,
+  main .container {
+    max-width: 100% !important;
+  }
+
+  /* Tables: tighter rows, wider usable area */
+  table {
+    width: 100%;
+  }
+  table :is(th, td) {
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+  }
+
+  /* Cards */
+  [data-slot='card'] > *,
+  .card-body {
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+  }
+
+  /* Dialogs / sheets / popovers */
+  [role='dialog'] {
+    padding: 1rem;
+  }
+  [role='dialog'] > div > .space-y-6 > * + * {
+    margin-top: 1rem;
+  }
+
+  /* Global stack rhythm — compact but still readable */
+  .space-y-8 > * + * { margin-top: 1.5rem; }
+  .space-y-6 > * + * { margin-top: 1.15rem; }
+  .space-y-4 > * + * { margin-top: 0.8rem; }
+  .gap-6 { gap: 1.15rem; }
+  .gap-4 { gap: 0.8rem; }
+  .mb-8 { margin-bottom: 1.5rem; }
+  .mb-6 { margin-bottom: 1.15rem; }
+  .p-6 { padding: 1.15rem; }
+  .py-6 { padding-top: 1.15rem; padding-bottom: 1.15rem; }
+}
