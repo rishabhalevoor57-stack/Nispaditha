@@ -466,24 +466,9 @@ export function ViewInvoiceDialog({
         return;
       }
 
+      // Stock deduction is handled atomically by the invoice status trigger
+      // (draft -> sent/paid), so no client-side product mutation here.
 
-      // Manually reduce stock for each item (trigger had skipped because invoice was draft at insert time)
-      for (const it of items) {
-        if (!it.product_id) continue;
-        const { data: prod } = await supabase.from('products').select('quantity').eq('id', it.product_id).single();
-        const currentQty = Number(prod?.quantity) || 0;
-        await supabase.from('products')
-          .update({ quantity: Math.max(0, currentQty - Number(it.quantity)) })
-          .eq('id', it.product_id);
-        await supabase.from('stock_history').insert([{
-          product_id: it.product_id,
-          quantity_change: -Number(it.quantity),
-          type: 'out',
-          reason: `Invoice ${newNum} finalized from draft`,
-          reference_id: invoice.id,
-          created_by: user?.id || null,
-        }]);
-      }
 
       // Debit wallet for credits
       if (credits > 0 && invoice.client_id) {
@@ -658,21 +643,9 @@ export function ViewInvoiceDialog({
     }
     if (!confirm(`Cancel invoice ${invoice.invoice_number}? Stock will be restored and any wallet credits used will be refunded.`)) return;
     try {
-      // Restore stock for each item with product_id
-      for (const it of items) {
-        if (!it.product_id) continue;
-        const { data: prod } = await supabase.from('products').select('quantity').eq('id', it.product_id).single();
-        const currentQty = Number(prod?.quantity) || 0;
-        await supabase.from('products').update({ quantity: currentQty + Number(it.quantity) }).eq('id', it.product_id);
-        await supabase.from('stock_history').insert([{
-          product_id: it.product_id,
-          quantity_change: Number(it.quantity),
-          type: 'in',
-          reason: `Invoice ${invoice.invoice_number} cancelled`,
-          reference_id: invoice.id,
-          created_by: user?.id || null,
-        }]);
-      }
+      // Stock restoration is handled by the invoice status trigger on cancel.
+
+
 
       // Refund any wallet credits used back to client
       const credits = Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0;
