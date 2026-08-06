@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance'; // money-tolerance
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { Receipt } from 'lucide-react';
@@ -40,8 +41,8 @@ export function InvoicePaymentHistory({ invoiceId, grandTotal, storeCreditsUsed 
 
   const totalPaid = rows.reduce((s, r) => s + Number(r.amount || 0), 0) + credits;
   const rawBalance = Math.round((grandTotal - totalPaid) * 100) / 100;
-  const balance = Math.abs(rawBalance) <= 0.05 ? 0 : Math.max(0, rawBalance);
-  const excess = rawBalance < -0.05 ? Math.abs(rawBalance) : 0;
+  const balance = Math.abs(rawBalance) <= PAYMENT_TOLERANCE ? 0 : Math.max(0, rawBalance);
+  const excess = rawBalance < -PAYMENT_TOLERANCE ? Math.abs(rawBalance) : 0;
   const isFullyPaid = balance === 0 && totalPaid > 0;
 
 

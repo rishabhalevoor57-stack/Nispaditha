@@ -1102,6 +1102,7 @@ export type Database = {
           product_name: string
           quantity: number
           rate_per_gram: number
+          stock_deducted: boolean
           subtotal: number
           total: number
           weight_grams: number
@@ -1124,6 +1125,7 @@ export type Database = {
           product_name: string
           quantity?: number
           rate_per_gram?: number
+          stock_deducted?: boolean
           subtotal?: number
           total?: number
           weight_grams?: number
@@ -1146,6 +1148,7 @@ export type Database = {
           product_name?: string
           quantity?: number
           rate_per_gram?: number
+          stock_deducted?: boolean
           subtotal?: number
           total?: number
           weight_grams?: number
@@ -2530,34 +2533,55 @@ export type Database = {
       }
       stock_history: {
         Row: {
+          action: string | null
           created_at: string
           created_by: string | null
           id: string
+          module: string | null
           product_id: string
+          quantity_after: number | null
+          quantity_before: number | null
           quantity_change: number
           reason: string | null
           reference_id: string | null
+          reference_label: string | null
           type: string
+          weight_after: number | null
+          weight_before: number | null
         }
         Insert: {
+          action?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          module?: string | null
           product_id: string
+          quantity_after?: number | null
+          quantity_before?: number | null
           quantity_change: number
           reason?: string | null
           reference_id?: string | null
+          reference_label?: string | null
           type: string
+          weight_after?: number | null
+          weight_before?: number | null
         }
         Update: {
+          action?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          module?: string | null
           product_id?: string
+          quantity_after?: number | null
+          quantity_before?: number | null
           quantity_change?: number
           reason?: string | null
           reference_id?: string | null
+          reference_label?: string | null
           type?: string
+          weight_after?: number | null
+          weight_before?: number | null
         }
         Relationships: [
           {
@@ -3004,6 +3028,19 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      log_stock_move: {
+        Args: {
+          p_action: string
+          p_module: string
+          p_product_id: string
+          p_qty_delta: number
+          p_reason: string
+          p_reference_id: string
+          p_reference_label: string
+          p_weight_delta: number
+        }
+        Returns: undefined
+      }
       process_buyback: {
         Args: {
           p_client_id: string

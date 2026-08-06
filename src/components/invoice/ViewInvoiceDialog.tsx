@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance'; // money-tolerance
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BlankZeroInput } from '@/components/ui/blank-zero-input';
@@ -466,24 +467,9 @@ export function ViewInvoiceDialog({
         return;
       }
 
+      // Stock deduction is handled atomically by the invoice status trigger
+      // (draft -> sent/paid), so no client-side product mutation here.
 
-      // Manually reduce stock for each item (trigger had skipped because invoice was draft at insert time)
-      for (const it of items) {
-        if (!it.product_id) continue;
-        const { data: prod } = await supabase.from('products').select('quantity').eq('id', it.product_id).single();
-        const currentQty = Number(prod?.quantity) || 0;
-        await supabase.from('products')
-          .update({ quantity: Math.max(0, currentQty - Number(it.quantity)) })
-          .eq('id', it.product_id);
-        await supabase.from('stock_history').insert([{
-          product_id: it.product_id,
-          quantity_change: -Number(it.quantity),
-          type: 'out',
-          reason: `Invoice ${newNum} finalized from draft`,
-          reference_id: invoice.id,
-          created_by: user?.id || null,
-        }]);
-      }
 
       // Debit wallet for credits
       if (credits > 0 && invoice.client_id) {
@@ -658,21 +644,9 @@ export function ViewInvoiceDialog({
     }
     if (!confirm(`Cancel invoice ${invoice.invoice_number}? Stock will be restored and any wallet credits used will be refunded.`)) return;
     try {
-      // Restore stock for each item with product_id
-      for (const it of items) {
-        if (!it.product_id) continue;
-        const { data: prod } = await supabase.from('products').select('quantity').eq('id', it.product_id).single();
-        const currentQty = Number(prod?.quantity) || 0;
-        await supabase.from('products').update({ quantity: currentQty + Number(it.quantity) }).eq('id', it.product_id);
-        await supabase.from('stock_history').insert([{
-          product_id: it.product_id,
-          quantity_change: Number(it.quantity),
-          type: 'in',
-          reason: `Invoice ${invoice.invoice_number} cancelled`,
-          reference_id: invoice.id,
-          created_by: user?.id || null,
-        }]);
-      }
+      // Stock restoration is handled by the invoice status trigger on cancel.
+
+
 
       // Refund any wallet credits used back to client
       const credits = Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0;
@@ -1153,9 +1127,9 @@ export function ViewInvoiceDialog({
                           {(() => {
                             const gt = (editTotals.grandTotal || 0) + (Number(editRoundOff) || 0);
                             const paid = Number(editPaidAmount) || 0;
-                            const bal = Math.max(0, gt - paid);
-                            const excess = Math.max(0, paid - gt);
-                            const status = paid <= 0 ? 'PENDING' : (gt - paid <= 0.05 ? 'PAID' : 'PARTIAL');
+                            const bal = gt - paid <= PAYMENT_TOLERANCE ? 0 : gt - paid;
+                            const excess = paid - gt > PAYMENT_TOLERANCE ? paid - gt : 0;
+                            const status = paid <= 0 ? 'PENDING' : (gt - paid <= PAYMENT_TOLERANCE ? 'PAID' : 'PARTIAL');
                             return (
                               <div className="w-full bg-muted/40 rounded-md p-3 text-sm space-y-1">
                                 <div className="flex justify-between"><span className="text-muted-foreground">Balance Due</span><span className="text-amber-600 font-semibold">{formatCurrency(bal)}</span></div>

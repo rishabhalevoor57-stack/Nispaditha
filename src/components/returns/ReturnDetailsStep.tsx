@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { logStockMove } from '@/utils/stockMovement';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -124,18 +125,15 @@ export function ReturnDetailsStep({ invoiceData, selectedItems, onBack, onComple
             .eq('id', item.product_id)
             .single();
           if (product) {
-            await supabase
-              .from('products')
-              .update({ quantity: product.quantity + item.return_quantity })
-              .eq('id', item.product_id);
-            await supabase.from('stock_history').insert([{
-              product_id: item.product_id,
-              quantity_change: item.return_quantity,
-              type: 'in',
-              reason: `Return - ${refNum}`,
-              reference_id: returnRecord.id,
-              created_by: user?.id,
-            }]);
+            await logStockMove({
+              productId: item.product_id,
+              qtyDelta: item.return_quantity,
+              module: 'returns',
+              action: 'Return Processed',
+              referenceId: returnRecord.id,
+              referenceLabel: refNum,
+              reason: `Return Processed ${refNum}`,
+            });
           }
         }
       } else {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { logStockMove } from '@/utils/stockMovement';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useActivityLogger } from '@/hooks/useActivityLog';
@@ -491,17 +492,15 @@ export function useInventory() {
       let merged = 0;
       for (const t of mergeTargets.values()) {
         if (t.addQty <= 0) continue;
-        const { error } = await supabase
-          .from('products')
-          .update({ quantity: t.baseQty + t.addQty })
-          .eq('id', t.id);
-        if (error) throw error;
-        await supabase.from('stock_history').insert({
-          product_id: t.id,
-          quantity_change: t.addQty,
-          type: 'in',
-          reason: 'Bulk import — quantity merged into existing SKU',
-        } as never);
+        await logStockMove({
+          productId: t.id,
+          qtyDelta: t.addQty,
+          module: 'inventory',
+          action: 'Bulk Import',
+          referenceId: t.id,
+          referenceLabel: t.sku ?? null,
+          reason: 'Bulk Import — quantity merged into existing SKU',
+        });
         merged += 1;
       }
 
