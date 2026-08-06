@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logStockMove } from '@/utils/stockMovement';
 
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/ui/page-header';
@@ -91,18 +92,15 @@ export default function Repair() {
           .eq('id', item.product_id)
           .maybeSingle();
         if (p) {
-          await supabase
-            .from('products')
-            .update({ quantity: (p.quantity || 0) + qty })
-            .eq('id', item.product_id);
-          await supabase.from('stock_history').insert([{
-            product_id: item.product_id,
-            quantity_change: qty,
-            type: 'in',
-            reason: `Returned from repair (${item.sku || item.product_name})`,
-            reference_id: item.id,
-            created_by: user?.id,
-          }]);
+          await logStockMove({
+            productId: item.product_id,
+            qtyDelta: qty,
+            module: 'repair',
+            action: 'Repair Return',
+            referenceId: item.id,
+            referenceLabel: item.sku || item.product_name,
+            reason: `Repair Return (${item.sku || item.product_name})`,
+          });
         }
       } else if (item.sku) {
         // try matching by SKU
@@ -113,18 +111,15 @@ export default function Repair() {
           .is('deleted_at', null)
           .maybeSingle();
         if (p) {
-          await supabase
-            .from('products')
-            .update({ quantity: (p.quantity || 0) + qty })
-            .eq('id', p.id);
-          await supabase.from('stock_history').insert([{
-            product_id: p.id,
-            quantity_change: qty,
-            type: 'in',
-            reason: `Returned from repair (${item.sku})`,
-            reference_id: item.id,
-            created_by: user?.id,
-          }]);
+          await logStockMove({
+            productId: p.id,
+            qtyDelta: qty,
+            module: 'repair',
+            action: 'Repair Return',
+            referenceId: item.id,
+            referenceLabel: item.sku,
+            reason: `Repair Return (${item.sku})`,
+          });
         }
       }
       await supabase

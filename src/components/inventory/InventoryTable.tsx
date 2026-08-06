@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logStockMove } from '@/utils/stockMovement';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -87,21 +88,15 @@ export function InventoryTable({
       }]);
       if (insErr) throw insErr;
 
-      const newQty = Math.max(0, (repairProduct.quantity || 0) - qty);
-      const { error: updErr } = await supabase
-        .from('products')
-        .update({ quantity: newQty })
-        .eq('id', repairProduct.id);
-      if (updErr) throw updErr;
-
-      await supabase.from('stock_history').insert([{
-        product_id: repairProduct.id,
-        quantity_change: -qty,
-        type: 'out',
-        reason: `Sent to repair (${repairProduct.sku})${repairNotes ? ` — ${repairNotes}` : ''}`,
-        reference_id: repairProduct.id,
-        created_by: user?.id,
-      }]);
+      await logStockMove({
+        productId: repairProduct.id,
+        qtyDelta: -qty,
+        module: 'inventory',
+        action: 'Repair Issue',
+        referenceId: repairProduct.id,
+        referenceLabel: repairProduct.sku,
+        reason: `Repair Issue (${repairProduct.sku})${repairNotes ? ` — ${repairNotes}` : ''}`,
+      });
 
       logActivity({
         module: 'inventory',

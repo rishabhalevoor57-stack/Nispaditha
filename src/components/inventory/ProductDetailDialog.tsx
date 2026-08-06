@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logStockMove } from '@/utils/stockMovement';
 import {
   Dialog,
   DialogContent,
@@ -103,17 +104,15 @@ export function ProductDetailDialog({
         created_by: user?.id,
       }]);
       if (insErr) throw insErr;
-      const newQty = Math.max(0, (product.quantity || 0) - qty);
-      const { error: updErr } = await supabase.from('products').update({ quantity: newQty }).eq('id', product.id);
-      if (updErr) throw updErr;
-      await supabase.from('stock_history').insert([{
-        product_id: product.id,
-        quantity_change: -qty,
-        type: 'out',
-        reason: `Sent to repair${repairNotes ? ` — ${repairNotes}` : ''}`,
-        reference_id: product.id,
-        created_by: user?.id,
-      }]);
+      await logStockMove({
+        productId: product.id,
+        qtyDelta: -qty,
+        module: 'inventory',
+        action: 'Repair Issue',
+        referenceId: product.id,
+        referenceLabel: product.sku,
+        reason: `Repair Issue${repairNotes ? ` — ${repairNotes}` : ''}`,
+      });
       logActivity({
         module: 'inventory',
         action: 'update',

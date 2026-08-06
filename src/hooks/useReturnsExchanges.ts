@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logStockMove } from '@/utils/stockMovement';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useActivityLogger } from '@/hooks/useActivityLog';
@@ -77,16 +78,26 @@ export function useReturnsExchanges() {
 
         if (item.direction === 'returned') {
           // Was added back to stock on create → subtract it now
-          await supabase
-            .from('products')
-            .update({ quantity: Math.max(0, (product.quantity || 0) - item.quantity) })
-            .eq('id', item.product_id);
+          await logStockMove({
+            productId: item.product_id,
+            qtyDelta: -item.quantity,
+            module: 'returns',
+            action: 'Return Deleted',
+            referenceId: record.id,
+            referenceLabel: record.reference_number,
+            reason: `Return Deleted ${record.reference_number}`,
+          });
         } else if (item.direction === 'new') {
           // Was subtracted from stock on create → add it back now
-          await supabase
-            .from('products')
-            .update({ quantity: product.quantity + item.quantity })
-            .eq('id', item.product_id);
+          await logStockMove({
+            productId: item.product_id,
+            qtyDelta: item.quantity,
+            module: 'returns',
+            action: 'Exchange Deleted',
+            referenceId: record.id,
+            referenceLabel: record.reference_number,
+            reason: `Exchange Deleted ${record.reference_number}`,
+          });
         }
 
         // Remove related stock_history entries
