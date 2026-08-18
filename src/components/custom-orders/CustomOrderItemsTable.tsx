@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CustomOrderItem, MetalType, METAL_TYPE_LABELS } from '@/types/customOrder';
 import { supabase } from '@/integrations/supabase/client';
+import ReactDOM from "react-dom";
 
 interface InventoryProduct {
   id: string;
@@ -54,11 +55,28 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data } = await supabase
-        .from('products')
-        .select('id, sku, name, description, weight_grams, quantity, selling_price, making_charges, price_per_gram, pricing_mode, mrp, locked_by_custom_order_id, categories(name)')
-        .is('deleted_at', null)
-        .order('name');
+      const { count, error } = await supabase
+  .from('products')
+  .select('*', { count: 'exact', head: true });
+  const batches = Math.ceil(count/1000);
+     const results = await Promise.all(
+  Array.from({ length: batches }, (_, i) => {
+    const from = i * 1000;
+    const to = Math.min((i + 1) * 1000 - 1, count - 1);
+
+    return supabase
+      .from('products')
+      .select(
+        'id, sku, name, description, weight_grams, quantity, selling_price, making_charges, price_per_gram, pricing_mode, mrp, locked_by_custom_order_id, categories(name)'
+      )
+      
+      .order('name')
+      .range(from, to);
+  })
+);
+
+const data = results.flatMap(({ data }) => data || []);
+     
       setProducts((data || []) as unknown as InventoryProduct[]);
     };
     fetchProducts();
@@ -208,6 +226,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
   const getFilteredProducts = (term: string) => {
     if (!term || term.length < 1) return [];
     const t = term.toLowerCase().trim();
+   const ssss= products.sort((a,b)=>a.sku.localeCompare(b.sku));
     return products
       .filter(p => {
         const isLocked = p.locked_by_custom_order_id && p.locked_by_custom_order_id !== orderId;
@@ -292,21 +311,18 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border overflow-x-auto">
-        <Table className="min-w-[1280px]">
-          <TableHeader>
+<div className="rounded-md border overflow-x-auto overflow-y-visible">      
+<Table className="min-w-[1280px] overflow-visible">          <TableHeader>
             <TableRow className="bg-muted/30">
-              <TableHead className="min-w-[200px]">SKU / Product</TableHead>
+              <TableHead className="max-w-[250px]">SKU / Product</TableHead>
               <TableHead className="min-w-[110px]">Metal</TableHead>
-              <TableHead className="min-w-[110px]">Mode</TableHead>
-              <TableHead className="min-w-[90px] text-center">Qty</TableHead>
+               <TableHead className="min-w-[90px] text-center">Qty</TableHead>
               <TableHead className="min-w-[100px]" title="Reference only — does not affect price">Weight(g) *</TableHead>
               <TableHead className="min-w-[110px]" title="Reference only — does not affect price">Rate *</TableHead>
               <TableHead className="min-w-[100px]" title="Reference only — does not affect price">MC/g *</TableHead>
-              <TableHead className="min-w-[90px]" title="Reference only">MC Disc% *</TableHead>
               <TableHead className="min-w-[110px]">Unit Price ₹</TableHead>
-              <TableHead className="min-w-[140px]">Discount</TableHead>
-              <TableHead className="min-w-[120px] text-right">Total</TableHead>
+              <TableHead className="min-w-[120px]">Discount</TableHead>
+              <TableHead className="w-[120px] text-right">Total</TableHead>
               <TableHead className="w-[44px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -325,10 +341,10 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                 const filtered = getFilteredProducts(searchTerm);
 
                 return (
-                  <><TableRow key={index} className="align-top">
+                  <><TableRow key={index} className="relative overflow-visible">
                     {/* SKU / Product */}
-                    <TableCell className="py-3">
-                      <div className="relative">
+<TableCell className="relative overflow-visible">                     
+   <div className="relative">
                         {item.product_id ? (
                           <div className="space-y-0.5">
                             <div className="font-mono text-xs text-primary font-semibold">{item.sku}</div>
@@ -367,6 +383,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                                 onChange={(e) => {
                                   setSearchTerms(prev => ({ ...prev, [index]: e.target.value }));
                                   setOpenDropdown(index);
+                                  
                                 }}
                                 onFocus={() => searchTerm && setOpenDropdown(index)}
                                 onBlur={() => setTimeout(() => setOpenDropdown(null), 200)}
@@ -374,10 +391,11 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                               />
                             </div>
                             {openDropdown === index && filtered.length > 0 && (
-                              <div className="absolute z-50 mt-1 w-72 bg-popover border rounded-md shadow-lg max-h-52 overflow-y-auto">
-                                {filtered.map((p) => (
+<div className="absolute z-[9999] mt-1 w-72 bg-popover border rounded-md shadow-lg max-h-52 overflow-y-auto relative overflow-visible">        
+                          {filtered.map((p) => (
                                   <button
                                     key={p.id}
+                                    
                                     onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => handleSelectProduct(index, p)}
                                     className="w-full px-3 py-2 text-left hover:bg-accent transition-colors border-b last:border-0"
@@ -422,25 +440,6 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                       </div>
                     </TableCell>
 
-                    {/* Mode */}
-                    <TableCell className="py-3">
-                      {isBeads ? (
-                        <span className="text-xs font-medium px-2 py-1 rounded bg-accent text-accent-foreground">Beads</span>
-                      ) : (
-                        <Select
-                          value={item.pricing_mode}
-                          onValueChange={(v) => updateItem(index, 'pricing_mode', v)}
-                        >
-                          <SelectTrigger className="h-9 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="weight_based">Normal</SelectItem>
-                            <SelectItem value="flat_price">Flat</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </TableCell>
 
                     {/* Quantity */}
                     <TableCell className="py-3">
@@ -495,18 +494,7 @@ export const CustomOrderItemsTable = ({ items, onChange, silverRate, metalRates,
                       />
                     </TableCell>
 
-                    {/* MC Disc% */}
-                    <TableCell className="py-3">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={item.discount_on_mc || ''}
-                        onChange={(e) => updateItem(index, 'discount_on_mc', parseFloat(e.target.value) || 0)}
-                        className="h-9 text-sm"
-                        placeholder="0"
-                      />
-                    </TableCell>
+                
 
                     {/* Unit Price (drives the total in both Normal and Flat modes) */}
                     <TableCell className="py-3">

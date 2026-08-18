@@ -26,7 +26,7 @@ import { useBranch } from '@/contexts/BranchContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MetalTypeSelect } from '@/components/shared/MetalTypeSelect';
-
+import type { ComponentUnit } from "@/types/customOrder";
 interface Client { id: string; name: string; phone: string | null; }
 interface Vendor { id: string; name: string; }
 interface Category { id: string; name: string; }
@@ -76,6 +76,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const [productDescription, setProductDescription] = useState('');
   const [productDateOfMaking, setProductDateOfMaking] = useState<Date>(new Date());
   const [productVendorId, setProductVendorId] = useState<string>('');
+  const [unitType, setUnitId] = useState<ComponentUnit | null>(null);
   const [productCategoryId, setProductCategoryId] = useState<string>('');
   const [productBuyingPrice, setProductBuyingPrice] = useState(0);
   const [productSellingPrice, setProductSellingPrice] = useState(0);
@@ -360,6 +361,8 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
           unit_price: c.unit_price || 0,
           rate_per_gram: c.rate_per_gram || 0,
           total: c.total || 0,
+    discount_type: c.discount_type || "fixed",   // or "percentage"
+    discount_value: c.discount_value || 0 
         }));
 
       if (isEditing) {
@@ -375,12 +378,13 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[97rem] max-h-[90vh] overflow-y-auto overflow-x-hidden
+        mx-auto ml-[8rem] ">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Custom Order' : 'New Custom Order (Job Work)'}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-[93rem]">
           {/* Order Type toggle */}
           <Card>
             <CardHeader className="pb-3">
@@ -388,8 +392,8 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
               <p className="text-xs text-muted-foreground">Customer Order = billed to a client. In-House = manufactured for stock — turns into a finished list-price product.</p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-                <button
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
+                  <button
                   type="button"
                   disabled={isEditing}
                   onClick={() => setOrderType('customer')}
@@ -671,12 +675,12 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
           )}
 
           {/* Order Items */}
-          <Card>
+          <Card className="overflow-visible">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Order Items</CardTitle>
               <p className="text-xs text-muted-foreground">Finished pieces being made for this order.</p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-visible">
               <CustomOrderItemsTable items={items} onChange={setItems} silverRate={silverRate} metalRates={metalRates} orderId={order?.id} />
             </CardContent>
           </Card>
@@ -694,12 +698,31 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                 )}
                 {customerMaterials.map((m, idx) => (
                   <div key={idx} className="grid grid-cols-12 gap-2 items-end border rounded-md p-2 bg-muted/20">
-                    <div className="col-span-12 md:col-span-4 space-y-1">
-                      <Label className="text-xs">Item *</Label>
+                    <div className="col-span-3 space-y-1">
+                        <Label className="text-xs">Item *</Label>
                       <Input className="h-9" placeholder="Pearls, Beads, Old Chain..." value={m.name} onChange={(e) => {
                         const next = [...customerMaterials]; next[idx] = { ...m, name: e.target.value }; setCustomerMaterials(next);
                       }} />
                     </div>
+                     <div className="col-span-1 space-y-1">
+                          <Label className="text-xs">Unit</Label>
+                    <Select
+                      value={m.unit ?? ""}
+                      onValueChange={(v) => {
+                        const next = [...customerMaterials];
+                        next[idx] = { ...m, unit: v as ComponentUnit };
+                        setCustomerMaterials(next);
+                      }}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="quantity">Qty</SelectItem>
+                        <SelectItem value="strings">Strings</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                     <div className="col-span-6 md:col-span-2 space-y-1">
                       <Label className="text-xs">Qty</Label>
                       <Input className="h-9" type="number" min="0" value={m.quantity || ''} onChange={(e) => {

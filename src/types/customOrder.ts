@@ -53,6 +53,9 @@ export interface CustomOrderComponent {
   rate_per_gram: number;
   total: number;
   created_at?: string;
+  discount_value:number;
+  discount_type: 'fixed' | 'percentage';
+
 }
 
 export interface CustomerSuppliedMaterial {
@@ -61,6 +64,7 @@ export interface CustomerSuppliedMaterial {
   quantity?: number;
   weight_grams?: number;
   strings?: number;
+  unit?: ComponentUnit;
 }
 
 export interface ExtraCharge {

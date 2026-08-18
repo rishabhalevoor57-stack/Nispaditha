@@ -23,7 +23,10 @@ const calcTotal = (c: CustomOrderComponent): number => {
     ? (Number(c.strings_used) || 0)
     : (Number(c.quantity_used) || 0);
   const weightTotal = (Number(c.weight_grams) || 0) * (Number(c.rate_per_gram) || 0);
-  return Number((units * unitPrice + weightTotal).toFixed(2));
+  const totals= Number((units * unitPrice + weightTotal).toFixed(2));
+  const discount=c.discount_type==='fixed'?c.discount_value:(totals*c.discount_value/100)
+
+  return Number((totals-discount).toFixed(2));
 };
 
 export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 0 }: Props) => {
@@ -47,6 +50,7 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
         component_name: '',
         material: '',
         unit: 'quantity',
+        discount_value:0,
         weight_grams: 0,
         quantity: 1,
         quantity_used: 1,
@@ -54,10 +58,12 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
         unit_price: 0,
         rate_per_gram: silverRate || 0,
         total: 0,
+        discount_type:'fixed',
+
       },
     ]);
   };
-
+   
   const removeRow = (idx: number) => onChange(components.filter((_, i) => i !== idx));
 
   const totalCost = components.reduce((s, c) => s + (Number(c.total) || 0), 0);
@@ -75,7 +81,7 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
         const unit: ComponentUnit = rawUnit === 'strings' ? 'strings' : 'quantity';
         return (
           <div key={idx} className="grid grid-cols-12 gap-2 items-end border rounded-md p-3 bg-muted/30">
-            <div className="col-span-12 md:col-span-3 space-y-1">
+            <div className="col-span-12 md:col-span-2 space-y-1 max-w-[200px]">
               <Label className="text-xs">Component Name</Label>
               <Input
                 placeholder="e.g. Silver Hook, Jump Ring, Pearl Beads"
@@ -146,20 +152,56 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
                 onChange={(e) => updateRow(idx, { unit_price: parseFloat(e.target.value) || 0 })}
                 className="h-9" />
             </div>
+ <div className="grid grid-cols-12 gap-11 items-end">
+  {/* Discount */}
+  <div className="col-span-6 md:col-span-4 space-y-1">
+    <Label className="text-xs">Discount</Label>
+    <div className="flex items-center gap-3">
+      <Select
+                          value={c.discount_type}
+                          onValueChange={(v) => updateRow(idx, { discount_type: v as "fixed" | "percentage" })}
+                        >
+        <SelectTrigger className="w-16 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="fixed">₹</SelectItem>
+          <SelectItem value="percentage">%</SelectItem>
+        </SelectContent>
+      </Select>      
+         <Input
+                          type="number"
+                          min="0"
+                          value={c.discount_value || ''}
+                          onChange={(e) => updateRow(idx,{ discount_value: parseFloat(e.target.value) || 0})}
+                          className="h-9 text-sm flex-1 min-w-[50px]"
+                          placeholder="0"
+      />
+    </div>
+  </div>
 
-            <div className="col-span-4 md:col-span-1 space-y-1">
-              <Label className="text-xs">Total</Label>
-              <div className="h-9 px-2 flex items-center text-sm font-medium border rounded-md bg-background">
-                ₹{Number(c.total || 0).toFixed(2)}
-              </div>
-            </div>
+  {/* Total */}
+  <div className="col-span-4 md:col-span-3 space-y-1">
+    <Label className="text-xs">Total</Label>
+    <div className="h-9 px-2 flex items-center text-sm font-medium border rounded-md bg-background">
+      ₹{Number(c.total || 0).toFixed(2)}
+    </div>
+  </div>
 
-            <div className="col-span-2 md:col-span-1 flex justify-end">
-              <Button type="button" variant="ghost" size="icon" onClick={() => removeRow(idx)} className="text-destructive h-9 w-9">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+  {/* Remove button */}
+  <div className="col-span-2 md:col-span-1 flex justify-end">
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      onClick={() => removeRow(idx)}
+      className="text-destructive h-9 w-9"
+    >
+      <X className="h-4 w-4" />
+    </Button>
+  </div>
+</div>
+         </div>
         );
       })}
 
