@@ -288,12 +288,12 @@ export default function Settings() {
               Backup & Restore
             </TabsTrigger>
           )}
-          {isAdmin && (
+          {/* {isAdmin && (
             <TabsTrigger value="data" className="flex items-center gap-2">
               <Trash2 className="w-4 h-4" />
               Data Management
             </TabsTrigger>
-          )}
+          )} */}
         </TabsList>
 
         {/* Business Profile Tab */}

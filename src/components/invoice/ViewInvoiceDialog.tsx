@@ -182,7 +182,7 @@ export function ViewInvoiceDialog({
           .from('invoices')
           .update({ grand_total: computedGrand } as never)
           .eq('id', invoiceId)
-          .then(() => {});
+          .then(() => { });
       }
       setInvoice({
         ...data,
@@ -445,7 +445,7 @@ export function ViewInvoiceDialog({
       const total = Number(invoice.grand_total) || 0;
       const status =
         credits + advance >= total - 0.001 ? 'paid'
-        : advance > 0 ? 'partial' : 'pending';
+          : advance > 0 ? 'partial' : 'pending';
 
       // Flip status FIRST (only if still draft) so subsequent reduction we perform manually.
       // The .eq('status','draft') is a concurrency guard — if another tab already flipped it, this updates 0 rows.
@@ -582,8 +582,8 @@ export function ViewInvoiceDialog({
       invoiceDate: invoice.invoice_date,
       clientName: invoice.clients?.name || 'Walk-in Customer',
       clientPhone: invoice.clients?.phone || '',
-        clientAddress: invoice.clients?.address || '',
-        clientGstNumber: invoice.clients?.gst_number || '',
+      clientAddress: invoice.clients?.address || '',
+      clientGstNumber: invoice.clients?.gst_number || '',
       paymentMode: invoice.payment_mode || 'cash',
       items: getInvoiceItems(),
       totals: getTotals(),
@@ -610,8 +610,8 @@ export function ViewInvoiceDialog({
       invoiceDate: invoice.invoice_date,
       clientName: invoice.clients?.name || 'Walk-in Customer',
       clientPhone: invoice.clients?.phone || '',
-        clientAddress: invoice.clients?.address || '',
-        clientGstNumber: invoice.clients?.gst_number || '',
+      clientAddress: invoice.clients?.address || '',
+      clientGstNumber: invoice.clients?.gst_number || '',
       paymentMode: invoice.payment_mode || 'cash',
       items: getInvoiceItems(),
       totals: getTotals(),
@@ -687,35 +687,35 @@ export function ViewInvoiceDialog({
   };
 
   if (isLoading || !invoice) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl">
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="!max-w-[95vw] w-[95vw] !max-h-[95vh] h-[95vh] overflow-y-auto overflow-x-hidden">
+        <div className="flex items-center justify-center h-full py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="!max-w-[95vw] w-[95vw] !max-h-[95vh] h-[95vh] xl:min-w-[1600px] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              Invoice {invoice.invoice_number}
-              {isEditing && <span className="text-xs font-normal text-muted-foreground ml-2">(Editing)</span>}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="!max-w-[95vw] w-[95vw] !max-h-[95vh] h-[95vh] xl:w-[1600px] xl:max-w-[95vw] overflow-y-auto overflow-x-hidden">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            Invoice {invoice.invoice_number}
+            {isEditing && <span className="text-xs font-normal text-muted-foreground ml-2">(Editing)</span>}
+          </DialogTitle>
+        </DialogHeader>
 
           <div className="space-y-6 mt-4">
             {/* Status and Actions Bar */}
             {!isEditing && (
               <div className="bg-muted/30 rounded-lg p-4">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-4 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     <InvoiceStatusBadge status={invoice.status} />
                     <InvoiceStatusActions
                       invoiceId={invoice.id}
@@ -726,18 +726,17 @@ export function ViewInvoiceDialog({
                       onStatusChange={handleStatusChange}
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    {invoice.status === 'draft' && (
-                      <Button
-                        size="sm"
-                        className="btn-gold"
-                        onClick={handleConfirmDraft}
-                        disabled={isSaving}
-                      >
-                        <Save className="w-4 h-4 mr-2" />
-                        {isSaving ? 'Finalizing...' : 'Confirm & Finalize'}
-                      </Button>
-                    )}
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">                    {invoice.status === 'draft' && (
+                    <Button
+                      size="sm"
+                      className="btn-gold"
+                      onClick={handleConfirmDraft}
+                      disabled={isSaving}
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      {isSaving ? 'Finalizing...' : 'Confirm & Finalize'}
+                    </Button>
+                  )}
                     {isAdmin && invoice.status !== 'cancelled' && (
                       <Button
                         variant="outline"
@@ -792,7 +791,7 @@ export function ViewInvoiceDialog({
               <>
                 {/* Invoice Header (read-only) */}
                 <div className="bg-muted/30 rounded-lg p-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm min-w-0">
                     <div>
                       <p className="text-muted-foreground">Invoice Number</p>
                       <p className="font-medium">{invoice.invoice_number}</p>
@@ -801,7 +800,7 @@ export function ViewInvoiceDialog({
                       <p className="text-muted-foreground">Date</p>
                       <p className="font-medium">{new Date(invoice.invoice_date).toLocaleDateString('en-IN')}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-muted-foreground">Client</p>
                       <p className="font-medium">{invoice.clients?.name || 'Walk-in Customer'}</p>
                       {invoice.clients?.phone && (
@@ -823,8 +822,8 @@ export function ViewInvoiceDialog({
                 </div>
 
                 {/* Items Table (read-only) */}
-                <div className="border rounded-lg overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="border rounded-lg overflow-x-auto w-full max-w-full">
+                  <table className="w-full min-w-[900px] text-sm">
                     <thead className="bg-muted/50">
                       <tr>
                         <th className="px-3 py-3 text-left font-medium">SKU</th>
@@ -840,7 +839,7 @@ export function ViewInvoiceDialog({
                             <th className="px-3 py-3 text-right font-medium">Discount</th>
                           </>
                         )}
-                        
+
                         <th className="px-3 py-3 text-right font-medium">Total</th>
                       </tr>
                     </thead>
@@ -872,7 +871,7 @@ export function ViewInvoiceDialog({
                                 </td>
                               </>
                             )}
-                            
+
                             <td className="px-3 py-3 text-right font-medium">{formatCurrency(Number(item.subtotal))}</td>
                           </tr>
                         );

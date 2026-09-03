@@ -84,6 +84,7 @@ export function CreateInvoiceDialog({
   const [gstPct, setGstPct] = useState<number>(3);
   const [gstMode, setGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
   const [roundOff, setRoundOff] = useState<number>(0);
+  const [totalDiscount, setTotalDiscount] = useState<number>(0);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [storeCreditsUsed, setStoreCreditsUsed] = useState<number>(0);
   const [payments, setPayments] = useState<{ mode: string; amount: string }[]>([]);
@@ -97,7 +98,20 @@ export function CreateInvoiceDialog({
   const { totals } = useInvoiceCalculations(invoiceItems, gstPct, gstMode);
   const { logActivity } = useActivityLogger();
 
-  const grandTotalWithRound = (totals.grandTotal || 0) + (Number(roundOff) || 0);
+  const mrpTotal = (totals.subtotal || 0) + (totals.discountAmount || 0);
+  const appliedTotalDiscount = Math.min(Math.max(0, Number(totalDiscount) || 0), mrpTotal);
+  const discountedSubtotal = Math.max(0, (totals.subtotal || 0) - appliedTotalDiscount);
+  const adjustedGstAmount = gstMode === 'inclusive'
+    ? discountedSubtotal - discountedSubtotal / (1 + gstPct / 100)
+    : discountedSubtotal * (gstPct / 100);
+  const invoiceTotals = {
+    ...totals,
+    subtotal: discountedSubtotal,
+    discountAmount: (totals.discountAmount || 0) + appliedTotalDiscount,
+    gstAmount: adjustedGstAmount,
+    grandTotal: gstMode === 'inclusive' ? discountedSubtotal : discountedSubtotal + adjustedGstAmount,
+  };
+  const grandTotalWithRound = (invoiceTotals.grandTotal || 0) + (Number(roundOff) || 0);
   const cappedCredits = Math.min(Math.max(0, Number(storeCreditsUsed) || 0), walletBalance, grandTotalWithRound);
   const grandTotalAfterCredits = Math.max(0, grandTotalWithRound - cappedCredits);
   const remainingAfterCredits = grandTotalAfterCredits;
@@ -141,8 +155,8 @@ export function CreateInvoiceDialog({
     (Number(storeCreditsUsed) || 0) > walletBalance ? 'Exceeds available credits'
     : (Number(storeCreditsUsed) || 0) > grandTotalWithRound ? 'Exceeds grand total'
     : '';
-  const cgst = (totals.gstAmount || 0) / 2;
-  const sgst = (totals.gstAmount || 0) / 2;
+  const cgst = (invoiceTotals.gstAmount || 0) / 2;
+  const sgst = (invoiceTotals.gstAmount || 0) / 2;
 
   // Resolve the active rate based on metal toggle
   const goldRate = businessSettings?.gold_rate_per_gram || 0;
@@ -338,6 +352,7 @@ export function CreateInvoiceDialog({
     setGstPct(3);
     setGstMode('exclusive');
     setRoundOff(0);
+    setTotalDiscount(0);
     setWalletBalance(0);
     setStoreCreditsUsed(0);
     setPayments([]);
@@ -368,7 +383,7 @@ export function CreateInvoiceDialog({
         const { data: clientId, error: clientError } = await supabase.rpc('upsert_client_on_invoice', {
           p_phone: phoneTrim,
           p_name: nameTrim || 'Walk-in Customer',
-          p_amount: totals.grandTotal,
+          p_amount: invoiceTotals.grandTotal,
         });
         if (clientError) {
           console.error('Error upserting client:', clientError);
@@ -388,7 +403,7 @@ export function CreateInvoiceDialog({
             .from('clients')
             .update({
               last_invoice_date: new Date().toISOString(),
-              total_purchases: (Number(existing.total_purchases) || 0) + totals.grandTotal,
+              total_purchases: (Number(existing.total_purchases) || 0) + invoiceTotals.grandTotal,
             })
             .eq('id', finalClientId);
         } else {
@@ -397,7 +412,7 @@ export function CreateInvoiceDialog({
             .insert({
               name: nameTrim,
               last_invoice_date: new Date().toISOString(),
-              total_purchases: totals.grandTotal,
+              total_purchases: invoiceTotals.grandTotal,
             } as never)
             .select('id')
             .single();
@@ -413,7 +428,7 @@ export function CreateInvoiceDialog({
 
         const updatePayload: any = {
           last_invoice_date: new Date().toISOString(),
-          total_purchases: (currentClient?.total_purchases || 0) + totals.grandTotal,
+          total_purchases: (currentClient?.total_purchases || 0) + invoiceTotals.grandTotal,
         };
         // Keep name in sync if user edited it
         if (nameTrim && currentClient?.name !== nameTrim) updatePayload.name = nameTrim;
@@ -438,9 +453,9 @@ export function CreateInvoiceDialog({
         invoice_number: invoiceNum,
         client_id: finalClientId,
         invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
-        subtotal: totals.subtotal,
-        discount_amount: totals.discountAmount,
-        gst_amount: totals.gstAmount,
+        subtotal: invoiceTotals.subtotal,
+        discount_amount: invoiceTotals.discountAmount,
+        gst_amount: invoiceTotals.gstAmount,
         grand_total: finalGrandTotal,
         advance_paid: effectiveAdvance,
         store_credits_used: cappedCredits,
@@ -555,7 +570,7 @@ export function CreateInvoiceDialog({
           clientPhone,
           paymentMode,
           items: invoiceItems,
-          totals,
+          totals: invoiceTotals,
           businessSettings,
           notes,
           gstPercentage: gstPct,
@@ -573,7 +588,7 @@ export function CreateInvoiceDialog({
         action: 'create',
         recordId: invoice.id,
         recordLabel: invoiceNum,
-        newValue: { invoice_number: invoiceNum, client: clientName || 'Walk-in', grand_total: totals.grandTotal, items_count: invoiceItems.length },
+        newValue: { invoice_number: invoiceNum, client: clientName || 'Walk-in', grand_total: invoiceTotals.grandTotal, items_count: invoiceItems.length },
       });
 
       toast({ title: 'Invoice created and downloaded!' });
@@ -631,9 +646,9 @@ export function CreateInvoiceDialog({
       const draftPayload: any = {
         client_id: finalClientId,
         invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
-        subtotal: totals.subtotal,
-        discount_amount: totals.discountAmount,
-        gst_amount: totals.gstAmount,
+        subtotal: invoiceTotals.subtotal,
+        discount_amount: invoiceTotals.discountAmount,
+        gst_amount: invoiceTotals.gstAmount,
         grand_total: grandTotalWithRound,
         advance_paid: 0,
         store_credits_used: 0,
@@ -735,7 +750,7 @@ export function CreateInvoiceDialog({
       clientPhone,
         paymentMode: combinedPaymentLabel,
       items: invoiceItems,
-      totals,
+      totals: invoiceTotals,
       businessSettings,
       notes,
       gstPercentage: gstPct,
@@ -983,24 +998,41 @@ export function CreateInvoiceDialog({
                     placeholder="e.g. 0.50 or -0.30"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="total-discount">Total Discount</Label>
+                  <BlankZeroInput
+                    id="total-discount"
+                    value={totalDiscount}
+                    onValueChange={setTotalDiscount}
+                    min={0}
+                    max={mrpTotal}
+                    placeholder="0"
+                  />
+                </div>
               </div>
 
               {/* Live Totals Summary — MRP-based display (discount applied once) */}
               <div className="text-sm space-y-1 pt-2 border-t">
                 <div className="flex justify-between text-base font-bold">
                   <span>MRP (Total)</span>
-                  <span className="tabular-nums">₹ {(totals.subtotal + totals.discountAmount).toFixed(2)}</span>
+                  <span className="tabular-nums">₹ {mrpTotal.toFixed(2)}</span>
                 </div>
                 {totals.discountAmount > 0 && (
                   <div className="flex justify-between text-destructive">
-                    <span>− Discount</span>
+                    <span>− Item Discount</span>
                     <span className="tabular-nums">− ₹ {totals.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
-                {gstMode === 'inclusive' && totals.gstAmount > 0 && (
+                {appliedTotalDiscount > 0 && (
+                  <div className="flex justify-between text-destructive">
+                    <span>− Total Discount</span>
+                    <span className="tabular-nums">− ₹ {appliedTotalDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {gstMode === 'inclusive' && invoiceTotals.gstAmount > 0 && (
                   <div className="flex justify-between text-destructive">
                     <span>− GST Included</span>
-                    <span className="tabular-nums">− ₹ {totals.gstAmount.toFixed(2)}</span>
+                    <span className="tabular-nums">− ₹ {invoiceTotals.gstAmount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -1308,7 +1340,7 @@ export function CreateInvoiceDialog({
         clientPhone={clientPhone}
         paymentMode={combinedPaymentLabel}
         items={invoiceItems}
-        totals={totals}
+        totals={invoiceTotals}
         businessSettings={businessSettings}
         notes={notes}
         showMakingCharges={true}

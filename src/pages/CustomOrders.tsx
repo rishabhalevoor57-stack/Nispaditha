@@ -11,6 +11,7 @@ const customOrderExportColumns: ExportColumn[] = [
   { header: 'Product', key: 'product_title', format: (o) => o.product_title || '' },
   { header: 'SKU', key: 'product_sku', format: (o) => o.product_sku || '' },
   { header: 'Status', key: 'status' },
+  { header: 'Total Discount', key: 'flat_discount', format: (o) => Number(o.flat_discount) || 0 },
   { header: 'Total', key: 'total_amount' },
   { header: 'Created', key: 'created_at', format: (o) => o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN') : '' },
 ];
@@ -185,10 +186,21 @@ const CustomOrders = () => {
       return;
     }
     try {
+      const { data: items, error: itemsError } = await supabase
+        .from('custom_order_items')
+        .select('expected_weight, quantity')
+        .eq('custom_order_id', order.id);
+      if (itemsError) throw itemsError;
+
+      const totalWeight = (items || []).reduce(
+        (sum, item) => sum + (Number(item.expected_weight) || 0) * (Number(item.quantity) || 1),
+        0,
+      );
+
       const { data, error } = await supabase.rpc('send_custom_order_to_inventory_v2' as any, {
         p_custom_order_id: order.id,
         p_final_quantity: 1,
-        p_total_weight: null,
+        p_total_weight: totalWeight > 0 ? totalWeight : null,
       });
       if (error) throw error;
       logActivity({

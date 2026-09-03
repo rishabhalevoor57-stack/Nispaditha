@@ -257,7 +257,7 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
                 <div key={i} className="flex justify-between"><span className="text-muted-foreground">{c.label}</span><span>₹{Number(c.amount).toLocaleString('en-IN')}</span></div>
               ))}
               {o.flat_discount > 0 && (
-                <div className="flex justify-between"><span className="text-muted-foreground">Flat Discount</span><span className="text-destructive">-₹{o.flat_discount.toLocaleString('en-IN')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Discount</span><span className="text-destructive">-₹{o.flat_discount.toLocaleString('en-IN')}</span></div>
               )}
               {Number((o as any).gst_percentage) > 0 && (
                 <div className="flex justify-between"><span className="text-muted-foreground">GST ({Number((o as any).gst_percentage)}% {(o as any).gst_mode === 'inclusive' ? 'incl.' : 'excl.'})</span><span>—</span></div>

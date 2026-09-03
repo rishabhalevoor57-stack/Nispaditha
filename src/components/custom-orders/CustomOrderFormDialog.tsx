@@ -794,7 +794,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                   <Input type="number" min="0" value={additionalCharge || ''} onChange={(e) => setAdditionalCharge(parseFloat(e.target.value) || 0)} placeholder="0" /></div>
                 <div className="space-y-1"><Label className="text-xs">Custom Label</Label>
                   <Input value={additionalChargeLabel} onChange={(e) => setAdditionalChargeLabel(e.target.value)} placeholder="Additional Charge" /></div>
-                <div className="space-y-1"><Label className="text-xs">Flat Discount</Label>
+                <div className="space-y-1"><Label className="text-xs">Total Discount</Label>
                   <Input type="number" min="0" value={flatDiscount || ''} onChange={(e) => setFlatDiscount(parseFloat(e.target.value) || 0)} placeholder="0" /></div>
               </div>
 
@@ -848,7 +848,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                   <div key={i} className="text-sm text-muted-foreground">{c.label}: ₹{Number(c.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                 ))}
                 {flatDiscount > 0 && (
-                  <div className="text-sm text-destructive">Flat Discount: -₹{flatDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                  <div className="text-sm text-destructive">Total Discount: -₹{flatDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                 )}
                 <div className="text-sm text-muted-foreground border-t pt-1 mt-1">Subtotal {gstMode === 'inclusive' ? '(GST incl.)' : ''}: ₹{Math.max(0, subTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                 {gstPercentage > 0 && (

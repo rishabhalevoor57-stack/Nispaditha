@@ -16,21 +16,27 @@ export function ProductSearchInput({
 }: ProductSearchInputProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+
+
   const filteredProducts = searchTerm.length >= 1
     ? products.filter((p) => {
-        const q = searchTerm.toLowerCase();
-        return (
-          p.sku?.toLowerCase().includes(q) ||
-          p.name?.toLowerCase().includes(q) ||
-          (p as any).description?.toLowerCase?.().includes(q) ||
-          p.categories?.name?.toLowerCase?.().includes(q)
-        );
-      }).slice(0, 200)
+      const q = searchTerm.toLowerCase();
+      return (
+        p.sku?.toLowerCase().includes(q) ||
+        p.name?.toLowerCase().includes(q) ||
+        (p as any).description?.toLowerCase?.().includes(q) ||
+        p.categories?.name?.toLowerCase?.().includes(q)
+      );
+    }).slice(0, 200)
     : [];
+
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [filteredProducts.length]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -69,9 +75,16 @@ export function ProductSearchInput({
         e.preventDefault();
         handleSelect(filteredProducts[highlightedIndex]);
         break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0) {          // ← only select if user actually navigated
+          handleSelect(filteredProducts[highlightedIndex]);
+        }
+        break;
       case 'Escape':
         setIsOpen(false);
         break;
+
     }
   };
 
@@ -100,9 +113,8 @@ export function ProductSearchInput({
             <button
               key={product.id}
               onClick={() => handleSelect(product)}
-              className={`w-full px-3 py-2 text-left hover:bg-accent transition-colors ${
-                index === highlightedIndex ? 'bg-accent' : ''
-              }`}
+              className={`w-full px-3 py-2 text-left hover:bg-accent transition-colors ${index === highlightedIndex ? 'bg-accent' : ''
+                }`}
             >
               <div className="flex justify-between items-start">
                 <div>

@@ -40,6 +40,7 @@ export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onCancel, o
             <TableHead>Client / Product</TableHead>
             <TableHead>Phone</TableHead>
             <TableHead className="text-right">Total</TableHead>
+            <TableHead className="text-center">Total Discount</TableHead>
             <TableHead>Delivery</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Invoice / Stock</TableHead>
@@ -68,8 +69,8 @@ export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onCancel, o
                 <TableCell>{displayName}</TableCell>
                 <TableCell>{isInHouse ? '-' : (order.phone_number || '-')}</TableCell>
                 <TableCell className="text-right font-medium">₹{order.total_amount.toLocaleString('en-IN')}</TableCell>
-                <TableCell>
-                  {order.expected_delivery_date ? format(new Date(order.expected_delivery_date), 'dd/MM/yyyy') : '-'}
+                <TableCell className="text-center text-destructive">
+                  {Number(order.flat_discount) > 0 ? `₹${Number(order.flat_discount).toLocaleString('en-IN')}` : '-'}
                 </TableCell>
                 <TableCell>
                   <Select value={order.status} onValueChange={(v) => onStatusChange(order.id, v as CustomOrderStatus)}>
@@ -79,7 +80,7 @@ export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onCancel, o
                       </Badge>
                     </SelectTrigger>
                     <SelectContent>
-                      {(Object.keys(CUSTOM_ORDER_STATUS_LABELS) as CustomOrderStatus[]).map((s) => (
+                      {(Object.keys(CUSTOM_ORDER_STATUS_LABELS) as CustomOrderStatus[]).filter((s) => s !== 'released').map((s) => (
                         <SelectItem key={s} value={s}>
                           <Badge className={CUSTOM_ORDER_STATUS_COLORS[s]}>{CUSTOM_ORDER_STATUS_LABELS[s]}</Badge>
                         </SelectItem>

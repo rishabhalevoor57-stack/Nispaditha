@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Search, Eye, IndianRupee } from 'lucide-react';
+import { Search, Eye, IndianRupee, Trash2 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,17 @@ import { DataTable } from '@/components/ui/data-table';
 import { supabase } from '@/integrations/supabase/client';
 import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import { ViewInvoiceDialog } from '@/components/invoice/ViewInvoiceDialog';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface PendingInvoiceRow {
   id: string;
@@ -30,6 +41,68 @@ export default function LeftOverPayments() {
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentTarget, setPaymentTarget] = useState<PendingInvoiceRow | null>(null);
   const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [deleteTarget, setDeleteTarget] = useState<PendingInvoiceRow | null>(null);
+
+const handleDeleteInvoice = async () => {
+   console.log('🔥 NEW handleDeleteInvoice running, target:', deleteTarget);
+  if (!deleteTarget) return;
+  const row = deleteTarget;
+
+  setDeletingId(row.id);
+  try {
+    // Block deletion if a return/exchange references this invoice
+    const { count: returnCount, error: returnCheckErr } = await supabase
+      .from('return_exchanges')
+      .select('id', { count: 'exact', head: true })
+      .eq('original_invoice_id', row.id);
+    if (returnCheckErr) throw returnCheckErr;
+    if ((returnCount || 0) > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot delete invoice',
+        description: 'This invoice has a return/exchange on record. Remove or resolve that first.',
+      });
+      return;
+    }
+
+    // Un-link and revert any custom order that was converted to this invoice
+    const { error: custOrderErr } = await supabase
+      .from('custom_orders')
+      .update({ converted_to_invoice_id: null, status: 'ready' } as never)
+      .eq('converted_to_invoice_id', row.id);
+    if (custOrderErr) throw custOrderErr;
+
+    const { error: itemsErr } = await supabase
+      .from('invoice_items')
+      .delete()
+      .eq('invoice_id', row.id);
+    if (itemsErr) throw itemsErr;
+
+    const { error: paymentsErr } = await supabase
+      .from('invoice_payments')
+      .delete()
+      .eq('invoice_id', row.id);
+    if (paymentsErr) throw paymentsErr;
+
+    const { error: invErr } = await supabase
+      .from('invoices')
+      .delete()
+      .eq('id', row.id);
+    if (invErr) throw invErr;
+
+    toast({ title: 'Invoice deleted', description: `${row.invoice_number} was removed.` });
+    refetch();
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to delete invoice';
+    toast({ variant: 'destructive', title: 'Error', description: message });
+  } finally {
+    setDeletingId(null);
+    setDeleteTarget(null);
+  }
+};
+
 
   const { data: rows = [], isLoading, refetch } = useQuery({
     queryKey: ['pending-payments-invoices'],
@@ -118,6 +191,16 @@ export default function LeftOverPayments() {
           <Button size="sm" variant="ghost" onClick={() => setViewInvoiceId(r.id)} title="View Invoice">
             <Eye className="w-4 h-4" />
           </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setDeleteTarget(r)}
+            disabled={deletingId === r.id}
+            title="Delete Invoice"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
       ),
     },
@@ -186,6 +269,27 @@ export default function LeftOverPayments() {
         onOpenChange={(open) => !open && setViewInvoiceId(null)}
         onStatusChange={refetch}
       />
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete invoice?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>Delete invoice <strong>{deleteTarget.invoice_number}</strong>? This cannot be undone.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteInvoice}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

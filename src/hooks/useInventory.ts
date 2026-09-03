@@ -64,9 +64,32 @@ export function useInventory() {
         from += PAGE;
       }
 
+      const zeroWeightIds = all
+        .filter((item) => Number(item.weight_grams) === 0)
+        .map((item) => item.id);
+      const recoveredWeights = new Map<string, number>();
+
+      if (zeroWeightIds.length > 0) {
+        const { data: history } = await supabase
+          .from('stock_history')
+          .select('product_id, weight_before, weight_after')
+          .in('product_id', zeroWeightIds);
+
+        (history || []).forEach((entry) => {
+          const historicalWeight = Math.max(
+            Number(entry.weight_before) || 0,
+            Number(entry.weight_after) || 0,
+          );
+          if (historicalWeight > (recoveredWeights.get(entry.product_id) || 0)) {
+            recoveredWeights.set(entry.product_id, historicalWeight);
+          }
+        });
+      }
+
       const typedProducts = all.map((item) => ({
 
         ...item,
+        weight_grams: Number(item.weight_grams) || recoveredWeights.get(item.id) || 0,
         type_of_work: (item.type_of_work || 'Others') as TypeOfWork,
         status: (item.status || 'in_stock') as ProductStatus,
         pricing_mode: (item.pricing_mode || 'weight_based') as import('@/types/inventory').PricingMode,
