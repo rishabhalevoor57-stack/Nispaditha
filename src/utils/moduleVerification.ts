@@ -119,7 +119,7 @@ export async function runModuleVerification(): Promise<VerificationRow[]> {
 
   // Custom orders
   const customOrders = await fetchAll<any>('custom_orders', 'id, status, total_amount, stock_deducted');
-  const confirmedStates = ['confirmed', 'in_production', 'ready', 'delivered', 'invoiced', 'released'];
+  const confirmedStates = ['confirmed', 'in_production', 'ready', 'delivered', 'invoiced'];
   const shouldDeduct = customOrders.filter((c) => confirmedStates.includes(c.status));
   const notDeducted = shouldDeduct.filter((c) => !c.stock_deducted).length;
   rows.push({ module: 'Custom Orders', metric: 'Total orders', value: customOrders.length, status: 'ok' });

@@ -30,7 +30,6 @@ interface DashboardStats {
   totalClients: number;
   totalProducts: number;
   outOfStockCount: number;
-  lifetimeSkus: number;
 }
 
 interface RecentInvoice {
@@ -59,7 +58,6 @@ export default function Dashboard() {
     totalClients: 0,
     totalProducts: 0,
     outOfStockCount: 0,
-    lifetimeSkus: 0,
   });
   const [recentInvoices, setRecentInvoices] = useState<RecentInvoice[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
@@ -135,7 +133,6 @@ export default function Dashboard() {
         totalClients: clientCount || 0,
         totalProducts: inStockProducts.length,
         outOfStockCount: outOfStockProducts.length,
-        lifetimeSkus: allProducts.length,
 
       });
 
@@ -266,18 +263,12 @@ export default function Dashboard() {
       </div>
 
       {/* Inventory analytics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <StatCard
           title="Out of Stock"
           value={stats.outOfStockCount}
           icon={AlertTriangle}
           variant={stats.outOfStockCount > 0 ? 'warning' : 'default'}
-        />
-        <StatCard
-          title="Total SKUs Ever Created"
-          value={stats.lifetimeSkus}
-          icon={Package}
-          variant="default"
         />
         <StatCard
           title="Low Stock Items"

@@ -152,11 +152,11 @@ export default function Sold() {
       });
     }
 
-    // 2. Completed custom orders (delivered or released)
+    // 2. Completed custom orders (delivered)
     const { data: cOrders } = await supabase
       .from('custom_orders')
       .select('id, reference_number, order_date, status, client_name')
-      .in('status', ['delivered', 'released'])
+      .in('status', ['delivered'])
       .order('order_date', { ascending: false });
     const cIds = (cOrders || []).map((c: any) => c.id);
     if (cIds.length) {
