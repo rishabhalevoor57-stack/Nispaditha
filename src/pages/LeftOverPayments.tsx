@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchPendingInvoices, pendingBalance, type PendingInvoiceRow } from '@/lib/pendingBalances';
 import { RecordPaymentDialog } from '@/components/invoice/RecordPaymentDialog';
 import { ViewInvoiceDialog } from '@/components/invoice/ViewInvoiceDialog';
 import { useToast } from '@/hooks/use-toast';
@@ -23,16 +24,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-
-interface PendingInvoiceRow {
-  id: string;
-  invoice_number: string;
-  invoice_date: string;
-  grand_total: number;
-  advance_paid: number;
-  payment_status: string;
-  clients: { name: string | null; phone: string | null } | null;
-}
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n || 0);
@@ -107,13 +98,7 @@ const handleDeleteInvoice = async () => {
   const { data: rows = [], isLoading, refetch } = useQuery({
     queryKey: ['pending-payments-invoices'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('invoices')
-        .select('id, invoice_number, invoice_date, grand_total, advance_paid, payment_status, clients(name, phone)')
-        .in('payment_status', ['partial', 'pending'])
-        .order('invoice_date', { ascending: true });
-      if (error) throw error;
-      return (data || []) as unknown as PendingInvoiceRow[];
+      return await fetchPendingInvoices();
     },
   });
 
@@ -129,7 +114,7 @@ const handleDeleteInvoice = async () => {
 
   const totalEstimate = filtered.reduce((s, r) => s + Number(r.grand_total || 0), 0);
   const totalReceived = filtered.reduce((s, r) => s + Number(r.advance_paid || 0), 0);
-  const totalPending = filtered.reduce((s, r) => s + Math.max(0, Number(r.grand_total || 0) - Number(r.advance_paid || 0)), 0);
+  const totalPending = filtered.reduce((s, r) => s + pendingBalance(r), 0);
 
   const columns = [
     { key: 'invoice_number', header: 'Ref #' },
@@ -176,7 +161,7 @@ const handleDeleteInvoice = async () => {
       header: 'Balance Due',
       cell: (r: PendingInvoiceRow) => (
         <span className="text-amber-600 font-semibold">
-          {formatCurrency(Math.max(0, Number(r.grand_total) - Number(r.advance_paid)))}
+          {formatCurrency(pendingBalance(r))}
         </span>
       ),
     },

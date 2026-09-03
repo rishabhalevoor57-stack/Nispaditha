@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchPendingInvoices, aggregateOutstanding } from '@/lib/pendingBalances';
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear, format, subMonths, parseISO } from 'date-fns';
 
 export type DatePreset = 'today' | 'this_month' | 'this_year' | 'custom';
@@ -109,6 +110,12 @@ export const useReports = () => {
   });
 
   // Custom Orders
+  // Pending payments ledger (shared with the Pending Payments page)
+  const { data: pendingInvoices = [] } = useQuery({
+    queryKey: ['pending-payments-invoices'],
+    queryFn: fetchPendingInvoices,
+  });
+
   const { data: customOrders = [], isLoading: customOrdersLoading } = useQuery({
     queryKey: ['report-custom-orders', fromISO, toISO],
     queryFn: async () => {
