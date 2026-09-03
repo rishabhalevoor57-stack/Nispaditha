@@ -80,7 +80,7 @@ export const CustomOrderTable = ({ orders, onView, onEdit, onDelete, onCancel, o
                       </Badge>
                     </SelectTrigger>
                     <SelectContent>
-                      {(Object.keys(CUSTOM_ORDER_STATUS_LABELS) as CustomOrderStatus[]).filter((s) => s !== 'released').map((s) => (
+                      {(Object.keys(CUSTOM_ORDER_STATUS_LABELS) as CustomOrderStatus[]).map((s) => (
                         <SelectItem key={s} value={s}>
                           <Badge className={CUSTOM_ORDER_STATUS_COLORS[s]}>{CUSTOM_ORDER_STATUS_LABELS[s]}</Badge>
                         </SelectItem>

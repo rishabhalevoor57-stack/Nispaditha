@@ -133,9 +133,7 @@ export const useCustomOrders = () => {
       }
 
       // Lock SKUs
-      if (data.order.status !== 'released') {
-        await lockSkus(data.items, orderData.id);
-      }
+      await lockSkus(data.items, orderData.id);
 
       await ensureClient(data.order.phone_number, data.order.client_name);
 
@@ -225,10 +223,8 @@ export const useCustomOrders = () => {
         if (compErr) throw compErr;
       }
 
-      // Lock new SKUs (unless released)
-      if (data.order.status !== 'released') {
-        await lockSkus(data.items, data.id);
-      }
+      // Lock new SKUs
+      await lockSkus(data.items, data.id);
 
       const convertedInvoiceId = (data.order as CustomOrder).converted_to_invoice_id;
       if (convertedInvoiceId) {
@@ -270,11 +266,6 @@ export const useCustomOrders = () => {
         .eq('id', id);
 
       if (error) throw error;
-
-      // If released, unlock all SKUs
-      if (status === 'released') {
-        await unlockSkus(id);
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
