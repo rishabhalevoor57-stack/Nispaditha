@@ -246,13 +246,11 @@ export const useReports = () => {
     return Object.values(map).filter(c => c.count >= 2).sort((a, b) => b.count - a.count);
   }, [invoices]);
 
-  // Outstanding balances
-  const outstandingClients = useMemo(() => {
-    return clients
-      .filter((c: any) => Number(c.outstanding_balance) > 0)
-      .map((c: any) => ({ name: c.name, phone: c.phone, balance: Number(c.outstanding_balance) }))
-      .sort((a, b) => b.balance - a.balance);
-  }, [clients]);
+  // Outstanding balances — single source of truth: the Pending Payments ledger
+  const outstandingClients = useMemo(
+    () => aggregateOutstanding(pendingInvoices),
+    [pendingInvoices]
+  );
 
   // Inventory reports — low stock excludes zero-quantity items (those are "out of stock")
   const lowStockItems = useMemo(() => {
