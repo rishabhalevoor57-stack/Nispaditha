@@ -354,3 +354,45 @@
   .p-6 { padding: 1.15rem; }
   .py-6 { padding-top: 1.15rem; padding-bottom: 1.15rem; }
 }
+
+/* ============================================================
+   RESPONSIVE SHELL
+   Fluid content width that adapts from 1366px laptops up to
+   ultra-wide monitors, plus safe horizontal scrolling on tables.
+   ============================================================ */
+@layer base {
+  .app-shell {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+
+  @media (min-width: 1600px) {
+    .app-shell { max-width: 1720px; }
+  }
+
+  @media (min-width: 2100px) {
+    .app-shell { max-width: 2000px; }
+  }
+
+  /* Tables never break the layout — they scroll inside their wrapper */
+  .app-shell table {
+    min-width: max-content;
+  }
+  .app-shell .overflow-x-auto,
+  .app-shell [data-slot='table-container'] {
+    max-width: 100%;
+  }
+
+  /* Charts stay inside their card on small screens */
+  .recharts-responsive-container {
+    max-width: 100%;
+  }
+
+  /* Dialogs fit the viewport on every screen size */
+  @media (max-width: 640px) {
+    [role='dialog'] {
+      padding: 0.75rem;
+    }
+  }
+}
