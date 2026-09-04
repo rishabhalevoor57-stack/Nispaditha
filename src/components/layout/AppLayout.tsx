@@ -26,8 +26,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 lg:p-8 p-4 pt-20 lg:pt-8 overflow-auto">
-        <div className="max-w-7xl mx-auto animate-fade-in">
+      <main className="flex-1 min-w-0 p-3 pt-20 sm:p-4 lg:p-6 xl:p-8 lg:pt-6 xl:pt-8 overflow-auto">
+        <div className="w-full mx-auto animate-fade-in app-shell">
           <div className="flex justify-end mb-4 gap-2">
             <BranchSwitcher />
             <Button
