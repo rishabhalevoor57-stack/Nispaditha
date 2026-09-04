@@ -376,7 +376,7 @@
   }
 
   /* Tables never break the layout — they scroll inside their wrapper */
-  .app-shell table {
+  .app-shell .overflow-x-auto > table {
     min-width: max-content;
   }
   .app-shell .overflow-x-auto,
