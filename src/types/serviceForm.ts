@@ -17,17 +17,8 @@ export const SERVICE_FORM_STATUS_COLORS: Record<ServiceFormStatus, string> = {
 export const SERVICE_TYPE_OPTIONS = [
   'Polish',
   'Repair',
-  'Resize',
-  'Fix Clasp',
-  'Stone Setting / Stone Replacement',
-  'Cleaning',
-  'Rhodium Plating',
   'Designing',
   'Restringing',
-  'Jewellery Restringing',
-  'Pearl Restringing',
-  'Bead Restringing',
-  'Mala Restringing',
 ] as const;
 
 export interface ServiceForm {

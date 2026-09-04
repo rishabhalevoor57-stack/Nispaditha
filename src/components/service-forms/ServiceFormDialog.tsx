@@ -169,6 +169,24 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Build Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Build Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(serviceDate, 'PPP')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={serviceDate} onSelect={(d) => d && setServiceDate(d)} initialFocus className={cn('p-3 pointer-events-auto')} />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
           {/* Client */}
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-sm">Client</CardTitle></CardHeader>
@@ -275,20 +293,6 @@ export const ServiceFormDialog = ({ open, onOpenChange, serviceForm }: Props) =>
                   </Popover>
                 </div>
                 <div className="space-y-1"><Label>Estimated Cost (₹)</Label><Input type="number" value={estimatedCost || ''} onChange={(e) => setEstimatedCost(parseFloat(e.target.value) || 0)} /></div>
-                <div className="space-y-1">
-                  <Label>Build Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(serviceDate, 'PPP')}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={serviceDate} onSelect={(d) => d && setServiceDate(d)} initialFocus className={cn('p-3 pointer-events-auto')} />
-                    </PopoverContent>
-                  </Popover>
-                </div>
                 <div className="space-y-1">
                   <Label>GST %</Label>
                   <Select value={String(gstPercent)} onValueChange={(v) => setGstPercent(Number(v))}>
