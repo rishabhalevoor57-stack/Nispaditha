@@ -8,10 +8,20 @@ import { DataTable } from '@/components/ui/data-table';
 interface CustomerReportProps {
   topCustomers: { name: string; invoices: number; total: number }[];
   repeatCustomers: { name: string; count: number; total: number }[];
-  outstandingClients: { name: string; phone: string | null; balance: number }[];
+  pendingPayments: {
+    id: string;
+    invoice_number: string;
+    invoice_date: string;
+    grand_total: number;
+    advance_paid: number;
+    payment_status: string;
+    customer: string;
+    phone: string | null;
+    balance: number;
+  }[];
 }
 
-export const CustomerReport = ({ topCustomers, repeatCustomers, outstandingClients }: CustomerReportProps) => {
+export const CustomerReport = ({ topCustomers, repeatCustomers, pendingPayments }: CustomerReportProps) => {
   const topCols = [
     { key: 'name', header: 'Customer' },
     { key: 'invoices', header: 'Invoices' },
@@ -25,27 +35,44 @@ export const CustomerReport = ({ topCustomers, repeatCustomers, outstandingClien
   ];
 
   const outstandingCols = [
-    { key: 'name', header: 'Customer' },
-    { key: 'phone', header: 'Phone', cell: (r: any) => r.phone || '–' },
-    { key: 'balance', header: 'Outstanding', cell: (r: any) => <span className="text-destructive font-medium">{formatCurrency(r.balance)}</span> },
+    { key: 'invoice_number', header: 'Ref #' },
+    { key: 'customer', header: 'Customer' },
+    { key: 'phone', header: 'Phone', cell: (r: any) => r.phone || '-' },
+    { key: 'invoice_date', header: 'Order Date', cell: (r: any) => new Date(r.invoice_date).toLocaleDateString('en-IN') },
+    { key: 'payment_status', header: 'Status', cell: (r: any) => r.payment_status === 'partial' ? 'PARTIAL' : 'PENDING' },
+    { key: 'grand_total', header: 'Total Amount', cell: (r: any) => formatCurrency(Number(r.grand_total)) },
+    { key: 'advance_paid', header: 'Paid', cell: (r: any) => formatCurrency(Number(r.advance_paid)) },
+    { key: 'balance', header: 'Balance Due', cell: (r: any) => <span className="text-destructive font-medium">{formatCurrency(r.balance)}</span> },
   ];
 
-  const totalOutstanding = outstandingClients.reduce((s, c) => s + c.balance, 0);
+  const totalOutstanding = pendingPayments.reduce((s, c) => s + c.balance, 0);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Customer Reports</h3>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => exportToExcel(outstandingClients, 'Outstanding_Balances')} className="gap-1">
+          <Button size="sm" variant="outline" onClick={() => exportToExcel(pendingPayments, 'Outstanding_Balances')} className="gap-1">
             <Download className="w-4 h-4" /> Excel
           </Button>
           <Button size="sm" variant="outline" onClick={() => {
             exportToPDF('Outstanding Balances', [
-              { header: 'Customer', key: 'name' },
+              { header: 'Ref #', key: 'invoice_number' },
+              { header: 'Customer', key: 'customer' },
               { header: 'Phone', key: 'phone' },
-              { header: 'Balance', key: 'balance' },
-            ], outstandingClients.map(c => ({ ...c, balance: formatCurrency(c.balance), phone: c.phone || '–' })), 'Outstanding_Balances');
+              { header: 'Order Date', key: 'invoice_date' },
+              { header: 'Status', key: 'payment_status' },
+              { header: 'Total Amount', key: 'grand_total' },
+              { header: 'Paid', key: 'advance_paid' },
+              { header: 'Balance Due', key: 'balance' },
+            ], pendingPayments.map(payment => ({
+              ...payment,
+              phone: payment.phone || '-',
+              invoice_date: new Date(payment.invoice_date).toLocaleDateString('en-IN'),
+              grand_total: formatCurrency(Number(payment.grand_total)),
+              advance_paid: formatCurrency(Number(payment.advance_paid)),
+              balance: formatCurrency(payment.balance),
+            })), 'Outstanding_Balances');
           }} className="gap-1">
             <Download className="w-4 h-4" /> PDF
           </Button>
@@ -83,7 +110,7 @@ export const CustomerReport = ({ topCustomers, repeatCustomers, outstandingClien
               <span className="text-destructive text-sm">{formatCurrency(totalOutstanding)}</span>
             </CardTitle>
           </CardHeader>
-          <CardContent><DataTable data={outstandingClients} columns={outstandingCols} emptyMessage="All clear!" /></CardContent>
+          <CardContent><DataTable data={pendingPayments} columns={outstandingCols} emptyMessage="All clear!" /></CardContent>
         </Card>
       </div>
     </div>

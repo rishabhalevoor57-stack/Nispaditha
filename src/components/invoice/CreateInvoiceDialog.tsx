@@ -177,7 +177,7 @@ export function CreateInvoiceDialog({
     if (metalRate === 'gold_22k') return `Gold 22K Rate: ₹ ${fmtRate(goldRate)}/g`;
     if (metalRate === 'gold_18k') return `Gold 18K Rate: ₹ ${fmtRate(goldRate * (18 / 22))}/g`;
     if (metalRate === 'silver') return `Silver Rate: ₹ ${fmtRate(silverRate)}/g`;
-    return '';
+    return 'Metal Rate: None';
   })();
 
 
@@ -476,7 +476,7 @@ export function CreateInvoiceDialog({
         gst_percentage: gstPct,
         gst_mode: gstMode,
         round_off: roundOff,
-        metal_type: metalRate === 'none' ? 'silver' : metalRate,
+        metal_type: metalRate,
       };
 
       let invoice: any;
@@ -669,7 +669,7 @@ export function CreateInvoiceDialog({
         gst_percentage: gstPct,
         gst_mode: gstMode,
         round_off: roundOff,
-        metal_type: metalRate === 'none' ? 'silver' : metalRate,
+        metal_type: metalRate,
       };
 
       let invoice: any;

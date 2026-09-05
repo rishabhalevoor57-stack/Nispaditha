@@ -16,7 +16,7 @@ export default function Reports() {
     salesStats, dailySalesData, monthlySalesData,
     categorySalesData, categoryStockData,
     topSellingProducts, lowSellingProducts,
-    topCustomers, repeatCustomers, outstandingClients,
+    topCustomers, repeatCustomers, pendingPayments,
     lowStockItems, outOfStockItems, totalStockValue, products, inventoryStats,
     customOrderStats, customOrdersByStatus, customOrders,
     invoices,
@@ -67,7 +67,7 @@ export default function Reports() {
           </TabsContent>
 
           <TabsContent value="customers" className="w-full min-w-0">
-            <CustomerReport topCustomers={topCustomers} repeatCustomers={repeatCustomers} outstandingClients={outstandingClients} />
+            <CustomerReport topCustomers={topCustomers} repeatCustomers={repeatCustomers} pendingPayments={pendingPayments} />
           </TabsContent>
 
           <TabsContent value="inventory" className="w-full min-w-0">

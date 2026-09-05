@@ -64,6 +64,7 @@ interface InvoiceDetails {
   paid_at: string | null;
   created_at: string;
   client_id: string | null;
+  metal_type?: string | null;
   gst_mode?: 'exclusive' | 'inclusive';
   clients: { name: string; phone: string | null; address?: string | null; gst_number?: string | null } | null;
 }
@@ -232,6 +233,10 @@ export function ViewInvoiceDialog({
     setEditItems(getInvoiceItems());
     setEditRoundOff(Number(invoice.round_off) || 0);
     setEditGstMode((invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
+    const savedMetal = invoice.metal_type;
+    if (savedMetal && ['gold_24k', 'gold_22k', 'gold_18k', 'silver', 'none'].includes(savedMetal)) {
+      setEditMetalRate(savedMetal as MetalRateOption);
+    }
     setEditPaidAmount(Number(invoice.advance_paid) || 0);
     setIsEditing(true);
   };
@@ -318,6 +323,7 @@ export function ViewInvoiceDialog({
           gst_mode: editGstMode,
           round_off: newRoundOff,
           grand_total: newGrandTotal,
+          metal_type: editMetalRate,
           advance_paid: finalAdvancePaid,
           balance_due: balanceDue,
         } as never)
@@ -557,21 +563,24 @@ export function ViewInvoiceDialog({
     const gold = Number(businessSettings?.gold_rate_per_gram) || 0;
     const fmt = (r: number) =>
       new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(r || 0);
-    // Infer which metal(s) this invoice used by comparing item rate_per_gram to settings
+
+    const selectedMetal = invoice?.metal_type;
+    if (selectedMetal === 'gold_24k') return `Gold 24K Rate: ₹ ${fmt(gold * (24 / 22))}/g`;
+    if (selectedMetal === 'gold_22k') return `Gold 22K Rate: ₹ ${fmt(gold)}/g`;
+    if (selectedMetal === 'gold_18k') return `Gold 18K Rate: ₹ ${fmt(gold * (18 / 22))}/g`;
+    if (selectedMetal === 'silver') return `Silver Rate: ₹ ${fmt(silver)}/g`;
+    if (selectedMetal === 'none') return 'Metal Rate: None';
+
+    // Older invoices may not have a saved selection; infer one label from the first priced item.
     const items = getInvoiceItems();
-    const rates = items
+    const firstRate = items
       .filter((i) => i.pricing_mode !== 'flat_price' && Number(i.rate_per_gram) > 0)
-      .map((i) => Number(i.rate_per_gram));
-    const labels: string[] = [];
-    const hasGold = rates.some((r) => gold > 0 && r >= gold * 0.7);
-    const hasSilver = rates.some((r) => silver > 0 && r < (gold || Infinity) * 0.7);
-    if (hasGold && gold > 0) labels.push(`Gold Rate: ₹ ${fmt(gold)}/g`);
-    if (hasSilver && silver > 0) labels.push(`Silver Rate: ₹ ${fmt(silver)}/g`);
-    if (labels.length === 0) {
-      if (silver > 0) labels.push(`Silver Rate: ₹ ${fmt(silver)}/g`);
-      if (gold > 0) labels.push(`Gold Rate: ₹ ${fmt(gold)}/g`);
+      .map((i) => Number(i.rate_per_gram))[0];
+    if (firstRate && gold > 0 && firstRate >= gold * 0.7) {
+      return `Gold Rate: ₹ ${fmt(gold)}/g`;
     }
-    return labels.length ? labels.join('  ·  ') : undefined;
+    if (firstRate && silver > 0) return `Silver Rate: ₹ ${fmt(silver)}/g`;
+    return undefined;
   };
 
   const handleDownload = () => {

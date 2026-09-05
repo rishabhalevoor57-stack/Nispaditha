@@ -378,13 +378,12 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[97rem] max-h-[90vh] overflow-y-auto overflow-x-hidden
-        mx-auto ml-[8rem] ">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-[97rem] max-h-[calc(100vh-1rem)] sm:w-[calc(100vw-2rem)] sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-3 sm:p-6">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Custom Order' : 'New Custom Order (Job Work)'}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 max-w-[93rem]">
+        <div className="w-full min-w-0 space-y-6">
           {/* Order Type toggle */}
           <Card>
             <CardHeader className="pb-3">
@@ -392,7 +391,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
               <p className="text-xs text-muted-foreground">Customer Order = billed to a client. In-House = manufactured for stock — turns into a finished list-price product.</p>
             </CardHeader>
             <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                   type="button"
                   disabled={isEditing}
@@ -697,14 +696,14 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                   <p className="text-xs text-muted-foreground text-center py-3">No customer items added yet.</p>
                 )}
                 {customerMaterials.map((m, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-2 items-end border rounded-md p-2 bg-muted/20">
-                    <div className="col-span-3 space-y-1">
+                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end border rounded-md p-2 bg-muted/20">
+                    <div className="sm:col-span-3 space-y-1">
                         <Label className="text-xs">Item *</Label>
                       <Input className="h-9" placeholder="Pearls, Beads, Old Chain..." value={m.name} onChange={(e) => {
                         const next = [...customerMaterials]; next[idx] = { ...m, name: e.target.value }; setCustomerMaterials(next);
                       }} />
                     </div>
-                     <div className="col-span-1 space-y-1">
+                     <div className="sm:col-span-1 space-y-1">
                           <Label className="text-xs">Unit</Label>
                     <Select
                       value={m.unit ?? ""}
@@ -723,32 +722,35 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
                       </SelectContent>
                     </Select>
                   </div>
-                    <div className="col-span-6 md:col-span-2 space-y-1">
-                      <Label className="text-xs">Qty</Label>
-                      <Input className="h-9" type="number" min="0" value={m.quantity || ''} onChange={(e) => {
-                        const next = [...customerMaterials]; next[idx] = { ...m, quantity: parseFloat(e.target.value) || 0 }; setCustomerMaterials(next);
+                    <div className="sm:col-span-2 space-y-1">
+                      <Label className="text-xs">{m.unit === 'strings' ? 'Strings' : 'Qty'}</Label>
+                      <Input className="h-9" type="number" min="0" value={(m.unit === 'strings' ? (m.strings ?? m.quantity) : m.quantity) || ''} onChange={(e) => {
+                        const value = parseFloat(e.target.value) || 0;
+                        const next = [...customerMaterials];
+                        next[idx] = m.unit === 'strings' ? { ...m, strings: value } : { ...m, quantity: value };
+                        setCustomerMaterials(next);
                       }} />
                     </div>
-                    <div className="col-span-6 md:col-span-2 space-y-1">
+                    <div className="sm:col-span-2 space-y-1">
                       <Label className="text-xs">Wt (g)</Label>
                       <Input className="h-9" type="number" min="0" step="0.001" value={m.weight_grams || ''} onChange={(e) => {
                         const next = [...customerMaterials]; next[idx] = { ...m, weight_grams: parseFloat(e.target.value) || 0 }; setCustomerMaterials(next);
                       }} />
                     </div>
-                    <div className="col-span-10 md:col-span-3 space-y-1">
+                    <div className="sm:col-span-3 space-y-1">
                       <Label className="text-xs">Notes</Label>
                       <Input className="h-9" placeholder="Optional" value={m.description || ''} onChange={(e) => {
                         const next = [...customerMaterials]; next[idx] = { ...m, description: e.target.value }; setCustomerMaterials(next);
                       }} />
                     </div>
-                    <div className="col-span-2 md:col-span-1 flex justify-end">
+                    <div className="sm:col-span-1 flex justify-end">
                       <Button type="button" variant="ghost" size="icon" className="text-destructive h-9 w-9" onClick={() => setCustomerMaterials(customerMaterials.filter((_, i) => i !== idx))}>
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 ))}
-                <Button type="button" variant="outline" className="w-full border-dashed" onClick={() => setCustomerMaterials([...customerMaterials, { name: '', quantity: 1, weight_grams: 0 }])}>
+                <Button type="button" variant="outline" className="w-full border-dashed" onClick={() => setCustomerMaterials([...customerMaterials, { name: '', quantity: 1, weight_grams: 0, unit: 'quantity' }])}>
                   <Plus className="h-4 w-4 mr-2" /> Add Customer Item
                 </Button>
               </CardContent>
@@ -801,14 +803,14 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
               <div className="space-y-2 mb-4">
                 <Label className="text-xs">Other Charges (custom labels)</Label>
                 {extraCharges.map((c, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-2 items-end">
-                    <Input className="col-span-7 h-9" placeholder="Label (e.g. Stone Setting)" value={c.label} onChange={(e) => {
+                  <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                    <Input className="sm:col-span-7 h-9" placeholder="Label (e.g. Stone Setting)" value={c.label} onChange={(e) => {
                       const next = [...extraCharges]; next[idx] = { ...c, label: e.target.value }; setExtraCharges(next);
                     }} />
-                    <Input className="col-span-4 h-9" type="number" min="0" placeholder="Amount" value={c.amount || ''} onChange={(e) => {
+                    <Input className="sm:col-span-4 h-9" type="number" min="0" placeholder="Amount" value={c.amount || ''} onChange={(e) => {
                       const next = [...extraCharges]; next[idx] = { ...c, amount: parseFloat(e.target.value) || 0 }; setExtraCharges(next);
                     }} />
-                    <Button type="button" variant="ghost" size="icon" className="col-span-1 text-destructive h-9 w-9" onClick={() => setExtraCharges(extraCharges.filter((_, i) => i !== idx))}>
+                    <Button type="button" variant="ghost" size="icon" className="sm:col-span-1 text-destructive h-9 w-9" onClick={() => setExtraCharges(extraCharges.filter((_, i) => i !== idx))}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>

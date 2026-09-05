@@ -77,6 +77,24 @@ export const useReports = () => {
     },
   });
 
+  const { data: pendingPayments = [], isLoading: pendingPaymentsLoading } = useQuery({
+    queryKey: ['report-pending-payments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, invoice_date, grand_total, advance_paid, payment_status, clients(name, phone)')
+        .in('payment_status', ['partial', 'pending'])
+        .order('invoice_date', { ascending: true });
+      if (error) throw error;
+      return (data || []).map((invoice: any) => ({
+        ...invoice,
+        customer: invoice.clients?.name || 'Walk-in',
+        phone: invoice.clients?.phone || null,
+        balance: Math.max(0, Number(invoice.grand_total || 0) - Number(invoice.advance_paid || 0)),
+      }));
+    },
+  });
+
   // Products with categories (active only, fully paginated past the 1000-row API cap)
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['report-products'],
@@ -321,7 +339,7 @@ export const useReports = () => {
     return Object.entries(map).map(([status, count]) => ({ status, count }));
   }, [customOrders]);
 
-  const isLoading = invoicesLoading || productsLoading || clientsLoading || customOrdersLoading;
+  const isLoading = invoicesLoading || pendingPaymentsLoading || productsLoading || clientsLoading || customOrdersLoading;
 
   return {
     filters,
@@ -340,6 +358,7 @@ export const useReports = () => {
     topCustomers,
     repeatCustomers,
     outstandingClients,
+    pendingPayments,
     lowStockItems,
     outOfStockItems,
     totalStockValue,
