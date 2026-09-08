@@ -21,9 +21,10 @@ interface ViewCustomOrderDialogProps {
   onOpenChange: (open: boolean) => void;
   order: CustomOrder | null;
   onGenerateInvoice?: (order: CustomOrder, items: CustomOrderItem[], components: CustomOrderComponent[]) => void;
+  isGeneratingInvoice?: boolean;
 }
 
-export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInvoice }: ViewCustomOrderDialogProps) => {
+export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInvoice, isGeneratingInvoice = false }: ViewCustomOrderDialogProps) => {
 
   const navigate = useNavigate();
   const { getOrderWithItems } = useCustomOrders();
@@ -101,9 +102,9 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
               )}
 
               {!o.converted_to_invoice_id && o.status !== 'cancelled' && onGenerateInvoice && (
-                <Button variant="default" size="sm" onClick={() => onGenerateInvoice(o, items, components)}>
+                <Button variant="default" size="sm" disabled={isGeneratingInvoice} onClick={() => onGenerateInvoice(o, items, components)}>
                   <FileText className="h-4 w-4 mr-1.5" />
-                  Generate GST Invoice
+                  {isGeneratingInvoice ? 'Generating...' : 'Generate GST Invoice'}
                 </Button>
               )}
 

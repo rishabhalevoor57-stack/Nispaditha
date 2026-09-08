@@ -258,6 +258,18 @@ export default function Invoices() {
         </div>
       )
     },
+    {
+      key: 'discount_amount',
+      header: 'Discount',
+      cell: (item: Invoice) => {
+        const discount = Number(item.discount_amount) || 0;
+        return (
+          <span className={discount > 0 ? 'font-medium text-destructive' : 'text-muted-foreground'}>
+            {discount > 0 ? formatCurrency(discount) : '-'}
+          </span>
+        );
+      },
+    },
     { 
       key: 'status_actions', 
       header: 'Update Status',

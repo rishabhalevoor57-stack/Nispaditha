@@ -62,6 +62,7 @@ const CustomOrders = () => {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [selected, setSelected] = useState<CustomOrder | null>(null);
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
 
 
   const filtered = useMemo(() => {
@@ -152,6 +153,8 @@ const CustomOrders = () => {
       toast({ title: 'Already invoiced', description: 'This order already has a GST invoice.', variant: 'destructive' });
       return;
     }
+    if (isGeneratingInvoice) return;
+    setIsGeneratingInvoice(true);
     try {
       const result = await convertCustomOrderToInvoice(order, items, components, {
         finalize: true,
@@ -173,6 +176,8 @@ const CustomOrders = () => {
       navigate('/invoices', { state: { editDraftId: result.invoiceId } });
     } catch (error: any) {
       toast({ title: 'Invoice generation failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsGeneratingInvoice(false);
     }
   };
 
@@ -333,7 +338,7 @@ const CustomOrders = () => {
       </div>
 
       <CustomOrderFormDialog open={formOpen} onOpenChange={setFormOpen} order={selected} />
-      <ViewCustomOrderDialog open={viewOpen} onOpenChange={setViewOpen} order={selected} onGenerateInvoice={handleGenerateInvoice} />
+      <ViewCustomOrderDialog open={viewOpen} onOpenChange={setViewOpen} order={selected} onGenerateInvoice={handleGenerateInvoice} isGeneratingInvoice={isGeneratingInvoice} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

@@ -227,6 +227,7 @@ export function CreateInvoiceDialog({
       setPaymentMode(inv.payment_mode || 'cash');
       setGstPct(Number(inv.gst_percentage) || 3);
       setGstMode(((inv as any).gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
+      const invoiceDiscount = Number(inv.discount_amount) || 0;
       const savedMetal = (inv as any).metal_type as string | undefined;
       if (savedMetal && ['silver','gold_18k','gold_22k','gold_24k'].includes(savedMetal)) {
         setMetalRate(savedMetal as any);
@@ -273,6 +274,11 @@ export function CreateInvoiceDialog({
         description: it.description || '',
       }));
       setInvoiceItems(mapped);
+      // Converted custom-order items store gross line values and move their
+      // discounts to invoices.discount_amount. Restore that discount so the
+      // GST totals and preview show the same amount after reopening.
+      const itemDiscount = mapped.reduce((sum, item) => sum + (Number(item.discount) || 0), 0);
+      setTotalDiscount(Math.max(0, invoiceDiscount - itemDiscount));
     })();
   }, [open, editingDraftId]);
 
@@ -455,6 +461,7 @@ export function CreateInvoiceDialog({
         invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
         subtotal: invoiceTotals.subtotal,
         discount_amount: invoiceTotals.discountAmount,
+        order_discount: totalDiscount,
         gst_amount: invoiceTotals.gstAmount,
         grand_total: finalGrandTotal,
         advance_paid: effectiveAdvance,
@@ -579,6 +586,7 @@ export function CreateInvoiceDialog({
           storeCreditsUsed: cappedCredits,
           metalRateLabel,
           gstMode,
+          orderDiscount: appliedTotalDiscount,
         }, true);
       }
 
@@ -759,6 +767,7 @@ export function CreateInvoiceDialog({
         storeCreditsUsed: cappedCredits,
         paymentBreakdown: effectivePaymentBreakdown,
         gstMode,
+        orderDiscount: appliedTotalDiscount,
     }, true);
   };
 
@@ -1351,6 +1360,7 @@ export function CreateInvoiceDialog({
         paymentBreakdown={effectivePaymentBreakdown}
         metalRateLabel={metalRateLabel}
         gstMode={gstMode}
+        orderDiscount={appliedTotalDiscount}
       />
     )}
   </>

@@ -98,8 +98,7 @@ export function InvoicePreviewModal({
   if (!businessSettings) return null;
 
   const isInclusive = gstMode === 'inclusive';
-  const orderDisc = Math.min(Math.max(0, orderDiscount), totals.discountAmount || 0);
-  const itemDiscount = Math.max(0, (totals.discountAmount || 0) - orderDisc);
+  const totalDiscount = Math.max(0, totals.discountAmount || 0, orderDiscount);
 
   const customOrderDetails = getCustomOrderDetailsFromNotes(notes);
   const showCustomOrderDetails = hasCustomOrderDetails(customOrderDetails);
@@ -415,17 +414,12 @@ export function InvoicePreviewModal({
               <div className="w-80 text-[11.5px] space-y-1">
                 <div className="flex justify-between text-[13px] font-bold">
                   <span>MRP (Total)</span>
-                  <span style={num}>{money((totals.subtotal || 0) + (totals.discountAmount || 0))}</span>
+                  <span style={num}>{money((totals.subtotal || 0) + totalDiscount)}</span>
                 </div>
-                {itemDiscount > 0 && (
+                {totalDiscount > 0 && (
                   <div className="flex justify-between" style={{ color: '#b91c1c' }}>
-                    <span>{orderDisc > 0 ? '\u2212 Item Discount' : '\u2212 Discount'}</span>
-                    <span style={num}>{`\u2212 ${money(itemDiscount)}`}</span>
-                  </div>
-                )}
-                {orderDisc > 0 && (
-                  <div className="flex justify-between" style={{ color: '#b91c1c' }}>
-                    <span>{'\u2212 Order Discount'}</span><span style={num}>{`\u2212 ${money(orderDisc)}`}</span>
+                    <span>− Total Discount</span>
+                    <span style={num}>{`− ${money(totalDiscount)}`}</span>
                   </div>
                 )}
                 {isInclusive && (totals.gstAmount || 0) > 0 && (

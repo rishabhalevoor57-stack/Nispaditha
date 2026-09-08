@@ -445,9 +445,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const rowGap = 5;
 
   // MRP (Total) = gross pre-discount value in both GST modes.
-  const totalDiscount = data.totals.discountAmount || 0;
-  const orderDisc = Math.min(Math.max(0, data.orderDiscount || 0), totalDiscount);
-  const itemDisc = Math.max(0, totalDiscount - orderDisc);
+  const totalDiscount = Math.max(0, data.totals.discountAmount || 0, data.orderDiscount || 0);
   const mrpTotal = (data.totals.subtotal || 0) + totalDiscount;
   doc.setFont(FONT, 'bold');
   doc.setFontSize(10);
@@ -459,18 +457,10 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(60, 60, 60);
   yPos += rowGap;
 
-  if (itemDisc > 0) {
+  if (totalDiscount > 0) {
     doc.setTextColor(180, 30, 30);
-    doc.text(orderDisc > 0 ? '- Item Discount' : '- Discount', totalsX, yPos);
-    doc.text(`- ${money(itemDisc)}`, valueX, yPos, { align: 'right' });
-    doc.setTextColor(60, 60, 60);
-    yPos += rowGap;
-  }
-
-  if (orderDisc > 0) {
-    doc.setTextColor(180, 30, 30);
-    doc.text('- Order Discount', totalsX, yPos);
-    doc.text(`- ${money(orderDisc)}`, valueX, yPos, { align: 'right' });
+    doc.text('- Total Discount', totalsX, yPos);
+    doc.text(`- ${money(totalDiscount)}`, valueX, yPos, { align: 'right' });
     doc.setTextColor(60, 60, 60);
     yPos += rowGap;
   }

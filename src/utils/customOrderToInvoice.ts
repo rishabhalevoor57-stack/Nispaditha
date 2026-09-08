@@ -452,15 +452,55 @@ export async function convertCustomOrderToInvoice(
     .single();
   if (invErr || !invoice) throw invErr || new Error('Failed to create invoice');
 
+  // Claim the order atomically before creating items or transferring payments.
+  // The in-memory guard above cannot prevent two browser requests from both
+  // passing the check at the same time.
+  const createdInvoiceId = (invoice as { id: string }).id;
+  const { data: claimedOrder, error: claimErr } = await supabase
+    .from('custom_orders')
+    .update({ converted_to_invoice_id: createdInvoiceId } as never)
+    .eq('id', order.id)
+    .is('converted_to_invoice_id', null)
+    .select('converted_to_invoice_id')
+    .maybeSingle();
+
+  if (claimErr) {
+    await supabase.from('invoices').delete().eq('id', createdInvoiceId);
+    throw claimErr;
+  }
+
+  if (!claimedOrder) {
+    await supabase.from('invoices').delete().eq('id', createdInvoiceId);
+    const { data: existingOrder } = await supabase
+      .from('custom_orders')
+      .select('converted_to_invoice_id')
+      .eq('id', order.id)
+      .maybeSingle();
+    const existingInvoiceId = (existingOrder as { converted_to_invoice_id?: string | null } | null)?.converted_to_invoice_id;
+    if (existingInvoiceId) {
+      const { data: existingInvoice } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, client_id')
+        .eq('id', existingInvoiceId)
+        .maybeSingle();
+      if (existingInvoice) {
+        const e = existingInvoice as { id: string; invoice_number: string; client_id: string | null };
+        return { invoiceId: e.id, invoiceNumber: e.invoice_number, clientId: e.client_id };
+      }
+    }
+    throw new Error('This custom order is already being converted to an invoice. Please refresh and try again.');
+  }
+
   // 6. Insert invoice items
-  const itemsPayload = buildItemsPayload((invoice as { id: string }).id, invoiceData.lines);
+  const itemsPayload = buildItemsPayload(createdInvoiceId, invoiceData.lines);
 
   const { data: insertedItems, error: itemsErr } = await supabase
     .from('invoice_items')
     .insert(itemsPayload)
     .select('id');
   if (itemsErr || !insertedItems || insertedItems.length === 0) {
-    await supabase.from('invoices').delete().eq('id', (invoice as { id: string }).id);
+    await supabase.from('custom_orders').update({ converted_to_invoice_id: null } as never).eq('id', order.id).eq('converted_to_invoice_id', createdInvoiceId);
+    await supabase.from('invoices').delete().eq('id', createdInvoiceId);
     console.error('[convertCustomOrderToInvoice] items insert failed', itemsErr, { count: itemsPayload.length, sample: itemsPayload[0] });
     throw itemsErr || new Error('Could not save invoice line items — invoice rolled back. Please try again.');
   }
@@ -493,14 +533,8 @@ export async function convertCustomOrderToInvoice(
     }
   }
 
-  // 8. Mark the custom order as converted
-  await supabase
-    .from('custom_orders')
-    .update({ converted_to_invoice_id: (invoice as { id: string }).id })
-    .eq('id', order.id);
-
   return {
-    invoiceId: (invoice as { id: string }).id,
+    invoiceId: createdInvoiceId,
     invoiceNumber: invoiceNumber as string,
     clientId,
   };
