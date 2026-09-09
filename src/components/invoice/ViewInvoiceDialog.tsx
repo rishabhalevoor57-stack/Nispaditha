@@ -177,7 +177,9 @@ export function ViewInvoiceDialog({
       // Exclusive: grand = subtotal + gst + roundOff.
       const computedGrand = Math.round(((mode === 'inclusive' ? subtotal : subtotal + gst) + roundOffVal) * 100) / 100;
       const storedGrand = Number(data.grand_total) || 0;
-      if (Math.abs(computedGrand - storedGrand) > 0.05) {
+      // Keep the persisted grand total aligned with the latest round-off value,
+      // including changes smaller than five paise.
+      if (Math.abs(computedGrand - storedGrand) > 0.005) {
         data.grand_total = computedGrand;
         supabase
           .from('invoices')
@@ -265,7 +267,7 @@ export function ViewInvoiceDialog({
 
       // 2) Update invoice header — preserve advance_paid / store_credits_used
       const newRoundOff = Number(editRoundOff) || 0;
-      const newGrandTotal = (editTotals.grandTotal || 0) + newRoundOff;
+      const newGrandTotal = Math.round(((editTotals.grandTotal || 0) + newRoundOff) * 100) / 100;
 
       // Recompute payment_status from REAL payments vs new grand_total
       // (Discount/Adjusted amounts must NOT influence status.)
@@ -300,7 +302,7 @@ export function ViewInvoiceDialog({
         finalAdvancePaid = desiredPaid;
         const diff = Math.round((newGrandTotal - desiredPaid) * 100) / 100;
         if (desiredPaid <= 0) computedStatus = 'pending';
-        else if (diff <= 0.05) computedStatus = 'paid';
+        else if (diff <= PAYMENT_TOLERANCE) computedStatus = 'paid';
         else computedStatus = 'partial';
       }
 
@@ -407,7 +409,7 @@ export function ViewInvoiceDialog({
         action: 'update',
         recordId: invoice.id,
         recordLabel: invoice.invoice_number,
-        newValue: { grand_total: editTotals.grandTotal, items_count: editItems.length },
+        newValue: { grand_total: newGrandTotal, round_off: newRoundOff, items_count: editItems.length },
       });
 
       toast({ title: 'Invoice updated successfully' });
@@ -450,7 +452,7 @@ export function ViewInvoiceDialog({
       const advance = Number(invoice.advance_paid) || 0;
       const total = Number(invoice.grand_total) || 0;
       const status =
-        credits + advance >= total - 0.001 ? 'paid'
+        credits + advance >= total - PAYMENT_TOLERANCE ? 'paid'
           : advance > 0 ? 'partial' : 'pending';
 
       // Flip status FIRST (only if still draft) so subsequent reduction we perform manually.
@@ -1090,7 +1092,7 @@ export function ViewInvoiceDialog({
                           id="edit-round-off"
                           value={editRoundOff}
                           onValueChange={setEditRoundOff}
-                          min={undefined}
+                          allowNegative
                           placeholder="e.g. -0.53"
                         />
                         <p className="text-xs text-muted-foreground">
@@ -1151,7 +1153,14 @@ export function ViewInvoiceDialog({
                         </div>
                       </div>
                     )}
-                    <InvoiceTotalsSection totals={editTotals} isAdmin={true} roundOff={editRoundOff} gstMode={editGstMode} />
+                    <InvoiceTotalsSection
+                      totals={editTotals}
+                      isAdmin={true}
+                      roundOff={editRoundOff}
+                      onRoundOffChange={setEditRoundOff}
+                      editableRoundOff
+                      gstMode={editGstMode}
+                    />
                   </>
                 )}
 

@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
+import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance';
 
 import { Calculator, Download, Printer, Eye, CalendarIcon } from 'lucide-react';
 
@@ -123,7 +124,7 @@ export function CreateInvoiceDialog({
       .map((p) => ({ mode: p.mode, amount: parseFloat(p.amount) || 0 }))
       .filter((p) => p.amount > 0),
   ];
-  const upfrontExceeds = upfrontNum > 0 && upfrontNum - grandTotalAfterCredits > 0.05;
+  const upfrontExceeds = upfrontNum > 0 && upfrontNum - grandTotalAfterCredits > PAYMENT_TOLERANCE;
   const cappedUpfront = Math.min(Math.max(0, upfrontNum), grandTotalAfterCredits);
   const remainingAfterUpfront = Math.max(0, grandTotalAfterCredits - cappedUpfront);
   const effectivePaymentBreakdown = validPayments.reduce<{ mode: string; amount: number }[]>((acc, payment) => {
@@ -142,7 +143,7 @@ export function CreateInvoiceDialog({
   const totalPaidRaw = cappedCredits + upfrontNum + additionalPaymentsTotal;
   const totalAccounted = Math.min(totalPaidRaw, grandTotalWithRound);
   const rawBalance = Math.round((grandTotalWithRound - totalPaidRaw) * 100) / 100;
-  const balanceDue = rawBalance <= 0.05 ? 0 : rawBalance;
+  const balanceDue = rawBalance <= PAYMENT_TOLERANCE ? 0 : rawBalance;
   const fullyPaidByCredits = cappedCredits >= grandTotalWithRound && grandTotalWithRound > 0;
   const isFullyPaid = grandTotalWithRound > 0 && balanceDue === 0 && totalPaidRaw > 0;
   const paymentStatusUI: 'PAID' | 'PARTIAL' | 'PENDING' =

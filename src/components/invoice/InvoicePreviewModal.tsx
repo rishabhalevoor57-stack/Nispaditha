@@ -124,7 +124,7 @@ export function InvoicePreviewModal({
   const cashOrUpiPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
   const paidTotal = cashOrUpiPaid + storeCreditsUsed;
   let balanceDue = Math.round((grandTotal - paidTotal) * 100) / 100;
-  if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
+  if (Math.abs(balanceDue) <= PAYMENT_TOLERANCE) balanceDue = 0;
 
   const isPaidFull = grandTotal > 0 && balanceDue === 0 && paidTotal > 0;
   const isOverpaid = paidTotal > grandTotal + PAYMENT_TOLERANCE && grandTotal >= 0;

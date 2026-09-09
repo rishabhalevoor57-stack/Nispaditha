@@ -1,5 +1,6 @@
 import type { InvoiceTotals } from '@/types/invoice';
 import type { GstMode } from '@/hooks/useInvoiceCalculations';
+import { BlankZeroInput } from '@/components/ui/blank-zero-input';
 
 interface InvoiceTotalsSectionProps {
   totals: InvoiceTotals;
@@ -7,6 +8,8 @@ interface InvoiceTotalsSectionProps {
   gstPercentage?: number;
   roundOff?: number;
   gstMode?: GstMode;
+  editableRoundOff?: boolean;
+  onRoundOffChange?: (value: number) => void;
   /** Order-level discount (e.g. carried over from a custom order). Part of totals.discountAmount. */
   orderDiscount?: number;
 }
@@ -26,6 +29,8 @@ export function InvoiceTotalsSection({
   roundOff = 0,
   gstMode = 'exclusive',
   orderDiscount = 0,
+  editableRoundOff = false,
+  onRoundOffChange,
 }: InvoiceTotalsSectionProps) {
   const isInclusive = gstMode === 'inclusive';
   // MRP (Total) is always the gross pre-discount value: subtotal (post-discount) + discount.
@@ -73,10 +78,21 @@ export function InvoiceTotalsSection({
         <span className="text-muted-foreground">SGST @ {(gstPercentage / 2).toFixed(2)}%</span>
         <span className="tabular-nums">{formatCurrency(sgst)}</span>
       </div>
-      {roundOff !== 0 && (
+      {(editableRoundOff || roundOff !== 0) && (
         <div className="flex justify-between text-muted-foreground italic">
           <span>{roundOff >= 0 ? 'Round Off' : '− Round Off'}</span>
-          <span className="tabular-nums">{formatCurrency(Math.abs(roundOff))}</span>
+          {editableRoundOff ? (
+            <BlankZeroInput
+              aria-label="Round Off"
+              value={roundOff}
+              onValueChange={onRoundOffChange}
+              allowNegative
+              className="h-8 w-32 text-right not-italic"
+              placeholder="0.00"
+            />
+          ) : (
+            <span className="tabular-nums">{formatCurrency(Math.abs(roundOff))}</span>
+          )}
         </div>
       )}
       <div

@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { CustomOrder, CustomOrderItem, CustomOrderComponent } from '@/types/customOrder';
 import type { InvoiceCustomOrderDetails } from '@/types/invoice';
+import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance';
 
 export interface ConvertOptions {
   finalize?: boolean; // true = sent/paid, false = draft
@@ -310,7 +311,7 @@ export async function syncCustomOrderInvoice(
       total_paid: paid + credits,
       advance_paid: paid,
       balance_due: balance,
-      payment_status: balance <= 0.05 ? 'paid' : (paid + credits) > 0 ? 'partial' : 'pending',
+      payment_status: balance <= PAYMENT_TOLERANCE ? 'paid' : (paid + credits) > 0 ? 'partial' : 'pending',
       notes: invoiceData.notes,
       gst_percentage: invoiceData.pct,
       gst_mode: invoiceData.gstMode,
@@ -414,7 +415,7 @@ export async function convertCustomOrderToInvoice(
   const creditAdvanceTotal = creditAdvances.reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const totalAdvanceApplied = cashAdvanceTotal + creditAdvanceTotal;
   const balanceAfterAdvances = Math.max(0, invoiceData.grandTotal - totalAdvanceApplied);
-  const paymentStatus = balanceAfterAdvances <= 0.05
+  const paymentStatus = balanceAfterAdvances <= PAYMENT_TOLERANCE
     ? 'paid'
     : totalAdvanceApplied > 0 ? 'partial' : 'pending';
 
@@ -435,7 +436,7 @@ export async function convertCustomOrderToInvoice(
     total_paid: totalAdvanceApplied,
     balance_due: balanceAfterAdvances,
     notes: invoiceData.notes,
-    status: finalize ? (balanceAfterAdvances <= 0.05 ? 'paid' : 'sent') : 'draft',
+    status: finalize ? (balanceAfterAdvances <= PAYMENT_TOLERANCE ? 'paid' : 'sent') : 'draft',
     gst_percentage: invoiceData.pct,
     gst_mode: invoiceData.gstMode,
     metal_type: (order as any).metal_type || null,

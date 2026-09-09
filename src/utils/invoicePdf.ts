@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { InvoiceItem, InvoiceTotals, BusinessSettings } from '@/types/invoice';
+import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance';
 import { ensureNotoLoaded, registerNotoFont } from './pdfFont';
 import { getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from './invoiceCustomOrderDetails';
 
@@ -435,7 +436,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const cashPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
   const paidIncludingCredits = cashPaid + storeCreditsUsed;
   let balanceDue = Math.round((grandTotalWithRound - paidIncludingCredits) * 100) / 100;
-  if (balanceDue <= 0.05 && balanceDue >= -0.05) balanceDue = 0;
+  if (Math.abs(balanceDue) <= PAYMENT_TOLERANCE) balanceDue = 0;
 
 
   doc.setFontSize(9);
@@ -511,7 +512,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   // ================== STATUS DETERMINATION ==================
   const paidTotal = paidIncludingCredits;
   const isPaidFull = grandTotalWithRound >= 0 && balanceDue === 0 && paidTotal > 0;
-  const isOverpaid = paidTotal > grandTotalWithRound + 0.05;
+  const isOverpaid = paidTotal > grandTotalWithRound + PAYMENT_TOLERANCE;
   const isPartial = paidTotal > 0 && !isPaidFull && balanceDue > 0;
 
 
