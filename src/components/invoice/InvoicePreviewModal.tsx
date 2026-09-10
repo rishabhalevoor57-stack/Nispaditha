@@ -112,11 +112,11 @@ export function InvoicePreviewModal({
 
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
-  // In inclusive mode the line-totals already contain GST, so grandTotal == subtotal + roundOff.
-  // In exclusive mode GST is added on top.
+  // Preview should display the invoice total without adding the round-off adjustment.
+  // Round-off remains visible as a separate line item, but it does not change the grand total.
   const grossTotal = isInclusive
-    ? (totals.subtotal || 0) + roundOff
-    : (totals.grandTotal || 0) + roundOff;
+    ? (totals.subtotal || 0)
+    : (totals.grandTotal || 0);
   // Grand Total is the tax-invoice total. Store credits are a payment method,
   // NOT a tax deduction — they only appear in the Payments section below.
   const grandTotal = grossTotal;
