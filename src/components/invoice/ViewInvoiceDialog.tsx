@@ -121,7 +121,6 @@ export function ViewInvoiceDialog({
   const [editNotes, setEditNotes] = useState('');
   const [editItems, setEditItems] = useState<InvoiceItem[]>([]);
   const [editMetalRate, setEditMetalRate] = useState<MetalRateOption>('silver');
-  const [editRoundOff, setEditRoundOff] = useState<number>(0);
   const [editGstMode, setEditGstMode] = useState<'exclusive' | 'inclusive'>('exclusive');
   const [editPaidAmount, setEditPaidAmount] = useState<number>(0);
 
@@ -233,7 +232,6 @@ export function ViewInvoiceDialog({
     setEditInvoiceDate(y && m && d ? new Date(y, m - 1, d) : new Date(invoice.invoice_date));
     setEditNotes(stripCustomOrderPayload(invoice.notes));
     setEditItems(getInvoiceItems());
-    setEditRoundOff(Number(invoice.round_off) || 0);
     setEditGstMode((invoice.gst_mode === 'inclusive' ? 'inclusive' : 'exclusive'));
     const savedMetal = invoice.metal_type;
     if (savedMetal && ['gold_24k', 'gold_22k', 'gold_18k', 'silver', 'none'].includes(savedMetal)) {
@@ -266,7 +264,7 @@ export function ViewInvoiceDialog({
       if (delErr) throw delErr;
 
       // 2) Update invoice header — preserve advance_paid / store_credits_used
-      const newRoundOff = Number(editRoundOff) || 0;
+      const newRoundOff = Number(invoice.round_off) || 0;
       const newGrandTotal = Math.round(((editTotals.grandTotal || 0) + newRoundOff) * 100) / 100;
 
       // Recompute payment_status from REAL payments vs new grand_total
@@ -1060,7 +1058,7 @@ export function ViewInvoiceDialog({
 
                 {editItems.length > 0 && (
                   <>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>GST Mode</Label>
                         <div className="grid grid-cols-2 gap-1 rounded-md border p-1">
@@ -1086,19 +1084,6 @@ export function ViewInvoiceDialog({
                           </button>
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-round-off">Round Off</Label>
-                        <BlankZeroInput
-                          id="edit-round-off"
-                          value={editRoundOff}
-                          onValueChange={setEditRoundOff}
-                          allowNegative
-                          placeholder="e.g. -0.53"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Adjusts Grand Total. Use a negative value (e.g. -0.53) to round down.
-                        </p>
-                      </div>
                       <div className="flex items-end">
                         <div className="w-full bg-muted/40 rounded-md p-3 text-sm">
                           <div className="flex justify-between">
@@ -1109,11 +1094,11 @@ export function ViewInvoiceDialog({
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Round Off</span>
-                            <span>{(editRoundOff >= 0 ? '+ ' : '- ')}{formatCurrency(Math.abs(editRoundOff))}</span>
+                            <span>{(Number(invoice?.round_off || 0) >= 0 ? '+ ' : '- ')}{formatCurrency(Math.abs(Number(invoice?.round_off || 0)))}</span>
                           </div>
                           <div className="flex justify-between font-bold pt-2 border-t mt-2">
                             <span>New Grand Total</span>
-                            <span className="text-primary">{formatCurrency((editTotals.grandTotal || 0) + (Number(editRoundOff) || 0))}</span>
+                            <span className="text-primary">{formatCurrency((editTotals.grandTotal || 0) + (Number(invoice?.round_off || 0)))}</span>
                           </div>
                         </div>
                       </div>
@@ -1135,7 +1120,7 @@ export function ViewInvoiceDialog({
                         </div>
                         <div className="md:col-span-2 flex items-end">
                           {(() => {
-                            const gt = (editTotals.grandTotal || 0) + (Number(editRoundOff) || 0);
+                            const gt = (editTotals.grandTotal || 0) + (Number(invoice?.round_off || 0));
                             const paid = Number(editPaidAmount) || 0;
                             const bal = gt - paid <= PAYMENT_TOLERANCE ? 0 : gt - paid;
                             const excess = paid - gt > PAYMENT_TOLERANCE ? paid - gt : 0;
@@ -1156,9 +1141,7 @@ export function ViewInvoiceDialog({
                     <InvoiceTotalsSection
                       totals={editTotals}
                       isAdmin={true}
-                      roundOff={editRoundOff}
-                      onRoundOffChange={setEditRoundOff}
-                      editableRoundOff
+                      roundOff={Number(invoice?.round_off || 0)}
                       gstMode={editGstMode}
                     />
                   </>
