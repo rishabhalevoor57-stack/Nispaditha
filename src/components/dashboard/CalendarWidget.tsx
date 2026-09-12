@@ -87,7 +87,7 @@ export const CalendarWidget = () => {
                     key={day.toString()}
                     onClick={() => setSelectedDate(day)}
                     className={cn(
-                      "aspect-square flex flex-col items-center justify-center rounded-md text-sm relative transition-colors",
+                      "aspect-square flex flex-col items-center justify-center rounded text-[11px] leading-none relative transition-colors",
                       "hover:bg-accent",
                       isSelected && "bg-primary text-primary-foreground hover:bg-primary",
                       isToday && !isSelected && "border border-primary",
@@ -96,15 +96,15 @@ export const CalendarWidget = () => {
                   >
                     <span>{format(day, 'd')}</span>
                     {dayEvents && (
-                      <div className="flex gap-0.5 mt-0.5">
+                      <div className="flex gap-px mt-0.5">
                         {dayEvents.order_start && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                          <span className="w-1 h-1 rounded-full bg-success" />
                         )}
                         {dayEvents.delivery && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                          <span className="w-1 h-1 rounded-full bg-destructive" />
                         )}
                         {dayEvents.milestone && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          <span className="w-1 h-1 rounded-full bg-primary" />
                         )}
                       </div>
                     )}
@@ -114,31 +114,31 @@ export const CalendarWidget = () => {
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[10px] text-muted-foreground">
               <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-success" />
+                <span className="w-1.5 h-1.5 rounded-full bg-success" />
                 <span>Order Start</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-destructive" />
+                <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
                 <span>Delivery</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-primary" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                 <span>Milestone</span>
               </div>
             </div>
           </div>
 
           {/* Events Panel */}
-          <div className="lg:w-64 border-t lg:border-t-0 lg:border-l pt-4 lg:pt-0 lg:pl-4">
-            <h4 className="text-sm font-medium mb-3">
+          <div className="flex-1 min-w-0 border-t lg:border-t-0 lg:border-l pt-2 lg:pt-0 lg:pl-3">
+            <h4 className="text-xs font-medium mb-2">
               {selectedDate 
                 ? format(selectedDate, 'MMM d, yyyy')
                 : 'Select a date'
               }
             </h4>
-            <ScrollArea className="h-48">
+            <ScrollArea className="h-32">
               {selectedDate && selectedEvents.length === 0 && (
                 <p className="text-sm text-muted-foreground">No events on this day</p>
               )}
