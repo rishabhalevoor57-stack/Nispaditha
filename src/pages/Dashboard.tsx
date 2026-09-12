@@ -5,7 +5,6 @@ import { StatCard } from '@/components/ui/stat-card';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { LiveMetalRatesCard } from '@/components/dashboard/LiveMetalRatesCard';
-import { CalendarWidget } from '@/components/dashboard/CalendarWidget';
 import { CategoryStockValuation } from '@/components/dashboard/CategoryStockValuation';
 import { CustomOrdersSummary } from '@/components/dashboard/CustomOrdersSummary';
 import { GSTSalesSummary } from '@/components/dashboard/GSTSalesSummary';
@@ -282,11 +281,6 @@ export default function Dashboard() {
       {/* GST & Sales Summary */}
       <div className="mb-8">
         <GSTSalesSummary />
-      </div>
-
-      {/* Calendar Widget */}
-      <div className="mb-8">
-        <CalendarWidget />
       </div>
 
       {/* Custom Orders & Category Stock Valuation */}
