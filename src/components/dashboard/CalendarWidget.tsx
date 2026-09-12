@@ -45,34 +45,34 @@ export const CalendarWidget = () => {
           Order Calendar
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col lg:flex-row gap-4">
+      <CardContent className="pt-0 pb-3">
+        <div className="flex flex-col lg:flex-row gap-3">
           {/* Calendar Grid */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 max-w-[20rem]">
             {/* Month Navigation */}
-            <div className="flex items-center justify-between mb-4">
-              <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
-                <ChevronLeft className="h-4 w-4" />
+            <div className="flex items-center justify-between mb-1.5">
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handlePrevMonth}>
+                <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
-              <h3 className="text-sm font-medium">
+              <h3 className="text-xs font-medium">
                 {format(currentMonth, 'MMMM yyyy')}
               </h3>
-              <Button variant="ghost" size="icon" onClick={handleNextMonth}>
-                <ChevronRight className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleNextMonth}>
+                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
 
             {/* Weekday Headers */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center text-xs text-muted-foreground font-medium py-1">
+            <div className="grid grid-cols-7 gap-0.5 mb-0.5">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                <div key={`${day}-${i}`} className="text-center text-[10px] text-muted-foreground font-medium">
                   {day}
                 </div>
               ))}
             </div>
 
             {/* Days Grid */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-0.5">
               {paddingDays.map((_, i) => (
                 <div key={`pad-${i}`} className="aspect-square" />
               ))}
@@ -87,7 +87,7 @@ export const CalendarWidget = () => {
                     key={day.toString()}
                     onClick={() => setSelectedDate(day)}
                     className={cn(
-                      "aspect-square flex flex-col items-center justify-center rounded-md text-sm relative transition-colors",
+                      "aspect-square flex flex-col items-center justify-center rounded text-[11px] leading-none relative transition-colors",
                       "hover:bg-accent",
                       isSelected && "bg-primary text-primary-foreground hover:bg-primary",
                       isToday && !isSelected && "border border-primary",
@@ -96,15 +96,15 @@ export const CalendarWidget = () => {
                   >
                     <span>{format(day, 'd')}</span>
                     {dayEvents && (
-                      <div className="flex gap-0.5 mt-0.5">
+                      <div className="flex gap-px mt-0.5">
                         {dayEvents.order_start && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                          <span className="w-1 h-1 rounded-full bg-success" />
                         )}
                         {dayEvents.delivery && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                          <span className="w-1 h-1 rounded-full bg-destructive" />
                         )}
                         {dayEvents.milestone && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          <span className="w-1 h-1 rounded-full bg-primary" />
                         )}
                       </div>
                     )}
@@ -114,31 +114,31 @@ export const CalendarWidget = () => {
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[10px] text-muted-foreground">
               <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-success" />
+                <span className="w-1.5 h-1.5 rounded-full bg-success" />
                 <span>Order Start</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-destructive" />
+                <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
                 <span>Delivery</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-primary" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                 <span>Milestone</span>
               </div>
             </div>
           </div>
 
           {/* Events Panel */}
-          <div className="lg:w-64 border-t lg:border-t-0 lg:border-l pt-4 lg:pt-0 lg:pl-4">
-            <h4 className="text-sm font-medium mb-3">
+          <div className="flex-1 min-w-0 border-t lg:border-t-0 lg:border-l pt-2 lg:pt-0 lg:pl-3">
+            <h4 className="text-xs font-medium mb-2">
               {selectedDate 
                 ? format(selectedDate, 'MMM d, yyyy')
                 : 'Select a date'
               }
             </h4>
-            <ScrollArea className="h-48">
+            <ScrollArea className="h-32">
               {selectedDate && selectedEvents.length === 0 && (
                 <p className="text-sm text-muted-foreground">No events on this day</p>
               )}
