@@ -109,9 +109,8 @@ export const useStockValuation = () => {
       totalWeight: acc.totalWeight + cat.totalWeight,
       totalStockValue: acc.totalStockValue + cat.stockValue,
       totalPurchaseValue: acc.totalPurchaseValue + cat.purchaseValue,
-      totalListValue: acc.totalListValue + cat.listValue,
     }),
-    { totalItems: 0, totalQuantity: 0, totalWeight: 0, totalStockValue: 0, totalPurchaseValue: 0, totalListValue: 0 }
+    { totalItems: 0, totalQuantity: 0, totalWeight: 0, totalStockValue: 0, totalPurchaseValue: 0 }
   );
 
   // Get products by category
