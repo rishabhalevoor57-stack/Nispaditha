@@ -47,7 +47,7 @@ export const useStockValuation = () => {
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
           .from('products')
-          .select('id, name, sku, weight_grams, quantity, purchase_price, selling_price, category_id, categories(name)')
+          .select('id, name, sku, weight_grams, quantity, purchase_price, selling_price, pricing_mode, category_id, categories(name)')
           .is('deleted_at', null)
           .gt('quantity', 0)
           .order('created_at', { ascending: false })
