@@ -115,10 +115,6 @@ export const CategoryStockValuation = () => {
               <p className="text-xs text-muted-foreground">Purchase Value</p>
               <p className="text-lg font-bold">{formatCurrency(totals.totalPurchaseValue)}</p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-muted-foreground">List Price Value</p>
-              <p className="text-lg font-bold">{formatCurrency(totals.totalListValue)}</p>
-            </div>
           </div>
 
           <Tabs defaultValue="table" className="w-full">
@@ -287,8 +283,9 @@ export const CategoryStockValuation = () => {
               </TableHeader>
               <TableBody>
                 {categoryProducts.map((product) => {
-                  const totalWeight = product.weight_grams * product.quantity;
-                  const value = totalWeight * silverRate;
+                  const isFlat = product.pricing_mode === 'flat_price';
+                  const totalWeight = isFlat ? 0 : (Number(product.weight_grams) || 0) * product.quantity;
+                  const value = isFlat ? (Number(product.purchase_price) || 0) : totalWeight * silverRate;
                   return (
                     <TableRow key={product.id}>
                       <TableCell className="font-mono text-xs">{product.sku}</TableCell>
