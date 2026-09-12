@@ -9,7 +9,6 @@ export interface CategoryStockData {
   totalWeight: number;
   stockValue: number;
   purchaseValue: number;
-  listValue: number;
 }
 
 export interface ProductForValuation {
@@ -20,6 +19,7 @@ export interface ProductForValuation {
   quantity: number;
   purchase_price: number | null;
   selling_price: number | null;
+  pricing_mode: string | null;
   category_id: string | null;
   categories: { name: string } | null;
 }
