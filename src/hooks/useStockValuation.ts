@@ -79,20 +79,23 @@ export const useStockValuation = () => {
           totalWeight: 0,
           stockValue: 0,
           purchaseValue: 0,
-          listValue: 0,
         });
       }
 
       const category = categoryMap.get(categoryId)!;
-      const itemWeight = product.weight_grams * product.quantity;
+      const isFlat = product.pricing_mode === 'flat_price';
+      // Weight-based: effective stock weight = item weight x current quantity
+      const itemWeight = isFlat ? 0 : (Number(product.weight_grams) || 0) * product.quantity;
       const itemValue = itemWeight * silverRate;
 
       category.totalItems += 1;
       category.totalQuantity += product.quantity;
       category.totalWeight += itemWeight;
       category.stockValue += itemValue;
-      category.purchaseValue += (Number(product.purchase_price) || 0) * product.quantity;
-      category.listValue += (Number(product.selling_price) || 0) * product.quantity;
+      // Flat price: simple sum of purchase price values, no multiplication
+      category.purchaseValue += isFlat
+        ? (Number(product.purchase_price) || 0)
+        : (Number(product.purchase_price) || 0) * product.quantity;
     });
 
     return Array.from(categoryMap.values()).sort((a, b) => b.stockValue - a.stockValue);
