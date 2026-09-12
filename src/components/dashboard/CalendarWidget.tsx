@@ -45,34 +45,34 @@ export const CalendarWidget = () => {
           Order Calendar
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col lg:flex-row gap-4">
+      <CardContent className="pt-0 pb-3">
+        <div className="flex flex-col lg:flex-row gap-3">
           {/* Calendar Grid */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 max-w-[20rem]">
             {/* Month Navigation */}
-            <div className="flex items-center justify-between mb-4">
-              <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
-                <ChevronLeft className="h-4 w-4" />
+            <div className="flex items-center justify-between mb-1.5">
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handlePrevMonth}>
+                <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
-              <h3 className="text-sm font-medium">
+              <h3 className="text-xs font-medium">
                 {format(currentMonth, 'MMMM yyyy')}
               </h3>
-              <Button variant="ghost" size="icon" onClick={handleNextMonth}>
-                <ChevronRight className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleNextMonth}>
+                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
 
             {/* Weekday Headers */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center text-xs text-muted-foreground font-medium py-1">
+            <div className="grid grid-cols-7 gap-0.5 mb-0.5">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                <div key={`${day}-${i}`} className="text-center text-[10px] text-muted-foreground font-medium">
                   {day}
                 </div>
               ))}
             </div>
 
             {/* Days Grid */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-0.5">
               {paddingDays.map((_, i) => (
                 <div key={`pad-${i}`} className="aspect-square" />
               ))}
