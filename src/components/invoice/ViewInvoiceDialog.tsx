@@ -36,6 +36,7 @@ import { useActivityLogger } from '@/hooks/useActivityLog';
 import { adjustWallet } from '@/hooks/useStoreWallet';
 import { cn } from '@/lib/utils';
 import { stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
+import { computeGrandTotal } from '@/lib/invoiceTotals';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals, InvoiceStatus, Product } from '@/types/invoice';
 import { format } from 'date-fns';
 
@@ -174,17 +175,12 @@ export function ViewInvoiceDialog({
       // subtotal stored is post-discount sum of line_totals.
       // Inclusive: grand = subtotal + roundOff (GST already inside).
       // Exclusive: grand = subtotal + gst + roundOff.
-      const computedGrand = Math.round(((mode === 'inclusive' ? subtotal : subtotal + gst) + roundOffVal) * 100) / 100;
+      const computedGrand = computeGrandTotal({ subtotal, gstAmount: gst, gstMode: mode, roundOff: roundOffVal });
       const storedGrand = Number(data.grand_total) || 0;
-      // Keep the persisted grand total aligned with the latest round-off value,
-      // including changes smaller than five paise.
+      // Display-only reconciliation. Viewing an invoice must NEVER mutate its stored
+      // financial values — round off is applied once, at save time.
       if (Math.abs(computedGrand - storedGrand) > 0.005) {
         data.grand_total = computedGrand;
-        supabase
-          .from('invoices')
-          .update({ grand_total: computedGrand } as never)
-          .eq('id', invoiceId)
-          .then(() => { });
       }
       setInvoice({
         ...data,
@@ -265,7 +261,13 @@ export function ViewInvoiceDialog({
 
       // 2) Update invoice header — preserve advance_paid / store_credits_used
       const newRoundOff = Number(invoice.round_off) || 0;
-      const newGrandTotal = Math.round(((editTotals.grandTotal || 0) + newRoundOff) * 100) / 100;
+      // Round off applied exactly once, from the recalculated line items.
+      const newGrandTotal = computeGrandTotal({
+        subtotal: editTotals.subtotal || 0,
+        gstAmount: editTotals.gstAmount || 0,
+        gstMode: editGstMode,
+        roundOff: newRoundOff,
+      });
 
       // Recompute payment_status from REAL payments vs new grand_total
       // (Discount/Adjusted amounts must NOT influence status.)

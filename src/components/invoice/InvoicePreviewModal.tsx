@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance'; // money-tolerance
+import { computeGrandTotal } from '@/lib/invoiceTotals';
 import { FileText } from 'lucide-react';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
 import { getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
@@ -112,14 +113,14 @@ export function InvoicePreviewModal({
 
   const cgst = (totals.gstAmount || 0) / 2;
   const sgst = (totals.gstAmount || 0) / 2;
-  // Preview should display the invoice total without adding the round-off adjustment.
-  // Round-off remains visible as a separate line item, but it does not change the grand total.
-  const grossTotal = isInclusive
-    ? (totals.subtotal || 0)
-    : (totals.grandTotal || 0);
-  // Grand Total is the tax-invoice total. Store credits are a payment method,
-  // NOT a tax deduction — they only appear in the Payments section below.
-  const grandTotal = grossTotal;
+  // Single authoritative total: subtotal (+ GST when exclusive) + roundOff, applied once.
+  // Store credits are a payment method, NOT a tax deduction — Payments section only.
+  const grandTotal = computeGrandTotal({
+    subtotal: totals.subtotal || 0,
+    gstAmount: totals.gstAmount || 0,
+    gstMode,
+    roundOff,
+  });
   const breakdownTotal = paymentBreakdown.reduce((s, p) => s + (p.amount || 0), 0);
   const cashOrUpiPaid = breakdownTotal > 0 ? breakdownTotal : advancePaid;
   const paidTotal = cashOrUpiPaid + storeCreditsUsed;
