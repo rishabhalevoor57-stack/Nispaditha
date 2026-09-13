@@ -261,7 +261,13 @@ export function ViewInvoiceDialog({
 
       // 2) Update invoice header — preserve advance_paid / store_credits_used
       const newRoundOff = Number(invoice.round_off) || 0;
-      const newGrandTotal = Math.round(((editTotals.grandTotal || 0) + newRoundOff) * 100) / 100;
+      // Round off applied exactly once, from the recalculated line items.
+      const newGrandTotal = computeGrandTotal({
+        subtotal: editTotals.subtotal || 0,
+        gstAmount: editTotals.gstAmount || 0,
+        gstMode: editGstMode,
+        roundOff: newRoundOff,
+      });
 
       // Recompute payment_status from REAL payments vs new grand_total
       // (Discount/Adjusted amounts must NOT influence status.)
