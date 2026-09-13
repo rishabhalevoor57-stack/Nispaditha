@@ -40,6 +40,7 @@ import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
 import { adjustWallet, getWalletBalance } from '@/hooks/useStoreWallet';
 import { Wallet } from 'lucide-react';
 import { stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
+import { computeGrandTotal } from '@/lib/invoiceTotals';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
 
 

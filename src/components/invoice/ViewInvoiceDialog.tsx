@@ -36,6 +36,7 @@ import { useActivityLogger } from '@/hooks/useActivityLog';
 import { adjustWallet } from '@/hooks/useStoreWallet';
 import { cn } from '@/lib/utils';
 import { stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
+import { computeGrandTotal } from '@/lib/invoiceTotals';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals, InvoiceStatus, Product } from '@/types/invoice';
 import { format } from 'date-fns';
 
