@@ -175,17 +175,12 @@ export function ViewInvoiceDialog({
       // subtotal stored is post-discount sum of line_totals.
       // Inclusive: grand = subtotal + roundOff (GST already inside).
       // Exclusive: grand = subtotal + gst + roundOff.
-      const computedGrand = Math.round(((mode === 'inclusive' ? subtotal : subtotal + gst) + roundOffVal) * 100) / 100;
+      const computedGrand = computeGrandTotal({ subtotal, gstAmount: gst, gstMode: mode, roundOff: roundOffVal });
       const storedGrand = Number(data.grand_total) || 0;
-      // Keep the persisted grand total aligned with the latest round-off value,
-      // including changes smaller than five paise.
+      // Display-only reconciliation. Viewing an invoice must NEVER mutate its stored
+      // financial values — round off is applied once, at save time.
       if (Math.abs(computedGrand - storedGrand) > 0.005) {
         data.grand_total = computedGrand;
-        supabase
-          .from('invoices')
-          .update({ grand_total: computedGrand } as never)
-          .eq('id', invoiceId)
-          .then(() => { });
       }
       setInvoice({
         ...data,
