@@ -112,7 +112,12 @@ export function CreateInvoiceDialog({
     gstAmount: adjustedGstAmount,
     grandTotal: gstMode === 'inclusive' ? discountedSubtotal : discountedSubtotal + adjustedGstAmount,
   };
-  const grandTotalWithRound = (invoiceTotals.grandTotal || 0) + (Number(roundOff) || 0);
+  const grandTotalWithRound = computeGrandTotal({
+    subtotal: invoiceTotals.subtotal || 0,
+    gstAmount: invoiceTotals.gstAmount || 0,
+    gstMode,
+    roundOff: Number(roundOff) || 0,
+  });
   const cappedCredits = Math.min(Math.max(0, Number(storeCreditsUsed) || 0), walletBalance, grandTotalWithRound);
   const grandTotalAfterCredits = Math.max(0, grandTotalWithRound - cappedCredits);
   const remainingAfterCredits = grandTotalAfterCredits;

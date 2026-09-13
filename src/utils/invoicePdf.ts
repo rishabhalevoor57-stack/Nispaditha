@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { InvoiceItem, InvoiceTotals, BusinessSettings } from '@/types/invoice';
 import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance';
+import { computeGrandTotal } from '@/lib/invoiceTotals';
 import { ensureNotoLoaded, registerNotoFont } from './pdfFont';
 import { getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from './invoiceCustomOrderDetails';
 
@@ -424,10 +425,14 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const isInclusive = gstMode === 'inclusive';
   const cgst = (data.totals.gstAmount || 0) / 2;
   const sgst = (data.totals.gstAmount || 0) / 2;
-  // Inclusive: subtotal already contains GST; do not add GST again.
-  const grossTotalWithRound = isInclusive
-    ? (data.totals.subtotal || 0) + roundOff
-    : (data.totals.grandTotal || 0) + roundOff;
+  // Single authoritative total. Derived from subtotal + GST (mode aware) so a caller
+  // passing an already-rounded stored grand_total can never double-apply round off.
+  const grossTotalWithRound = computeGrandTotal({
+    subtotal: data.totals.subtotal || 0,
+    gstAmount: data.totals.gstAmount || 0,
+    gstMode,
+    roundOff,
+  });
   // Grand Total is the tax-invoice total. Store credits are a payment method,
   // NOT a tax deduction — they only appear in the Payments section.
   const grandTotalWithRound = grossTotalWithRound;
