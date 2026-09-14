@@ -468,6 +468,14 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setTextColor(60, 60, 60);
   yPos += rowGap;
 
+  if (itemLevelDiscount > 0) {
+    doc.setTextColor(180, 30, 30);
+    doc.text('- Item Discount', totalsX, yPos);
+    doc.text(`- ${money(itemLevelDiscount)}`, valueX, yPos, { align: 'right' });
+    doc.setTextColor(60, 60, 60);
+    yPos += rowGap;
+  }
+
   if (totalDiscount > 0) {
     doc.setTextColor(180, 30, 30);
     doc.text('- Total Discount', totalsX, yPos);
