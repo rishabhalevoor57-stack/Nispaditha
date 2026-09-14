@@ -328,7 +328,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       yPos = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 2;
     };
 
-    drawDetailTable('ORDER ITEMS', customOrderDetails.orderItems.map((item) => {
+    drawDetailTable('CUSTOM ORDER ITEMS', customOrderDetails.orderItems.map((item) => {
       const meta = [item.sku, item.weight_grams ? `${item.weight_grams}g` : '', `Qty ${item.quantity}`].filter(Boolean).join(' · ');
       return [`• ${item.name}${meta ? ` — ${meta}` : ''}${item.description ? `\n${item.description}` : ''}`, money(item.line_total)];
     }));
