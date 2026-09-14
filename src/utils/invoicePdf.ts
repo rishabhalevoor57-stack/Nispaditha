@@ -328,7 +328,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
       yPos = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 2;
     };
 
-    drawDetailTable('ORDER ITEMS', customOrderDetails.orderItems.map((item) => {
+    drawDetailTable('CUSTOM ORDER ITEMS', customOrderDetails.orderItems.map((item) => {
       const meta = [item.sku, item.weight_grams ? `${item.weight_grams}g` : '', `Qty ${item.quantity}`].filter(Boolean).join(' · ');
       return [`• ${item.name}${meta ? ` — ${meta}` : ''}${item.description ? `\n${item.description}` : ''}`, money(item.line_total)];
     }));
@@ -451,8 +451,13 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const rowGap = 5;
 
   // MRP (Total) = gross pre-discount value in both GST modes.
-  const totalDiscount = Math.max(0, data.totals.discountAmount || 0, data.orderDiscount || 0);
-  const mrpTotal = (data.totals.subtotal || 0) + totalDiscount;
+  // Per-item discounts stay on their own rows; only the flat/order-level part is
+  // shown as "Total Discount" so nothing is counted twice.
+  const allDiscount = Math.max(0, data.totals.discountAmount || 0);
+  const orderLevelDiscount = Math.min(Math.max(0, data.orderDiscount || 0), allDiscount);
+  const itemLevelDiscount = Math.max(0, allDiscount - orderLevelDiscount);
+  const totalDiscount = orderLevelDiscount;
+  const mrpTotal = (data.totals.subtotal || 0) + allDiscount;
   doc.setFont(FONT, 'bold');
   doc.setFontSize(10);
   doc.setTextColor(20, 20, 20);
@@ -462,6 +467,14 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setFontSize(9);
   doc.setTextColor(60, 60, 60);
   yPos += rowGap;
+
+  if (itemLevelDiscount > 0) {
+    doc.setTextColor(180, 30, 30);
+    doc.text('- Item Discount', totalsX, yPos);
+    doc.text(`- ${money(itemLevelDiscount)}`, valueX, yPos, { align: 'right' });
+    doc.setTextColor(60, 60, 60);
+    yPos += rowGap;
+  }
 
   if (totalDiscount > 0) {
     doc.setTextColor(180, 30, 30);

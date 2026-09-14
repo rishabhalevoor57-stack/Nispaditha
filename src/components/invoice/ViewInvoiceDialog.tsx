@@ -571,7 +571,7 @@ export function ViewInvoiceDialog({
     if (selectedMetal === 'gold_22k') return `Gold 22K Rate: ₹ ${fmt(gold)}/g`;
     if (selectedMetal === 'gold_18k') return `Gold 18K Rate: ₹ ${fmt(gold * (18 / 22))}/g`;
     if (selectedMetal === 'silver') return `Silver Rate: ₹ ${fmt(silver)}/g`;
-    if (selectedMetal === 'none') return 'Metal Rate: None';
+    if (selectedMetal === 'none') return undefined; // hide badge entirely
 
     // Older invoices may not have a saved selection; infer one label from the first priced item.
     const items = getInvoiceItems();

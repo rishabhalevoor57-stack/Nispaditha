@@ -99,7 +99,11 @@ export function InvoicePreviewModal({
   if (!businessSettings) return null;
 
   const isInclusive = gstMode === 'inclusive';
-  const totalDiscount = Math.max(0, totals.discountAmount || 0, orderDiscount);
+  // Per-item discounts remain on their item rows; only the flat/order-level
+  // discount is shown as "Total Discount". Neither is counted twice.
+  const allDiscount = Math.max(0, totals.discountAmount || 0);
+  const totalDiscount = Math.min(Math.max(0, orderDiscount), allDiscount);
+  const itemDiscount = Math.max(0, allDiscount - totalDiscount);
 
   const customOrderDetails = getCustomOrderDetailsFromNotes(notes);
   const showCustomOrderDetails = hasCustomOrderDetails(customOrderDetails);
@@ -274,7 +278,7 @@ export function InvoicePreviewModal({
 
                 {customOrderDetails.orderItems.length > 0 && (
                   <div className="border rounded overflow-hidden" style={{ borderColor: '#e5e0ee' }}>
-                    <div className="px-3 py-1 font-bold uppercase tracking-wider" style={{ background: PURPLE_LIGHT, color: PURPLE }}>Order Items</div>
+                    <div className="px-3 py-1 font-bold uppercase tracking-wider" style={{ background: PURPLE_LIGHT, color: PURPLE }}>Custom Order Items</div>
                     <div className="divide-y" style={{ borderColor: '#eee' }}>
                       {customOrderDetails.orderItems.map((item, idx) => (
                         <div key={idx} className="px-3 py-1.5 flex justify-between gap-3">
@@ -415,8 +419,14 @@ export function InvoicePreviewModal({
               <div className="w-80 text-[11.5px] space-y-1">
                 <div className="flex justify-between text-[13px] font-bold">
                   <span>MRP (Total)</span>
-                  <span style={num}>{money((totals.subtotal || 0) + totalDiscount)}</span>
+                  <span style={num}>{money((totals.subtotal || 0) + allDiscount)}</span>
                 </div>
+                {itemDiscount > 0 && (
+                  <div className="flex justify-between" style={{ color: '#b91c1c' }}>
+                    <span>− Item Discount</span>
+                    <span style={num}>{`− ${money(itemDiscount)}`}</span>
+                  </div>
+                )}
                 {totalDiscount > 0 && (
                   <div className="flex justify-between" style={{ color: '#b91c1c' }}>
                     <span>− Total Discount</span>
