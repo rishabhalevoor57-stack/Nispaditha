@@ -451,8 +451,13 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const rowGap = 5;
 
   // MRP (Total) = gross pre-discount value in both GST modes.
-  const totalDiscount = Math.max(0, data.totals.discountAmount || 0, data.orderDiscount || 0);
-  const mrpTotal = (data.totals.subtotal || 0) + totalDiscount;
+  // Per-item discounts stay on their own rows; only the flat/order-level part is
+  // shown as "Total Discount" so nothing is counted twice.
+  const allDiscount = Math.max(0, data.totals.discountAmount || 0);
+  const orderLevelDiscount = Math.min(Math.max(0, data.orderDiscount || 0), allDiscount);
+  const itemLevelDiscount = Math.max(0, allDiscount - orderLevelDiscount);
+  const totalDiscount = orderLevelDiscount;
+  const mrpTotal = (data.totals.subtotal || 0) + allDiscount;
   doc.setFont(FONT, 'bold');
   doc.setFontSize(10);
   doc.setTextColor(20, 20, 20);
