@@ -108,6 +108,9 @@ export function InvoicePreviewModal({
   const customOrderDetails = getCustomOrderDetailsFromNotes(notes);
   const showCustomOrderDetails = hasCustomOrderDetails(customOrderDetails);
   const cleanNotes = stripCustomOrderPayload(notes);
+  // Legacy converted custom orders can have no saved line items — rebuild the
+  // billing rows from the stored custom-order payload so the table is never empty.
+  const displayItems = items.length > 0 ? items : buildItemsFromCustomOrderDetails(customOrderDetails);
 
   const dateStr = new Date(invoiceDate).toLocaleDateString('en-IN', {
     day: '2-digit',
