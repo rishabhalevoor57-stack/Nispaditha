@@ -375,7 +375,7 @@ export function InvoicePreviewModal({
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item, i) => {
+                  {displayItems.map((item, i) => {
                     const isFlat = item.pricing_mode === 'flat_price';
                     return (
                       <tr key={i} style={{ background: i % 2 === 1 ? ROW_ALT : '#fff' }}>
