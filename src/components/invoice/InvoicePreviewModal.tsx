@@ -9,7 +9,7 @@ import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance'; // money-tolerance
 import { computeGrandTotal } from '@/lib/invoiceTotals';
 import { FileText } from 'lucide-react';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
-import { getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
+import { buildItemsFromCustomOrderDetails, getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
 
 interface PaymentBreakdownEntry {
   mode: string;
@@ -108,6 +108,9 @@ export function InvoicePreviewModal({
   const customOrderDetails = getCustomOrderDetailsFromNotes(notes);
   const showCustomOrderDetails = hasCustomOrderDetails(customOrderDetails);
   const cleanNotes = stripCustomOrderPayload(notes);
+  // Legacy converted custom orders can have no saved line items — rebuild the
+  // billing rows from the stored custom-order payload so the table is never empty.
+  const displayItems = items.length > 0 ? items : buildItemsFromCustomOrderDetails(customOrderDetails);
 
   const dateStr = new Date(invoiceDate).toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -372,7 +375,7 @@ export function InvoicePreviewModal({
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item, i) => {
+                  {displayItems.map((item, i) => {
                     const isFlat = item.pricing_mode === 'flat_price';
                     return (
                       <tr key={i} style={{ background: i % 2 === 1 ? ROW_ALT : '#fff' }}>

@@ -4,7 +4,7 @@ import type { InvoiceItem, InvoiceTotals, BusinessSettings } from '@/types/invoi
 import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance';
 import { computeGrandTotal } from '@/lib/invoiceTotals';
 import { ensureNotoLoaded, registerNotoFont } from './pdfFont';
-import { getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from './invoiceCustomOrderDetails';
+import { buildItemsFromCustomOrderDetails, getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from './invoiceCustomOrderDetails';
 
 interface PaymentBreakdownEntry {
   mode: string;
@@ -360,7 +360,13 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     { header: `Total (${RUPEE})`, dataKey: 'total' },
   ];
 
-  const tableRows = data.items.map((item, index) => {
+  // Legacy converted custom orders may have no saved line items — rebuild rows
+  // from the stored custom-order payload so the table is never empty.
+  const rowSource = data.items.length > 0
+    ? data.items
+    : buildItemsFromCustomOrderDetails(customOrderDetails);
+
+  const tableRows = rowSource.map((item, index) => {
     const isFlat = item.pricing_mode === 'flat_price';
     return {
       sr: (index + 1).toString(),

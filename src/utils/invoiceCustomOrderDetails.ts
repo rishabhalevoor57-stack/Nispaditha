@@ -48,6 +48,89 @@ export const hasCustomOrderDetails = (details?: InvoiceCustomOrderDetails | null
   );
 };
 
+/**
+ * Display-only rescue: rebuild billing rows from the custom-order payload stored
+ * in the invoice notes when the invoice has no saved line items (legacy
+ * conversions where the items insert failed). Never used for saving.
+ */
+export const buildItemsFromCustomOrderDetails = (
+  details: InvoiceCustomOrderDetails | null,
+): InvoiceItem[] => {
+  if (!details) return [];
+  const rows: InvoiceItem[] = [];
+
+  const base = (over: Partial<InvoiceItem>): InvoiceItem => ({
+    product_id: '',
+    sku: '',
+    product_name: '',
+    category: '',
+    weight_grams: 0,
+    quantity: 1,
+    rate_per_gram: 0,
+    base_price: 0,
+    making_charges: 0,
+    making_charges_per_gram: 0,
+    discount: 0,
+    discount_type: 'fixed',
+    discount_value: 0,
+    discounted_making: 0,
+    line_total: 0,
+    gst_percentage: Number(details.gstPercentage) || 0,
+    pricing_mode: 'weight_based',
+    mrp: 0,
+    ...over,
+  });
+
+  for (const it of details.orderItems) {
+    const lineTotal = Number(it.line_total) || 0;
+    const discount = Number(it.discount) || 0;
+    rows.push(base({
+      sku: it.sku || 'N/A',
+      product_name: it.name,
+      category: it.category || 'Custom Order',
+      weight_grams: Number(it.weight_grams) || 0,
+      quantity: Number(it.quantity) || 1,
+      rate_per_gram: Number(it.rate_per_gram) || 0,
+      making_charges: Number(it.making_charges) || 0,
+      discount,
+      discount_value: discount,
+      line_total: lineTotal,
+      pricing_mode: it.pricing_mode === 'flat_price' ? 'flat_price' : 'weight_based',
+      mrp: lineTotal + discount,
+      description: it.description || '',
+    }));
+  }
+
+  for (const c of details.components) {
+    const total = Number(c.total) || 0;
+    rows.push(base({
+      sku: 'N/A',
+      product_name: `${c.name}${c.material ? ` (${c.material})` : ''}`,
+      category: 'Component',
+      weight_grams: Number(c.weight_grams) || 0,
+      quantity: Number(c.quantity) || 1,
+      rate_per_gram: Number(c.rate_per_gram) || 0,
+      line_total: total,
+      pricing_mode: (Number(c.rate_per_gram) || 0) > 0 ? 'weight_based' : 'flat_price',
+      mrp: total,
+    }));
+  }
+
+  for (const ch of details.charges) {
+    const amount = Number(ch.amount) || 0;
+    rows.push(base({
+      sku: 'N/A',
+      product_name: ch.label,
+      category: 'Service Charge',
+      line_total: amount,
+      pricing_mode: 'flat_price',
+      mrp: amount,
+    }));
+  }
+
+  return rows;
+};
+
 export const buildFallbackCustomOrderDetails = (
   notes: string | null | undefined,
   items: InvoiceItem[],
