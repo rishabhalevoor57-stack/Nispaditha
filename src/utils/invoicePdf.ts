@@ -4,7 +4,7 @@ import type { InvoiceItem, InvoiceTotals, BusinessSettings } from '@/types/invoi
 import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance';
 import { computeGrandTotal } from '@/lib/invoiceTotals';
 import { ensureNotoLoaded, registerNotoFont } from './pdfFont';
-import { getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from './invoiceCustomOrderDetails';
+import { buildItemsFromCustomOrderDetails, getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from './invoiceCustomOrderDetails';
 
 interface PaymentBreakdownEntry {
   mode: string;
