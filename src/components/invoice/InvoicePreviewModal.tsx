@@ -9,7 +9,7 @@ import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance'; // money-tolerance
 import { computeGrandTotal } from '@/lib/invoiceTotals';
 import { FileText } from 'lucide-react';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
-import { getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
+import { buildItemsFromCustomOrderDetails, getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
 
 interface PaymentBreakdownEntry {
   mode: string;
