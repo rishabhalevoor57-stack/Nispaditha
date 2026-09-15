@@ -360,7 +360,13 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     { header: `Total (${RUPEE})`, dataKey: 'total' },
   ];
 
-  const tableRows = data.items.map((item, index) => {
+  // Legacy converted custom orders may have no saved line items — rebuild rows
+  // from the stored custom-order payload so the table is never empty.
+  const rowSource = data.items.length > 0
+    ? data.items
+    : buildItemsFromCustomOrderDetails(customOrderDetails);
+
+  const tableRows = rowSource.map((item, index) => {
     const isFlat = item.pricing_mode === 'flat_price';
     return {
       sr: (index + 1).toString(),
