@@ -80,7 +80,26 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
       money(it.item_total),
     ]);
   const cm = (order.customer_materials || []).filter((m) => (m?.name || '').trim());
-  const detailRows: string[][] = itemRows;
+  const compRows = components
+    .filter((c) => (c.component_name || '').trim())
+    .map((c) => [
+      '',
+      c.component_name + (c.material ? ` (${c.material})` : ''),
+      c.sku || '-',
+      c.weight_grams ? String(c.weight_grams) : '-',
+      String(c.unit === 'strings' ? (c.strings_used || c.quantity || 1) : (c.quantity_used || c.quantity || 1)),
+      '-',
+      money((Number(c.total) || 0) + (Number(c.discount) || 0)),
+      Number(c.discount) > 0 ? money(Number(c.discount)) : '-',
+      money(c.total || 0),
+    ]);
+  const detailRows: string[][] = [];
+  if (itemRows.length) detailRows.push(['CUSTOM ORDER ITEMS', '', '', '', '', '', '', '', ''], ...itemRows);
+  if (cm.length) detailRows.push(
+    ['CUSTOMER SUPPLIED ITEMS', '', '', '', '', '', '', '', '],
+    ...cm.map((m) => ['', m.name + (m.description ? ` — ${m.description}` : ''), '-', m.weight_grams ? String(m.weight_grams) : '-', String(m.quantity ?? '-'), '-', '-', '-', '-']),
+  );
+  if (compRows.length) detailRows.push(['COMPONENTS USED', '', '', '', '', '', '', '', ''], ...compRows);
 
   if (detailRows.length > 0) {
     autoTable(doc, {
@@ -94,6 +113,14 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
         3: { cellWidth: 15, halign: 'center' }, 4: { cellWidth: 10, halign: 'center' },
         5: { cellWidth: 20, halign: 'right' }, 6: { cellWidth: 22, halign: 'right' },
         7: { cellWidth: 24, halign: 'right' }, 8: { cellWidth: 25, halign: 'right' },
+      },
+      didParseCell: (hook) => {
+        const firstCell = Array.isArray(hook.row.raw) ? String(hook.row.raw[0]) : '';
+        if (hook.section === 'body' && (firstCell.endsWith('ITEMS') || firstCell.endsWith('USED'))) {
+          hook.cell.styles.fillColor = [245, 238, 255];
+          hook.cell.styles.textColor = [74, 32, 96];
+          hook.cell.styles.fontStyle = 'bold';
+        }
       },
     });
     y = (doc as any).lastAutoTable.finalY + 6;
