@@ -96,7 +96,7 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
   const detailRows: string[][] = [];
   if (itemRows.length) detailRows.push(['CUSTOM ORDER ITEMS', '', '', '', '', '', '', '', ''], ...itemRows);
   if (cm.length) detailRows.push(
-    ['CUSTOMER SUPPLIED ITEMS', '', '', '', '', '', '', '', '],
+    ['CUSTOMER SUPPLIED ITEMS', '', '', '', '', '', '', '', ''],
     ...cm.map((m) => ['', m.name + (m.description ? ` — ${m.description}` : ''), '-', m.weight_grams ? String(m.weight_grams) : '-', String(m.quantity ?? '-'), '-', '-', '-', '-']),
   );
   if (compRows.length) detailRows.push(['COMPONENTS USED', '', '', '', '', '', '', '', ''], ...compRows);
