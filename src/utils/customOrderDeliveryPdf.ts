@@ -68,12 +68,14 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
   // One unified details table with compact category rows.
   const itemRows = items
     .filter((it) => (it.item_description || '').trim())
-    .map((it) => [
-      it.sku || '-',
+    .map((it, index) => [
+      String(index + 1),
       it.item_description,
-      it.pricing_mode === 'flat_price' ? 'Flat' : 'Wt',
+      it.sku || '-',
+      Number(it.expected_weight) > 0 ? String(it.expected_weight) : '-',
       String(it.quantity || 1),
-      it.pricing_mode === 'weight_based' ? `${it.expected_weight || 0} g` : '-',
+      Number(it.mc_per_gram) > 0 ? money(it.mc_per_gram) : '-',
+      money((Number(it.flat_price) || 0) * (Number(it.quantity) || 1)),
       Number(it.discount) > 0 ? money(it.discount) : '-',
       money(it.item_total),
     ]);
@@ -81,30 +83,37 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
   const compRows = components
     .filter((c) => (c.component_name || '').trim())
     .map((c) => [
-      c.sku || '-',
+      '',
       c.component_name + (c.material ? ` (${c.material})` : ''),
-      c.unit === 'strings' ? 'Strings' : 'Qty',
-      String(c.quantity || 1),
-      c.weight_grams ? `${c.weight_grams} g` : '-',
+      c.sku || '-',
+      c.weight_grams ? String(c.weight_grams) : '-',
+      String(c.unit === 'strings' ? (c.strings_used || c.quantity || 1) : (c.quantity_used || c.quantity || 1)),
+      '-',
+      money((Number(c.total) || 0) + (Number(c.discount) || 0)),
       Number(c.discount) > 0 ? money(Number(c.discount)) : '-',
       money(c.total || 0),
     ]);
   const detailRows: string[][] = [];
-  if (itemRows.length) detailRows.push(['CUSTOM ORDER ITEMS', '', '', '', '', '', ''], ...itemRows);
+  if (itemRows.length) detailRows.push(['CUSTOM ORDER ITEMS', '', '', '', '', '', '', '', ''], ...itemRows);
   if (cm.length) detailRows.push(
-    ['CUSTOMER SUPPLIED ITEMS', '', '', '', '', '', ''],
-    ...cm.map((m) => ['-', m.name + (m.description ? ` — ${m.description}` : ''), 'Customer', String(m.quantity ?? '-'), m.weight_grams ? `${m.weight_grams} g` : '-', '-', '-']),
+    ['CUSTOMER SUPPLIED ITEMS', '', '', '', '', '', '', '', ''],
+    ...cm.map((m) => ['', m.name + (m.description ? ` — ${m.description}` : ''), '-', m.weight_grams ? String(m.weight_grams) : '-', String(m.quantity ?? '-'), '-', '-', '-', '-']),
   );
-  if (compRows.length) detailRows.push(['COMPONENTS USED', '', '', '', '', '', ''], ...compRows);
+  if (compRows.length) detailRows.push(['COMPONENTS USED', '', '', '', '', '', '', '', ''], ...compRows);
 
   if (detailRows.length > 0) {
     autoTable(doc, {
       startY: y,
-      head: [['SKU', 'Item / Description', 'Mode', 'Qty', 'Weight', 'Discount', 'Total']],
+      head: [['Sr', 'Product Name', 'SKU', 'Wt(G)', 'Qty', 'MC (Rs.)', 'MRP (Rs.)', 'Discount (Rs.)', 'Total (Rs.)']],
       body: detailRows,
       headStyles: { fillColor: [126, 58, 242], textColor: 255 },
-      styles: { fontSize: 8, cellPadding: 2.2 },
-      columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 57 }, 2: { cellWidth: 20 }, 3: { cellWidth: 13 }, 4: { cellWidth: 20 }, 5: { cellWidth: 26 }, 6: { cellWidth: 28, halign: 'right' } },
+      styles: { fontSize: 7, cellPadding: 1.8, overflow: 'linebreak', valign: 'middle' },
+      columnStyles: {
+        0: { cellWidth: 8, halign: 'center' }, 1: { cellWidth: 42 }, 2: { cellWidth: 22 },
+        3: { cellWidth: 15, halign: 'center' }, 4: { cellWidth: 10, halign: 'center' },
+        5: { cellWidth: 20, halign: 'right' }, 6: { cellWidth: 22, halign: 'right' },
+        7: { cellWidth: 24, halign: 'right' }, 8: { cellWidth: 25, halign: 'right' },
+      },
       didParseCell: (hook) => {
         const firstCell = Array.isArray(hook.row.raw) ? String(hook.row.raw[0]) : '';
         if (hook.section === 'body' && (firstCell.endsWith('ITEMS') || firstCell.endsWith('USED'))) {
