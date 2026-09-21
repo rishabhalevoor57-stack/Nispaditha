@@ -249,18 +249,29 @@ const data = results.flatMap(({ data }) => data || []);
   if (readOnly) {
     return (
       <div className="rounded-md border overflow-x-auto">
-        <Table>
+        <Table className="min-w-[1040px] table-fixed">
+          <colgroup>
+            <col className="w-[44px]" />
+            <col className="w-[300px]" />
+            <col className="w-[130px]" />
+            <col className="w-[85px]" />
+            <col className="w-[65px]" />
+            <col className="w-[100px]" />
+            <col className="w-[110px]" />
+            <col className="w-[110px]" />
+            <col className="w-[125px]" />
+          </colgroup>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">SKU</TableHead>
-              <TableHead>Item</TableHead>
-              <TableHead className="w-[80px]">Mode</TableHead>
-              <TableHead className="w-[60px] text-center">Qty</TableHead>
-              <TableHead className="w-[80px] text-right">Weight</TableHead>
-              <TableHead className="w-[90px] text-right">Rate</TableHead>
-              <TableHead className="w-[80px] text-right">MC/g</TableHead>
-              <TableHead className="w-[90px] text-right">Discount</TableHead>
-              <TableHead className="w-[100px] text-right">Total</TableHead>
+            <TableRow className="bg-primary hover:bg-primary">
+              <TableHead className="text-center text-primary-foreground">Sr</TableHead>
+              <TableHead className="text-primary-foreground">Product Name</TableHead>
+              <TableHead className="text-primary-foreground">SKU</TableHead>
+              <TableHead className="text-center text-primary-foreground">Wt(G)</TableHead>
+              <TableHead className="text-center text-primary-foreground">Qty</TableHead>
+              <TableHead className="text-right text-primary-foreground">MC (₹)</TableHead>
+              <TableHead className="text-right text-primary-foreground">MRP (₹)</TableHead>
+              <TableHead className="text-right text-primary-foreground">Discount (₹)</TableHead>
+              <TableHead className="text-right text-primary-foreground">Total (₹)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -274,26 +285,20 @@ const data = results.flatMap(({ data }) => data || []);
                   const isBeads = isBeadsCategory(item.category);
                   return (
                     <TableRow key={i}>
-                      <TableCell className="font-mono text-xs text-primary">{item.sku || '-'}</TableCell>
-                      <TableCell>
-                        <div className="font-medium text-sm">{item.item_description}</div>
-                        {item.category && <div className="text-xs text-muted-foreground">{item.category}</div>}
+                      <TableCell className="text-center tabular-nums">{i + 1}</TableCell>
+                      <TableCell className="whitespace-normal break-words">
+                        <div className="font-medium text-sm leading-snug">{item.item_description}</div>
+                        {item.customization_notes && <div className="text-xs text-muted-foreground mt-0.5">{item.customization_notes}</div>}
                       </TableCell>
-                      <TableCell className="text-xs">
-                        {isBeads ? 'Beads' : item.pricing_mode === 'flat_price' ? 'Flat' : 'Normal'}
-                      </TableCell>
-                      <TableCell className="text-center">{item.quantity}{isBeads ? ' str' : ''}</TableCell>
-                      <TableCell className="text-right">
-                        {item.pricing_mode === 'weight_based' && !isBeads ? `${item.expected_weight}g` : '-'}
-                      </TableCell>
-                      <TableCell className="text-right">₹{item.rate_per_gram.toLocaleString('en-IN')}</TableCell>
-                      <TableCell className="text-right">
-                        {item.mc_per_gram ? `₹${item.mc_per_gram}` : '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="font-mono text-xs text-primary whitespace-normal break-all">{item.sku || '-'}</TableCell>
+                      <TableCell className="text-center tabular-nums">{Number(item.expected_weight) > 0 ? Number(item.expected_weight).toLocaleString('en-IN') : '-'}</TableCell>
+                      <TableCell className="text-center tabular-nums">{item.quantity}{isBeads ? ' str' : ''}</TableCell>
+                      <TableCell className="text-right tabular-nums">{item.mc_per_gram ? `₹${Number(item.mc_per_gram).toLocaleString('en-IN')}` : '-'}</TableCell>
+                      <TableCell className="text-right tabular-nums">₹{((Number(item.flat_price) || 0) * (Number(item.quantity) || 1)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right tabular-nums">
                         {item.discount > 0 ? `₹${item.discount.toLocaleString('en-IN')}` : '-'}
                       </TableCell>
-                      <TableCell className="text-right font-semibold">₹{item.item_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">₹{item.item_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -312,24 +317,37 @@ const data = results.flatMap(({ data }) => data || []);
   return (
     <div className="space-y-4">
 <div className="rounded-md border overflow-x-auto overflow-y-visible">      
-<Table className="min-w-[1280px] overflow-visible">          <TableHeader>
-            <TableRow className="bg-muted/30">
-              <TableHead className="max-w-[250px]">SKU / Product</TableHead>
-              <TableHead className="min-w-[110px]">Metal</TableHead>
-               <TableHead className="min-w-[90px] text-center">Qty</TableHead>
-              <TableHead className="min-w-[100px]" title="Reference only — does not affect price">Weight(g) *</TableHead>
-              <TableHead className="min-w-[110px]" title="Reference only — does not affect price">Rate *</TableHead>
-              <TableHead className="min-w-[100px]" title="Reference only — does not affect price">MC/g *</TableHead>
-              <TableHead className="min-w-[110px]">Unit Price ₹</TableHead>
-              <TableHead className="min-w-[120px]">Discount</TableHead>
-              <TableHead className="w-[120px] text-right">Total</TableHead>
-              <TableHead className="w-[44px]"></TableHead>
+<Table className="min-w-[1180px] table-fixed overflow-visible">
+          <colgroup>
+            <col className="w-[44px]" />
+            <col className="w-[300px]" />
+            <col className="w-[125px]" />
+            <col className="w-[90px]" />
+            <col className="w-[75px]" />
+            <col className="w-[105px]" />
+            <col className="w-[115px]" />
+            <col className="w-[155px]" />
+            <col className="w-[125px]" />
+            <col className="w-[46px]" />
+          </colgroup>
+          <TableHeader>
+            <TableRow className="bg-primary hover:bg-primary">
+              <TableHead className="text-center text-primary-foreground">Sr</TableHead>
+              <TableHead className="text-primary-foreground">Product Name</TableHead>
+              <TableHead className="text-primary-foreground">SKU</TableHead>
+              <TableHead className="text-center text-primary-foreground" title="Reference only — does not affect price">Wt(G)</TableHead>
+              <TableHead className="text-center text-primary-foreground">Qty</TableHead>
+              <TableHead className="text-right text-primary-foreground" title="Reference only — does not affect price">MC (₹)</TableHead>
+              <TableHead className="text-right text-primary-foreground">MRP (₹)</TableHead>
+              <TableHead className="text-right text-primary-foreground">Discount (₹)</TableHead>
+              <TableHead className="text-right text-primary-foreground">Total (₹)</TableHead>
+              <TableHead className="text-primary-foreground"><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                   No items added. Click "Add Item" to start.
                 </TableCell>
               </TableRow>
@@ -342,12 +360,12 @@ const data = results.flatMap(({ data }) => data || []);
 
                 return (
                   <><TableRow key={index} className="relative overflow-visible">
-                    {/* SKU / Product */}
+                    <TableCell className="text-center align-top pt-5 tabular-nums">{index + 1}</TableCell>
+                    {/* Product Name */}
 <TableCell className="relative overflow-visible">                     
    <div className="relative">
                         {item.product_id ? (
                           <div className="space-y-0.5">
-                            <div className="font-mono text-xs text-primary font-semibold">{item.sku}</div>
                             <div className="text-sm font-medium leading-tight">{item.item_description}</div>
                             {item.category && <div className="text-xs text-muted-foreground">{item.category}</div>}
                             <Button
@@ -417,43 +435,17 @@ const data = results.flatMap(({ data }) => data || []);
                             />
                           </div>
                         )}
+                        <div className="grid grid-cols-2 gap-1 mt-1.5">
+                          <Select value={(item.metal_type as MetalType) || 'silver'} onValueChange={(v) => updateItem(index, 'metal_type' as keyof CustomOrderItem, v)}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>{(Object.keys(METAL_TYPE_LABELS) as MetalType[]).map(m => <SelectItem key={m} value={m}>{METAL_TYPE_LABELS[m]}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <Input type="number" min="0" step="0.01" value={item.rate_per_gram || ''} onChange={(e) => updateItem(index, 'rate_per_gram', parseFloat(e.target.value) || 0)} className="h-8 text-xs" placeholder="Rate/g" title="Metal rate per gram" />
+                        </div>
                       </div>
                     </TableCell>
 
-                    {/* Metal */}
-                    <TableCell className="py-3">
-                      <Select
-                        value={(item.metal_type as MetalType) || 'silver'}
-                        onValueChange={(v) => updateItem(index, 'metal_type' as any, v)}
-                      >
-                        <SelectTrigger className="h-9 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(Object.keys(METAL_TYPE_LABELS) as MetalType[]).map(m => (
-                            <SelectItem key={m} value={m}>{METAL_TYPE_LABELS[m]}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="text-[10px] text-muted-foreground mt-0.5">
-                        ₹{rateForMetal((item.metal_type as MetalType) || 'silver').toLocaleString('en-IN')}/g
-                      </div>
-                    </TableCell>
-
-
-                    {/* Quantity */}
-                    <TableCell className="py-3">
-                      <div className="space-y-0.5">
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                          className="h-9 text-sm text-center w-full"
-                        />
-                        {isBeads && <span className="text-[10px] text-muted-foreground block text-center">strings</span>}
-                      </div>
-                    </TableCell>
+                    <TableCell className="align-top py-3 font-mono text-xs text-primary whitespace-normal break-all">{item.sku || '-'}</TableCell>
 
                     {/* Weight */}
                     <TableCell className="py-3">
@@ -463,22 +455,17 @@ const data = results.flatMap(({ data }) => data || []);
                         step="0.01"
                         value={item.expected_weight || ''}
                         onChange={(e) => updateItem(index, 'expected_weight', parseFloat(e.target.value) || 0)}
-                        className="h-9 text-sm"
+                        className="h-9 text-sm text-center tabular-nums"
                         placeholder="0"
                       />
                     </TableCell>
 
-                    {/* Rate */}
+                    {/* Quantity */}
                     <TableCell className="py-3">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.rate_per_gram || ''}
-                        onChange={(e) => updateItem(index, 'rate_per_gram', parseFloat(e.target.value) || 0)}
-                        className="h-9 text-sm"
-                        placeholder="0"
-                      />
+                      <div className="space-y-0.5">
+                        <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)} className="h-9 text-sm text-center tabular-nums" />
+                        {isBeads && <span className="text-[10px] text-muted-foreground block text-center">strings</span>}
+                      </div>
                     </TableCell>
 
                     {/* MC/g */}
@@ -489,7 +476,7 @@ const data = results.flatMap(({ data }) => data || []);
                         step="0.01"
                         value={item.mc_per_gram || ''}
                         onChange={(e) => updateItem(index, 'mc_per_gram', parseFloat(e.target.value) || 0)}
-                        className="h-9 text-sm"
+                        className="h-9 text-sm text-right tabular-nums"
                         placeholder="0"
                       />
                     </TableCell>
@@ -504,20 +491,20 @@ const data = results.flatMap(({ data }) => data || []);
                         value={item.flat_price || ''}
                         onChange={(e) => updateItem(index, 'flat_price', parseFloat(e.target.value) || 0)}
                         disabled={isBeads}
-                        className="h-9 text-sm disabled:opacity-40"
+                        className="h-9 text-sm text-right tabular-nums disabled:opacity-40"
                         placeholder="0"
                       />
                     </TableCell>
 
                     {/* Discount */}
                     <TableCell className="py-3">
-                      <div className="flex gap-1 items-center">
+                      <div className="flex gap-1 items-center justify-end">
                         <Input
                           type="number"
                           min="0"
                           value={item.discount_value || ''}
                           onChange={(e) => updateItem(index, 'discount_value', parseFloat(e.target.value) || 0)}
-                          className="h-9 text-sm flex-1 min-w-[50px]"
+                          className="h-9 text-sm text-right tabular-nums flex-1 min-w-[50px]"
                           placeholder="0"
                         />
                         <Select
@@ -536,7 +523,7 @@ const data = results.flatMap(({ data }) => data || []);
                     </TableCell>
 
                     {/* Total */}
-                    <TableCell className="text-right font-semibold py-3 text-sm">
+                    <TableCell className="text-right font-semibold py-3 text-sm tabular-nums">
                       ₹{item.item_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </TableCell>
 
@@ -548,7 +535,8 @@ const data = results.flatMap(({ data }) => data || []);
                     </TableCell>
                   </TableRow>
                   <TableRow key={`${index}-desc`} className="border-t-0">
-                    <TableCell colSpan={12} className="py-2 pl-4">
+                    <TableCell></TableCell>
+                    <TableCell colSpan={9} className="py-2">
                       <Input
                         placeholder="Description (optional) — notes, customisation, instructions..."
                         value={item.customization_notes || ''}
