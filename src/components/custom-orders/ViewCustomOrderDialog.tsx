@@ -13,7 +13,6 @@ import { printCustomOrderDeliveryBill, downloadCustomOrderDeliveryBill } from '@
 import { useCustomOrderPayments } from '@/hooks/useCustomOrderPayments';
 import { CustomOrderPaymentDialog } from './CustomOrderPaymentDialog';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { CustomOrderItemsTable } from './CustomOrderItemsTable';
 
 
 
@@ -146,7 +145,27 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
                 <p className="text-muted-foreground text-center py-3 text-sm">Loading...</p>
               ) : items.length === 0 ? (
                 <p className="text-muted-foreground text-center py-3 text-sm">None</p>
-              ) : <CustomOrderItemsTable items={items} onChange={() => undefined} silverRate={0} readOnly />}
+              ) : (
+                <div className="space-y-2 text-sm">
+                  {items.map((it, i) => (
+                    <div key={i} className="flex justify-between items-start border-b pb-1.5 last:border-0">
+                      <div className="flex-1 pr-3">
+                        <p className="font-medium">{it.item_description || 'Custom Item'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {it.sku ? `${it.sku} • ` : ''}
+                          {it.pricing_mode === 'flat_price'
+                            ? `Flat • Qty ${it.quantity || 1}`
+                            : `${it.expected_weight || 0}g × Qty ${it.quantity || 1}${it.rate_per_gram ? ` @ ₹${it.rate_per_gram}/g` : ''}${it.mc_per_gram ? ` + MC ₹${it.mc_per_gram}/g` : ''}`}
+                        </p>
+                        {it.customization_notes ? (
+                          <p className="text-xs text-muted-foreground italic mt-0.5">{it.customization_notes}</p>
+                        ) : null}
+                      </div>
+                      <span className="font-semibold whitespace-nowrap">₹{(Number(it.item_total) || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
