@@ -93,13 +93,23 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
       Number(c.discount) > 0 ? money(Number(c.discount)) : '-',
       money(c.total || 0),
     ]);
-  const detailRows: string[][] = [];
-  if (itemRows.length) detailRows.push(['CUSTOM ORDER ITEMS', '', '', '', '', '', '', '', ''], ...itemRows);
+  const sectionRow = (title: string) => [{
+    content: title,
+    colSpan: 9,
+    styles: {
+      fillColor: [245, 238, 255] as [number, number, number],
+      textColor: [74, 32, 96] as [number, number, number],
+      fontStyle: 'bold' as const,
+      halign: 'left' as const,
+    },
+  }];
+  const detailRows: any[] = [];
+  if (itemRows.length) detailRows.push(sectionRow('CUSTOM ORDER ITEMS'), ...itemRows);
   if (cm.length) detailRows.push(
-    ['CUSTOMER SUPPLIED ITEMS', '', '', '', '', '', '', '', ''],
+    sectionRow('CUSTOMER SUPPLIED ITEMS'),
     ...cm.map((m) => ['', m.name + (m.description ? ` — ${m.description}` : ''), '-', m.weight_grams ? String(m.weight_grams) : '-', String(m.quantity ?? '-'), '-', '-', '-', '-']),
   );
-  if (compRows.length) detailRows.push(['COMPONENTS USED', '', '', '', '', '', '', '', ''], ...compRows);
+  if (compRows.length) detailRows.push(sectionRow('COMPONENTS USED'), ...compRows);
 
   if (detailRows.length > 0) {
     autoTable(doc, {
@@ -113,14 +123,6 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
         3: { cellWidth: 15, halign: 'center' }, 4: { cellWidth: 10, halign: 'center' },
         5: { cellWidth: 20, halign: 'right' }, 6: { cellWidth: 22, halign: 'right' },
         7: { cellWidth: 24, halign: 'right' }, 8: { cellWidth: 25, halign: 'right' },
-      },
-      didParseCell: (hook) => {
-        const firstCell = Array.isArray(hook.row.raw) ? String(hook.row.raw[0]) : '';
-        if (hook.section === 'body' && (firstCell.endsWith('ITEMS') || firstCell.endsWith('USED'))) {
-          hook.cell.styles.fillColor = [245, 238, 255];
-          hook.cell.styles.textColor = [74, 32, 96];
-          hook.cell.styles.fontStyle = 'bold';
-        }
       },
     });
     y = (doc as any).lastAutoTable.finalY + 6;
@@ -210,13 +212,17 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
 
 export const printCustomOrderDeliveryBill = (ctx: DeliveryBillContext) => {
   const doc = generateCustomOrderDeliveryPdf(ctx);
+  doc.autoPrint();
   const blob = doc.output('blob');
   const url = URL.createObjectURL(blob);
   const iframe = document.createElement('iframe');
   iframe.style.display = 'none';
   iframe.src = url;
   document.body.appendChild(iframe);
-  iframe.onload = () => setTimeout(() => iframe.contentWindow?.print(), 250);
+  window.setTimeout(() => {
+    iframe.remove();
+    URL.revokeObjectURL(url);
+  }, 60_000);
 };
 
 export const downloadCustomOrderDeliveryBill = (ctx: DeliveryBillContext) => {
