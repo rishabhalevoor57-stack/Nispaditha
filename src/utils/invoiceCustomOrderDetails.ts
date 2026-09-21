@@ -103,6 +103,7 @@ export const buildItemsFromCustomOrderDetails = (
 
   for (const c of details.components) {
     const total = Number(c.total) || 0;
+    const discount = Number(c.discount) || 0;
     rows.push(base({
       sku: 'N/A',
       product_name: `${c.name}${c.material ? ` (${c.material})` : ''}`,
@@ -110,9 +111,11 @@ export const buildItemsFromCustomOrderDetails = (
       weight_grams: Number(c.weight_grams) || 0,
       quantity: Number(c.quantity) || 1,
       rate_per_gram: Number(c.rate_per_gram) || 0,
+      discount,
+      discount_value: discount,
       line_total: total,
       pricing_mode: (Number(c.rate_per_gram) || 0) > 0 ? 'weight_based' : 'flat_price',
-      mrp: total,
+      mrp: total + discount,
     }));
   }
 
@@ -164,6 +167,7 @@ export const buildFallbackCustomOrderDetails = (
         weight_grams: Number(item.weight_grams) || 0,
         unit_price: item.pricing_mode === 'flat_price' ? Number(item.line_total) || 0 : 0,
         rate_per_gram: Number(item.rate_per_gram) || 0,
+        discount: Number(item.discount) || 0,
         total: Number(item.line_total) || 0,
       })),
     charges: items

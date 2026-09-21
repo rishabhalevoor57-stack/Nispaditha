@@ -40,7 +40,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranch } from '@/contexts/BranchContext';
 import { useQueryClient } from '@tanstack/react-query';
-import { convertCustomOrderToInvoice } from '@/utils/customOrderToInvoice';
+import { prepareCustomOrderInvoice } from '@/utils/customOrderToInvoice';
 import { supabase } from '@/integrations/supabase/client';
 
 
@@ -156,24 +156,16 @@ const CustomOrders = () => {
     if (isGeneratingInvoice) return;
     setIsGeneratingInvoice(true);
     try {
-      const result = await convertCustomOrderToInvoice(order, items, components, {
-        finalize: true,
-        createdBy: user?.id || null,
-      });
-      // Mark the custom order as Invoiced
-      await supabase.from('custom_orders').update({ status: 'invoiced' } as any).eq('id', order.id);
-      queryClient.invalidateQueries({ queryKey: ['custom-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      const prefill = await prepareCustomOrderInvoice(order, items, components);
       logActivity({
         module: 'Custom Orders',
-        action: 'Generate GST Invoice',
+        action: 'Open GST Invoice',
         recordId: order.id,
         recordLabel: order.reference_number,
-        newValue: { invoice_number: result.invoiceNumber },
+        newValue: { preview_only: true },
       });
-      toast({ title: 'GST Invoice created', description: `Invoice ${result.invoiceNumber} generated.` });
       setViewOpen(false);
-      navigate('/invoices', { state: { editDraftId: result.invoiceId } });
+      navigate('/invoices', { state: { customOrderPrefill: prefill } });
     } catch (error: any) {
       toast({ title: 'Invoice generation failed', description: error.message, variant: 'destructive' });
     } finally {

@@ -66,7 +66,12 @@ export const useCustomOrders = () => {
         discount_type: item.discount_type || 'fixed',
         discount_value: item.discount_value || 0,
       })) as CustomOrderItem[],
-      components: ((componentsResult as any)?.data || []) as CustomOrderComponent[],
+      components: (((componentsResult as any)?.data || []).map((component: any) => ({
+        ...component,
+        discount_type: component.discount_type === 'percentage' ? 'percentage' : 'fixed',
+        discount_value: Number(component.discount_value) || 0,
+        discount: Number(component.discount) || 0,
+      }))) as CustomOrderComponent[],
     };
   };
 
@@ -127,6 +132,9 @@ export const useCustomOrders = () => {
           unit_price: c.unit_price || 0,
           rate_per_gram: c.rate_per_gram || 0,
           total: c.total || 0,
+          discount_type: c.discount_type || 'fixed',
+          discount_value: c.discount_value || 0,
+          discount: c.discount || 0,
         }));
         const { error: compErr } = await (supabase.from('custom_order_components' as any).insert(componentsWithId) as any);
         if (compErr) throw compErr;
@@ -218,6 +226,9 @@ export const useCustomOrders = () => {
           unit_price: c.unit_price || 0,
           rate_per_gram: c.rate_per_gram || 0,
           total: c.total || 0,
+          discount_type: c.discount_type || 'fixed',
+          discount_value: c.discount_value || 0,
+          discount: c.discount || 0,
         }));
         const { error: compErr } = await (supabase.from('custom_order_components' as any).insert(compsWithId) as any);
         if (compErr) throw compErr;

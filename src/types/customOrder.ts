@@ -55,6 +55,7 @@ export interface CustomOrderComponent {
   created_at?: string;
   discount_value:number;
   discount_type: 'fixed' | 'percentage';
+  discount?: number;
 
 }
 

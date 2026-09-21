@@ -4,7 +4,7 @@ import type { InvoiceItem, InvoiceTotals, BusinessSettings } from '@/types/invoi
 import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance';
 import { computeGrandTotal } from '@/lib/invoiceTotals';
 import { ensureNotoLoaded, registerNotoFont } from './pdfFont';
-import { buildItemsFromCustomOrderDetails, getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from './invoiceCustomOrderDetails';
+import { buildItemsFromCustomOrderDetails, getCustomOrderDetailsFromNotes, stripCustomOrderPayload } from './invoiceCustomOrderDetails';
 
 interface PaymentBreakdownEntry {
   mode: string;
@@ -150,7 +150,6 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   const advancePaid = data.advancePaid ?? 0;
   const storeCreditsUsed = data.storeCreditsUsed ?? 0;
   const customOrderDetails = getCustomOrderDetailsFromNotes(data.notes);
-  const showCustomOrderDetails = hasCustomOrderDetails(customOrderDetails);
   const cleanNotes = stripCustomOrderPayload(data.notes);
 
   // ================== HEADER (white with bold purple bottom border) ==================
@@ -303,48 +302,12 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   yPos = Math.max(yPos + 14, billToExtraY + 1);
   doc.setTextColor(0, 0, 0);
 
-  if (showCustomOrderDetails && customOrderDetails) {
+  if (customOrderDetails?.referenceNumber) {
     doc.setFont(FONT, 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(...PURPLE);
     doc.text(`Custom Order: ${customOrderDetails.referenceNumber}`, margin, yPos);
     yPos += 4;
-
-    const drawDetailTable = (title: string, rows: Array<[string, string]>) => {
-      if (rows.length === 0) return;
-      autoTable(doc, {
-        body: rows.map(([label, value]) => ({ label, value })),
-        columns: [
-          { header: title, dataKey: 'label' },
-          { header: 'Amount / Details', dataKey: 'value' },
-        ],
-        startY: yPos,
-        margin: { left: margin, right: margin },
-        tableWidth: contentWidth,
-        styles: { font: FONT, fontSize: 7.5, cellPadding: 1.6, lineWidth: 0.1, lineColor: [225, 220, 235], overflow: 'linebreak' },
-        headStyles: { font: FONT, fillColor: PURPLE_LIGHT, textColor: PURPLE, fontStyle: 'bold', fontSize: 7.5, cellPadding: 1.7 },
-        columnStyles: { 0: { cellWidth: contentWidth * 0.66 }, 1: { cellWidth: contentWidth * 0.34, halign: 'right' } },
-      });
-      yPos = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 2;
-    };
-
-    drawDetailTable('CUSTOM ORDER ITEMS', customOrderDetails.orderItems.map((item) => {
-      const meta = [item.sku, item.weight_grams ? `${item.weight_grams}g` : '', `Qty ${item.quantity}`].filter(Boolean).join(' · ');
-      return [`• ${item.name}${meta ? ` — ${meta}` : ''}${item.description ? `\n${item.description}` : ''}`, money(item.line_total)];
-    }));
-
-    drawDetailTable('CUSTOMER SUPPLIED ITEMS', customOrderDetails.customerMaterials.map((item) => {
-      const meta = [item.quantity ? `Qty ${item.quantity}` : '', item.weight_grams ? `${item.weight_grams}g` : '', item.description || ''].filter(Boolean).join(' · ');
-      return [`• ${item.name}${meta ? ` — ${meta}` : ''}`, 'Reference only'];
-    }));
-
-    drawDetailTable('NISPADITHA COMPONENTS USED', customOrderDetails.components.map((item) => {
-      const name = `${item.name}${item.material ? ` (${item.material})` : ''}`;
-      const meta = [`Qty ${item.quantity}`, item.weight_grams ? `${item.weight_grams}g` : ''].filter(Boolean).join(' · ');
-      return [`• ${name} — ${meta}`, money(item.total)];
-    }));
-
-    drawDetailTable('CHARGES', customOrderDetails.charges.map((charge) => [`• ${charge.label}`, money(charge.amount)]));
   }
 
   // ================== PRODUCT TABLE ==================

@@ -53,6 +53,16 @@ export interface InvoiceCustomOrderComponentDetail {
   unit_price: number;
   rate_per_gram: number;
   total: number;
+  discount?: number;
+}
+
+export interface InvoiceAdvancePrefill {
+  id: string;
+  referenceNumber: string;
+  amount: number;
+  paymentMode: string;
+  paymentDate: string;
+  notes?: string | null;
 }
 
 export interface InvoiceChargeDetail {

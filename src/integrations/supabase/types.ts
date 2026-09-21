@@ -594,6 +594,9 @@ export type Database = {
           component_name: string
           created_at: string
           custom_order_id: string
+          discount: number
+          discount_type: string
+          discount_value: number
           id: string
           material: string | null
           product_id: string | null
@@ -612,6 +615,9 @@ export type Database = {
           component_name: string
           created_at?: string
           custom_order_id: string
+          discount?: number
+          discount_type?: string
+          discount_value?: number
           id?: string
           material?: string | null
           product_id?: string | null
@@ -630,6 +636,9 @@ export type Database = {
           component_name?: string
           created_at?: string
           custom_order_id?: string
+          discount?: number
+          discount_type?: string
+          discount_value?: number
           id?: string
           material?: string | null
           product_id?: string | null

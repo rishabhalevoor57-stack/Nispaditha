@@ -42,6 +42,7 @@ import { Wallet } from 'lucide-react';
 import { stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
 import { computeGrandTotal } from '@/lib/invoiceTotals';
 import type { Product, Client, BusinessSettings, InvoiceItem } from '@/types/invoice';
+import type { InvoiceAdvancePrefill } from '@/types/invoice';
 
 
 export interface InvoicePrefillData {
@@ -51,6 +52,13 @@ export interface InvoicePrefillData {
   advancePaid?: number;
   paymentMode?: string;
   sourceLabel?: string; // e.g. "Order Note ON-000123"
+  customOrderId?: string;
+  items?: InvoiceItem[];
+  gstPercentage?: number;
+  gstMode?: 'exclusive' | 'inclusive';
+  orderDiscount?: number;
+  metalType?: MetalRateOption;
+  advances?: InvoiceAdvancePrefill[];
 }
 
 interface CreateInvoiceDialogProps {
@@ -204,10 +212,21 @@ export function CreateInvoiceDialog({
       if (prefill.clientPhone) setClientPhone(prefill.clientPhone);
       if (prefill.notes) setNotes(prefill.notes);
       if (prefill.paymentMode) setPaymentMode(prefill.paymentMode);
+      if (prefill.items) setInvoiceItems(prefill.items.map((item) => ({ ...item, gst_percentage: prefill.gstPercentage ?? item.gst_percentage })));
+      if (prefill.gstPercentage !== undefined) setGstPct(prefill.gstPercentage);
+      if (prefill.gstMode) setGstMode(prefill.gstMode);
+      if (prefill.orderDiscount !== undefined) setTotalDiscount(prefill.orderDiscount);
+      if (prefill.metalType) setMetalRate(prefill.metalType);
+      if (prefill.customOrderId) setClientSource('custom_order');
       setSelectedClient('walk-in');
-      const adv = Number(prefill.advancePaid) || 0;
-      if (adv > 0) {
-        setUpfrontAmount(String(adv));
+      const advances = prefill.advances || [];
+      if (advances.length > 0) {
+        setPaymentMode(advances[0].paymentMode);
+        setUpfrontAmount(String(advances[0].amount));
+        setPayments(advances.slice(1).map((advance) => ({ mode: advance.paymentMode, amount: String(advance.amount) })));
+      } else {
+        const adv = Number(prefill.advancePaid) || 0;
+        if (adv > 0) setUpfrontAmount(String(adv));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -515,6 +534,20 @@ export function CreateInvoiceDialog({
         invoice = inserted;
       }
 
+      if (prefill?.customOrderId) {
+        const { data: claimedOrder, error: claimError } = await supabase
+          .from('custom_orders')
+          .update({ converted_to_invoice_id: invoice.id, status: 'invoiced' } as never)
+          .eq('id', prefill.customOrderId)
+          .is('converted_to_invoice_id', null)
+          .select('id')
+          .maybeSingle();
+        if (claimError || !claimedOrder) {
+          await supabase.from('invoices').delete().eq('id', invoice.id);
+          throw claimError || new Error('This Custom Order already has a GST Invoice. Reopen it from Custom Orders.');
+        }
+      }
+
       // Debit store wallet for credits used
       if (cappedCredits > 0 && finalClientId) {
         try {
@@ -532,17 +565,39 @@ export function CreateInvoiceDialog({
       }
 
       // Record each payment entry in invoice_payments (for receipt history)
-      for (const p of effectivePaymentBreakdown) {
-        const { data: receiptNum } = await supabase.rpc('generate_receipt_number');
-        await supabase.from('invoice_payments').insert([{
-          invoice_id: invoice.id,
-          receipt_number: receiptNum,
-          amount: p.amount,
-          payment_mode: p.mode,
-          payment_date: format(invoiceDate, 'yyyy-MM-dd'),
-          notes: isFullyPaid ? 'Payment received in full at invoice creation' : 'Payment received at invoice creation',
-          created_by: user?.id,
-        }]);
+      if (prefill?.customOrderId && prefill.advances?.length) {
+        for (const advance of prefill.advances) {
+          const { data: payment, error: paymentError } = await supabase.from('invoice_payments').insert([{
+            invoice_id: invoice.id,
+            receipt_number: advance.referenceNumber,
+            amount: advance.amount,
+            payment_mode: advance.paymentMode,
+            payment_date: advance.paymentDate,
+            notes: `Advance from ${prefill.sourceLabel || 'Custom Order'}${advance.notes ? ` — ${advance.notes}` : ''}`,
+            created_by: user?.id,
+          }]).select('id').single();
+          if (paymentError) throw paymentError;
+          const paymentId = (payment as { id?: string } | null)?.id;
+          if (paymentId) {
+            await (supabase.from('custom_order_payments' as any)
+              .update({ transferred_to_invoice_payment_id: paymentId } as any)
+              .eq('id', advance.id)
+              .is('transferred_to_invoice_payment_id', null) as any);
+          }
+        }
+      } else {
+        for (const p of effectivePaymentBreakdown) {
+          const { data: receiptNum } = await supabase.rpc('generate_receipt_number');
+          await supabase.from('invoice_payments').insert([{
+            invoice_id: invoice.id,
+            receipt_number: receiptNum,
+            amount: p.amount,
+            payment_mode: p.mode,
+            payment_date: format(invoiceDate, 'yyyy-MM-dd'),
+            notes: isFullyPaid ? 'Payment received in full at invoice creation' : 'Payment received at invoice creation',
+            created_by: user?.id,
+          }]);
+        }
       }
 
       // Create invoice items
@@ -796,7 +851,7 @@ export function CreateInvoiceDialog({
         <div className="space-y-6 mt-4">
           {prefill?.sourceLabel && (
             <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
-              Pre-filled from <span className="font-semibold">{prefill.sourceLabel}</span>. Review and add product line items before saving.
+              Pre-filled from <span className="font-semibold">{prefill.sourceLabel}</span>. Review all details, then create the invoice when ready.
             </div>
           )}
 
@@ -1325,13 +1380,13 @@ export function CreateInvoiceDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button
+            {!prefill?.customOrderId && <Button
               variant="secondary"
               onClick={handleSaveAsDraft}
               disabled={invoiceItems.length === 0 || isSubmitting}
             >
               {isSubmitting ? 'Saving...' : 'Save as Draft'}
-            </Button>
+            </Button>}
             <Button
               className="btn-gold"
               onClick={handleCreateInvoice}

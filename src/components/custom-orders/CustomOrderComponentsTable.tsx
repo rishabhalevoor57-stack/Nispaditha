@@ -23,10 +23,23 @@ const calcTotal = (c: CustomOrderComponent): number => {
     ? (Number(c.strings_used) || 0)
     : (Number(c.quantity_used) || 0);
   const weightTotal = (Number(c.weight_grams) || 0) * (Number(c.rate_per_gram) || 0);
-  const totals= Number((units * unitPrice + weightTotal).toFixed(2));
-  const discount=c.discount_type==='fixed'?c.discount_value:(totals*c.discount_value/100)
+  const totals = Number((units * unitPrice + weightTotal).toFixed(2));
+  const rawDiscount = c.discount_type === 'fixed'
+    ? Number(c.discount_value) || 0
+    : totals * (Number(c.discount_value) || 0) / 100;
+  const discount = Math.min(totals, Math.max(0, rawDiscount));
+  return Number((totals - discount).toFixed(2));
+};
 
-  return Number((totals-discount).toFixed(2));
+const calcDiscount = (c: CustomOrderComponent): number => {
+  const unit: ComponentUnit = c.unit === 'strings' ? 'strings' : 'quantity';
+  const units = unit === 'strings' ? Number(c.strings_used) || 0 : Number(c.quantity_used) || 0;
+  const gross = units * (Number(c.unit_price) || 0)
+    + (Number(c.weight_grams) || 0) * (Number(c.rate_per_gram) || 0);
+  const raw = c.discount_type === 'percentage'
+    ? gross * (Number(c.discount_value) || 0) / 100
+    : Number(c.discount_value) || 0;
+  return Number(Math.min(gross, Math.max(0, raw)).toFixed(2));
 };
 
 export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 0 }: Props) => {
@@ -34,6 +47,7 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
     const next = components.map((c, i) => {
       if (i !== idx) return c;
       const merged = { ...c, ...patch } as CustomOrderComponent;
+      merged.discount = calcDiscount(merged);
       merged.total = calcTotal(merged);
       return merged;
     });
@@ -51,6 +65,7 @@ export const CustomOrderComponentsTable = ({ components, onChange, silverRate = 
         material: '',
         unit: 'quantity',
         discount_value:0,
+        discount: 0,
         weight_grams: 0,
         quantity: 1,
         quantity_used: 1,

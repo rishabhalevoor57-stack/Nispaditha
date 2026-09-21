@@ -163,8 +163,12 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         const weightTotal = (Number(c.weight_grams) || 0) * currentMetalRate;
         const unit = (c as any).unit === 'strings' ? 'strings' : 'quantity';
         const units = unit === 'strings' ? (Number(c.strings_used) || 0) : (Number(c.quantity_used) || 0);
-        const total = Number(((Number(c.unit_price) || 0) * units + weightTotal).toFixed(2));
-        return { ...c, rate_per_gram: currentMetalRate, total };
+        const gross = Number(((Number(c.unit_price) || 0) * units + weightTotal).toFixed(2));
+        const rawDiscount = c.discount_type === 'percentage'
+          ? gross * (Number(c.discount_value) || 0) / 100
+          : Number(c.discount_value) || 0;
+        const discount = Number(Math.min(gross, Math.max(0, rawDiscount)).toFixed(2));
+        return { ...c, rate_per_gram: currentMetalRate, discount, total: Number((gross - discount).toFixed(2)) };
       });
       return dirty ? next : prev;
     });
@@ -361,8 +365,9 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
           unit_price: c.unit_price || 0,
           rate_per_gram: c.rate_per_gram || 0,
           total: c.total || 0,
-    discount_type: c.discount_type || "fixed",   // or "percentage"
-    discount_value: c.discount_value || 0 
+          discount_type: c.discount_type || 'fixed',
+          discount_value: c.discount_value || 0,
+          discount: c.discount || 0,
         }));
 
       if (isEditing) {
