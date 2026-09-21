@@ -20,6 +20,7 @@ import { InvoiceStatusBadge, InvoiceStatusActions } from '@/components/invoice/I
 import { downloadInvoicePdf } from '@/utils/invoicePdf';
 import { ReturnExchangeDialog } from '@/components/returns/ReturnExchangeDialog';
 import type { Invoice, BusinessSettings, InvoiceItem, InvoiceTotals, InvoiceStatus } from '@/types/invoice';
+import type { CustomOrderInvoicePrefill } from '@/utils/customOrderToInvoice';
 
 export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -27,6 +28,7 @@ export default function Invoices() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [customOrderPrefill, setCustomOrderPrefill] = useState<CustomOrderInvoicePrefill | null>(null);
   const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>('all');
@@ -46,14 +48,18 @@ export default function Invoices() {
 
   // If navigated from Custom Orders with editDraftId, open the draft for editing
   useEffect(() => {
-    const state = location.state as { editDraftId?: string } | null;
+    const state = location.state as { editDraftId?: string; customOrderPrefill?: CustomOrderInvoicePrefill } | null;
     if (state?.editDraftId) {
       setEditingDraftId(state.editDraftId);
       setIsCreateDialogOpen(true);
       // Clear state to avoid reopening on remount
       navigate(location.pathname, { replace: true, state: {} });
+    } else if (state?.customOrderPrefill) {
+      setCustomOrderPrefill(state.customOrderPrefill);
+      setIsCreateDialogOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state]);
+  }, [location.state, location.pathname, navigate]);
 
   const fetchInvoices = async () => {
     try {
@@ -394,11 +400,12 @@ export default function Invoices() {
 
       <CreateInvoiceDialog
         open={isCreateDialogOpen}
-        onOpenChange={(o) => { setIsCreateDialogOpen(o); if (!o) setEditingDraftId(null); }}
+        onOpenChange={(o) => { setIsCreateDialogOpen(o); if (!o) { setEditingDraftId(null); setCustomOrderPrefill(null); } }}
         onInvoiceCreated={() => {
           fetchInvoices();
         }}
         editingDraftId={editingDraftId}
+        prefill={customOrderPrefill}
       />
 
       <ViewInvoiceDialog

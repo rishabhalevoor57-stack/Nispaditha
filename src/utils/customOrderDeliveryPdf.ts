@@ -21,11 +21,6 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
   const { order, items, components, advancePayments = [] } = ctx;
   const totalAdvance = advancePayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const advancePaid = totalAdvance > 0 ? totalAdvance : (ctx.advancePaid || 0);
-  const paymentMode = advancePayments.length === 1
-    ? advancePayments[0].payment_mode.replace(/_/g, ' ').toUpperCase()
-    : advancePayments.length > 1
-      ? 'Multiple'
-      : (ctx.paymentMode || '-');
   const doc = new jsPDF();
 
 
@@ -70,7 +65,7 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
 
   let y = 84;
 
-  // Order Items
+  // One unified details table with compact category rows.
   const itemRows = items
     .filter((it) => (it.item_description || '').trim())
     .map((it) => [
@@ -79,56 +74,45 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
       it.pricing_mode === 'flat_price' ? 'Flat' : 'Wt',
       String(it.quantity || 1),
       it.pricing_mode === 'weight_based' ? `${it.expected_weight || 0} g` : '-',
+      Number(it.discount) > 0 ? money(it.discount) : '-',
       money(it.item_total),
     ]);
-
-  if (itemRows.length > 0) {
-    autoTable(doc, {
-      startY: y,
-      head: [['SKU', 'Item', 'Mode', 'Qty', 'Weight', 'Total']],
-      body: itemRows,
-      headStyles: { fillColor: [126, 58, 242], textColor: 255 },
-      styles: { fontSize: 9, cellPadding: 3 },
-    });
-    y = (doc as any).lastAutoTable.finalY + 6;
-  }
-
-  // Customer supplied materials
   const cm = (order.customer_materials || []).filter((m) => (m?.name || '').trim());
-  if (cm.length > 0) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('Customer Supplied Items', 14, y);
-    y += 2;
-    autoTable(doc, {
-      startY: y + 2,
-      head: [['Item', 'Qty', 'Weight (g)', 'Notes']],
-      body: cm.map((m) => [m.name, String(m.quantity ?? '-'), String(m.weight_grams ?? '-'), m.description || '-']),
-      headStyles: { fillColor: [126, 58, 242], textColor: 255 },
-      styles: { fontSize: 9, cellPadding: 3 },
-    });
-    y = (doc as any).lastAutoTable.finalY + 6;
-  }
-
-  // Components
   const compRows = components
     .filter((c) => (c.component_name || '').trim())
     .map((c) => [
+      c.sku || '-',
       c.component_name + (c.material ? ` (${c.material})` : ''),
+      c.unit === 'strings' ? 'Strings' : 'Qty',
       String(c.quantity || 1),
       c.weight_grams ? `${c.weight_grams} g` : '-',
+      Number(c.discount) > 0 ? money(Number(c.discount)) : '-',
       money(c.total || 0),
     ]);
-  if (compRows.length > 0) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('Components Used', 14, y);
+  const detailRows: string[][] = [];
+  if (itemRows.length) detailRows.push(['CUSTOM ORDER ITEMS', '', '', '', '', '', ''], ...itemRows);
+  if (cm.length) detailRows.push(
+    ['CUSTOMER SUPPLIED ITEMS', '', '', '', '', '', ''],
+    ...cm.map((m) => ['-', m.name + (m.description ? ` — ${m.description}` : ''), 'Customer', String(m.quantity ?? '-'), m.weight_grams ? `${m.weight_grams} g` : '-', '-', '-']),
+  );
+  if (compRows.length) detailRows.push(['COMPONENTS USED', '', '', '', '', '', ''], ...compRows);
+
+  if (detailRows.length > 0) {
     autoTable(doc, {
-      startY: y + 2,
-      head: [['Component', 'Qty', 'Weight', 'Total']],
-      body: compRows,
+      startY: y,
+      head: [['SKU', 'Item / Description', 'Mode', 'Qty', 'Weight', 'Discount', 'Total']],
+      body: detailRows,
       headStyles: { fillColor: [126, 58, 242], textColor: 255 },
-      styles: { fontSize: 9, cellPadding: 3 },
+      styles: { fontSize: 8, cellPadding: 2.2 },
+      columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 57 }, 2: { cellWidth: 20 }, 3: { cellWidth: 13 }, 4: { cellWidth: 20 }, 5: { cellWidth: 26 }, 6: { cellWidth: 28, halign: 'right' } },
+      didParseCell: (hook) => {
+        const firstCell = Array.isArray(hook.row.raw) ? String(hook.row.raw[0]) : '';
+        if (hook.section === 'body' && (firstCell.endsWith('ITEMS') || firstCell.endsWith('USED'))) {
+          hook.cell.styles.fillColor = [245, 238, 255];
+          hook.cell.styles.textColor = [74, 32, 96];
+          hook.cell.styles.fontStyle = 'bold';
+        }
+      },
     });
     y = (doc as any).lastAutoTable.finalY + 6;
   }
@@ -169,7 +153,6 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
     summaryRows.push(['Total Advance Paid', money(advancePaid)]);
   } else {
     summaryRows.push(['Advance Paid', money(advancePaid)]);
-    summaryRows.push(['Payment Mode', paymentMode || '-']);
   }
   summaryRows.push(['Balance Remaining', money(balance)]);
 

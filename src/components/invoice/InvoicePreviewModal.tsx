@@ -9,7 +9,7 @@ import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance'; // money-tolerance
 import { computeGrandTotal } from '@/lib/invoiceTotals';
 import { FileText } from 'lucide-react';
 import type { BusinessSettings, InvoiceItem, InvoiceTotals } from '@/types/invoice';
-import { buildItemsFromCustomOrderDetails, getCustomOrderDetailsFromNotes, hasCustomOrderDetails, stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
+import { buildItemsFromCustomOrderDetails, getCustomOrderDetailsFromNotes, stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
 
 interface PaymentBreakdownEntry {
   mode: string;
@@ -106,7 +106,6 @@ export function InvoicePreviewModal({
   const itemDiscount = Math.max(0, allDiscount - totalDiscount);
 
   const customOrderDetails = getCustomOrderDetailsFromNotes(notes);
-  const showCustomOrderDetails = hasCustomOrderDetails(customOrderDetails);
   const cleanNotes = stripCustomOrderPayload(notes);
   // Legacy converted custom orders can have no saved line items — rebuild the
   // billing rows from the stored custom-order payload so the table is never empty.
@@ -271,76 +270,9 @@ export function InvoicePreviewModal({
               )}
             </div>
 
-            {showCustomOrderDetails && customOrderDetails && (
-              <div className="px-6 pb-3 space-y-2 text-[10.5px]">
-                {customOrderDetails.referenceNumber && (
-                  <div className="font-bold" style={{ color: PURPLE }}>
-                    Custom Order: {customOrderDetails.referenceNumber}
-                  </div>
-                )}
-
-                {customOrderDetails.orderItems.length > 0 && (
-                  <div className="border rounded overflow-hidden" style={{ borderColor: '#e5e0ee' }}>
-                    <div className="px-3 py-1 font-bold uppercase tracking-wider" style={{ background: PURPLE_LIGHT, color: PURPLE }}>Custom Order Items</div>
-                    <div className="divide-y" style={{ borderColor: '#eee' }}>
-                      {customOrderDetails.orderItems.map((item, idx) => (
-                        <div key={idx} className="px-3 py-1.5 flex justify-between gap-3">
-                          <div>
-                            <span className="font-semibold">• {item.name}</span>
-                            <span className="text-gray-500"> {item.sku ? `— ${item.sku}` : ''}{item.weight_grams ? ` — ${item.weight_grams}g` : ''}{item.quantity ? ` — Qty ${item.quantity}` : ''}</span>
-                            {item.description && <div className="text-gray-500 italic ml-3">{item.description}</div>}
-                          </div>
-                          <span style={num}>{money(item.line_total)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {customOrderDetails.customerMaterials.length > 0 && (
-                  <div className="border rounded overflow-hidden" style={{ borderColor: '#e5e0ee' }}>
-                    <div className="px-3 py-1 font-bold uppercase tracking-wider" style={{ background: PURPLE_LIGHT, color: PURPLE }}>Customer Supplied Items</div>
-                    <div className="px-3 py-1.5 grid grid-cols-1 gap-1">
-                      {customOrderDetails.customerMaterials.map((item, idx) => (
-                        <div key={idx}>
-                          <span className="font-semibold">• {item.name}</span>
-                          <span className="text-gray-500">{item.quantity ? ` — Qty ${item.quantity}` : ''}{item.weight_grams ? ` — ${item.weight_grams}g` : ''}{item.description ? ` — ${item.description}` : ''}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {customOrderDetails.components.length > 0 && (
-                  <div className="border rounded overflow-hidden" style={{ borderColor: '#e5e0ee' }}>
-                    <div className="px-3 py-1 font-bold uppercase tracking-wider" style={{ background: PURPLE_LIGHT, color: PURPLE }}>Nispaditha Components Used</div>
-                    <div className="divide-y" style={{ borderColor: '#eee' }}>
-                      {customOrderDetails.components.map((item, idx) => (
-                        <div key={idx} className="px-3 py-1.5 flex justify-between gap-3">
-                          <div>
-                            <span className="font-semibold">• {item.name}{item.material ? ` (${item.material})` : ''}</span>
-                            <span className="text-gray-500"> — Qty {item.quantity}{item.weight_grams ? ` — ${item.weight_grams}g` : ''}</span>
-                          </div>
-                          <span style={num}>{money(item.total)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {customOrderDetails.charges.length > 0 && (
-                  <div className="border rounded overflow-hidden" style={{ borderColor: '#e5e0ee' }}>
-                    <div className="px-3 py-1 font-bold uppercase tracking-wider" style={{ background: PURPLE_LIGHT, color: PURPLE }}>Charges</div>
-                    <div className="divide-y" style={{ borderColor: '#eee' }}>
-                      {customOrderDetails.charges.map((charge, idx) => (
-                        <div key={idx} className="px-3 py-1.5 flex justify-between gap-3">
-                          <span>• {charge.label}</span>
-                          <span style={num}>{money(charge.amount)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            {customOrderDetails?.referenceNumber && (
+              <div className="px-6 pb-2 text-[10.5px] font-bold" style={{ color: PURPLE }}>
+                Custom Order: {customOrderDetails.referenceNumber}
               </div>
             )}
 

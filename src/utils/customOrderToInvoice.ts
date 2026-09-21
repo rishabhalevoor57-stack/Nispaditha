@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { CustomOrder, CustomOrderItem, CustomOrderComponent } from '@/types/customOrder';
-import type { InvoiceCustomOrderDetails } from '@/types/invoice';
+import type { InvoiceCustomOrderDetails, InvoiceItem } from '@/types/invoice';
 import { PAYMENT_TOLERANCE } from '@/lib/moneyTolerance';
 
 export interface ConvertOptions {
@@ -12,6 +12,27 @@ export interface ConvertResult {
   invoiceId: string;
   invoiceNumber: string;
   clientId: string | null;
+}
+
+export interface CustomOrderInvoicePrefill {
+  customOrderId: string;
+  clientName: string;
+  clientPhone: string;
+  notes: string;
+  sourceLabel: string;
+  items: InvoiceItem[];
+  gstPercentage: number;
+  gstMode: 'exclusive' | 'inclusive';
+  orderDiscount: number;
+  metalType: 'none';
+  advances: Array<{
+    id: string;
+    referenceNumber: string;
+    amount: number;
+    paymentMode: string;
+    paymentDate: string;
+    notes: string | null;
+  }>;
 }
 
 interface LineItemInput {
@@ -88,6 +109,7 @@ const buildCustomOrderDetails = (
       weight_grams: Number(c.weight_grams) || 0,
       unit_price: Number(c.unit_price) || 0,
       rate_per_gram: Number(c.rate_per_gram) || 0,
+      discount: Number(c.discount) || 0,
       total: Number(c.total) || 0,
     })),
   charges,
@@ -138,6 +160,7 @@ const buildInvoiceLines = (
 
   for (const c of components) {
     const lineTotal = Number(c.total) || 0;
+    const discount = Number(c.discount) || 0;
     const wt = Number(c.weight_grams) || 0;
     const qty = Number(c.quantity) || 1;
     const isWeightBased = (Number(c.rate_per_gram) || 0) > 0 && wt > 0;
@@ -150,10 +173,10 @@ const buildInvoiceLines = (
       rate_per_gram: isWeightBased ? (Number(c.rate_per_gram) || 0) : 0,
       gold_value: isWeightBased ? wt * (Number(c.rate_per_gram) || 0) * qty : 0,
       making_charges: 0,
-      discount: 0,
+      discount,
       discounted_making: 0,
       subtotal: lineTotal,
-      mrp: lineTotal,
+      mrp: lineTotal + discount,
       description: null,
     });
   }
@@ -205,7 +228,8 @@ const buildInvoiceData = (order: CustomOrder, items: CustomOrderItem[], componen
   const flatDiscount = Number(order.flat_discount) || 0;
   // Sum per-item line discounts so they don't silently disappear on the invoice
   const itemsDiscount = items.reduce((s, i) => s + (Number(i.discount) || 0), 0);
-  const totalDiscount = flatDiscount + itemsDiscount;
+  const componentsDiscount = components.reduce((s, c) => s + (Number(c.discount) || 0), 0);
+  const totalDiscount = flatDiscount + itemsDiscount + componentsDiscount;
   // Gross subtotal = post-per-item-discount lines + itemsDiscount so subtotal - totalDiscount = same taxable base
   const grossSubtotal = linesSubtotal + itemsDiscount;
   const taxableBase = Math.max(0, linesSubtotal - flatDiscount);
@@ -272,6 +296,63 @@ const buildItemsPayload = (invoiceId: string, lines: LineItemInput[]) => lines.m
     description: l.description,
   };
 });
+
+export async function prepareCustomOrderInvoice(
+  order: CustomOrder,
+  items: CustomOrderItem[],
+  components: CustomOrderComponent[],
+): Promise<CustomOrderInvoicePrefill> {
+  const invoiceData = buildInvoiceData(order, items, components);
+  const { data: advances = [], error } = await (supabase
+    .from('custom_order_payments' as any)
+    .select('id, reference_number, amount, payment_mode, payment_date, notes, transferred_to_invoice_payment_id')
+    .eq('custom_order_id', order.id)
+    .order('payment_date', { ascending: true }) as any);
+  if (error) throw error;
+
+  return {
+    customOrderId: order.id,
+    clientName: order.client_name || '',
+    clientPhone: order.phone_number || '',
+    notes: invoiceData.notes,
+    sourceLabel: `Custom Order ${order.reference_number}`,
+    items: invoiceData.lines.map((line) => ({
+      product_id: line.product_id || '',
+      sku: items.find((item) => item.product_id === line.product_id && item.item_description === line.product_name)?.sku || 'N/A',
+      product_name: line.product_name,
+      category: line.category,
+      weight_grams: line.weight_grams,
+      quantity: line.quantity,
+      rate_per_gram: line.rate_per_gram,
+      base_price: line.gold_value,
+      making_charges: line.making_charges,
+      making_charges_per_gram: line.weight_grams > 0 ? line.making_charges / line.weight_grams : 0,
+      discount: line.discount,
+      discount_type: 'fixed',
+      discount_value: line.discount,
+      discounted_making: line.discounted_making,
+      line_total: line.subtotal,
+      gst_percentage: invoiceData.pct,
+      pricing_mode: line.rate_per_gram > 0 ? 'weight_based' : 'flat_price',
+      mrp: Math.max(line.mrp, line.subtotal + line.discount),
+      description: line.description || '',
+    })),
+    gstPercentage: invoiceData.pct,
+    gstMode: invoiceData.gstMode as 'exclusive' | 'inclusive',
+    orderDiscount: Number(order.flat_discount) || 0,
+    metalType: 'none',
+    advances: (advances || [])
+      .filter((advance: any) => !advance.transferred_to_invoice_payment_id)
+      .map((advance: any) => ({
+        id: advance.id,
+        referenceNumber: advance.reference_number,
+        amount: Number(advance.amount) || 0,
+        paymentMode: advance.payment_mode,
+        paymentDate: advance.payment_date,
+        notes: advance.notes || null,
+      })),
+  };
+}
 
 export async function syncCustomOrderInvoice(
   order: CustomOrder,

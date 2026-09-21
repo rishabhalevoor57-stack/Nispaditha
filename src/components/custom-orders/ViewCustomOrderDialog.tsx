@@ -104,7 +104,7 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
               {!o.converted_to_invoice_id && o.status !== 'cancelled' && onGenerateInvoice && (
                 <Button variant="default" size="sm" disabled={isGeneratingInvoice} onClick={() => onGenerateInvoice(o, items, components)}>
                   <FileText className="h-4 w-4 mr-1.5" />
-                  {isGeneratingInvoice ? 'Generating...' : 'Generate GST Invoice'}
+                  {isGeneratingInvoice ? 'Opening...' : 'Open GST Invoice'}
                 </Button>
               )}
 
