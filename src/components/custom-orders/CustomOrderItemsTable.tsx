@@ -114,7 +114,7 @@ const data = results.flatMap(({ data }) => data || []);
     // fields (visible on the order bill / invoice) but do NOT drive the total.
     // This matches the "weight is reference only" rule for Custom Orders.
     const unitPrice = Number(item.flat_price) || 0;
-    const qty = Number(item.quantity) || 1;
+    const qty = Math.max(0, Number(item.quantity) || 0);
     const grossPrice = unitPrice * qty;
 
     const discount = item.discount_type === 'percentage'
@@ -255,7 +255,7 @@ const data = results.flatMap(({ data }) => data || []);
               <TableHead className="w-[100px]">SKU</TableHead>
               <TableHead>Item</TableHead>
               <TableHead className="w-[80px]">Mode</TableHead>
-              <TableHead className="w-[60px] text-center">Qty</TableHead>
+              <TableHead className="w-[80px] text-center">Qty / Strings</TableHead>
               <TableHead className="w-[80px] text-right">Weight</TableHead>
               <TableHead className="w-[90px] text-right">Rate</TableHead>
               <TableHead className="w-[80px] text-right">MC/g</TableHead>
@@ -282,7 +282,10 @@ const data = results.flatMap(({ data }) => data || []);
                       <TableCell className="text-xs">
                         {isBeads ? 'Beads' : item.pricing_mode === 'flat_price' ? 'Flat' : 'Normal'}
                       </TableCell>
-                      <TableCell className="text-center">{item.quantity}{isBeads ? ' str' : ''}</TableCell>
+                      <TableCell className="text-center">
+                        <div>{item.quantity}</div>
+                        {item.strings_used != null && <div className="text-xs text-muted-foreground">{item.strings_used} strings</div>}
+                      </TableCell>
                       <TableCell className="text-right">
                         {item.pricing_mode === 'weight_based' && !isBeads ? `${item.expected_weight}g` : '-'}
                       </TableCell>
@@ -446,12 +449,21 @@ const data = results.flatMap(({ data }) => data || []);
                       <div className="space-y-0.5">
                         <Input
                           type="number"
-                          min="1"
+                          min="0"
                           value={item.quantity}
-                          onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                          onChange={(e) => updateItem(index, 'quantity', Math.max(0, Number.parseInt(e.target.value, 10) || 0))}
                           className="h-9 text-sm text-center w-full"
                         />
-                        {isBeads && <span className="text-[10px] text-muted-foreground block text-center">strings</span>}
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          aria-label="Strings"
+                          value={item.strings_used ?? ''}
+                          onChange={(e) => updateItem(index, 'strings_used', Math.max(0, Number.parseFloat(e.target.value) || 0))}
+                          className="h-8 text-xs text-center w-full"
+                          placeholder="Strings"
+                        />
                       </div>
                     </TableCell>
 

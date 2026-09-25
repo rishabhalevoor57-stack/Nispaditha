@@ -28,6 +28,7 @@ export interface InvoiceCustomOrderItemDetail {
   sku?: string | null;
   category?: string | null;
   quantity: number;
+  strings_used?: number | null;
   weight_grams: number;
   pricing_mode: PricingMode;
   rate_per_gram: number;
@@ -49,6 +50,9 @@ export interface InvoiceCustomOrderComponentDetail {
   name: string;
   material?: string | null;
   quantity: number;
+  quantity_used?: number | null;
+  strings_used?: number | null;
+  unit?: 'quantity' | 'strings';
   weight_grams: number;
   unit_price: number;
   rate_per_gram: number;
@@ -135,6 +139,7 @@ export interface InvoiceItem {
   category: string;
   weight_grams: number;
   quantity: number;
+  strings_used?: number | null;
   rate_per_gram: number;
   base_price: number;
   making_charges: number;
