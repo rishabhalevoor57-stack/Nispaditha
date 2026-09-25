@@ -77,7 +77,7 @@ export const useCustomOrders = () => {
 
   // Lock/unlock SKUs when creating/updating orders
   const lockSkus = async (items: { product_id?: string | null }[], orderId: string) => {
-    const productIds = items.filter(i => i.product_id).map(i => i.product_id!);
+    const productIds = items.flatMap(i => i.product_id ? [i.product_id] : []);
     if (productIds.length > 0) {
       for (const pid of productIds) {
         await (supabase.from('products').update({ locked_by_custom_order_id: orderId } as any).eq('id', pid) as any);
@@ -124,9 +124,9 @@ export const useCustomOrders = () => {
           category: (c as any).category || null,
           component_name: c.component_name,
           material: c.material || null,
-          unit: (c as any).unit || 'weight_based',
+          unit: (c as any).unit === 'strings' ? 'strings' : 'quantity',
           weight_grams: c.weight_grams || 0,
-          quantity: c.quantity || 1,
+          quantity: Math.max(0, Number(c.quantity) || 0),
           quantity_used: (c as any).quantity_used ?? 0,
           strings_used: (c as any).strings_used ?? 0,
           unit_price: c.unit_price || 0,
@@ -163,64 +163,18 @@ export const useCustomOrders = () => {
       items: Omit<CustomOrderItem, 'custom_order_id' | 'created_at'>[];
       components?: Omit<CustomOrderComponent, 'id' | 'custom_order_id' | 'created_at'>[];
     }) => {
-      const { error: orderError } = await supabase
-        .from('custom_orders')
-        .update(data.order as never)
-        .eq('id', data.id);
-
-      if (orderError) throw orderError;
-
       // Unlock old SKUs first
       await unlockSkus(data.id);
 
-      // Delete existing items and re-insert
-      await supabase.from('custom_order_items').delete().eq('custom_order_id', data.id);
-
-      if (data.items.length > 0) {
-        const itemsWithId = data.items.map(item => ({
-          product_id: item.product_id || null,
-          sku: item.sku || null,
-          item_description: item.item_description,
-          category: item.category || null,
-          customization_notes: item.customization_notes,
-          reference_image_url: item.reference_image_url,
-          quantity: item.quantity,
-          expected_weight: item.expected_weight,
-          pricing_mode: item.pricing_mode,
-          metal_type: (item as any).metal_type || 'silver',
-          flat_price: item.flat_price,
-          mc_per_gram: item.mc_per_gram,
-          discount_on_mc: item.discount_on_mc,
-          rate_per_gram: item.rate_per_gram,
-          base_price: item.base_price,
-          mc_amount: item.mc_amount,
-          discount: item.discount,
-          discount_type: item.discount_type,
-          discount_value: item.discount_value,
-          item_total: item.item_total,
-          custom_order_id: data.id,
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('custom_order_items')
-          .insert(itemsWithId);
-
-        if (itemsError) throw itemsError;
-      }
-
-      // Replace components
-      await (supabase.from('custom_order_components' as any).delete().eq('custom_order_id', data.id) as any);
-      if (data.components && data.components.length > 0) {
-        const compsWithId = data.components.map(c => ({
-          custom_order_id: data.id,
+      const components = (data.components || []).map(c => ({
           product_id: (c as any).product_id || null,
           sku: (c as any).sku || null,
           category: (c as any).category || null,
           component_name: c.component_name,
           material: c.material || null,
-          unit: (c as any).unit || 'weight_based',
+          unit: (c as any).unit === 'strings' ? 'strings' : 'quantity',
           weight_grams: c.weight_grams || 0,
-          quantity: c.quantity || 1,
+          quantity: Math.max(0, Number(c.quantity) || 0),
           quantity_used: (c as any).quantity_used ?? 0,
           strings_used: (c as any).strings_used ?? 0,
           unit_price: c.unit_price || 0,
@@ -230,9 +184,19 @@ export const useCustomOrders = () => {
           discount_value: c.discount_value || 0,
           discount: c.discount || 0,
         }));
-        const { error: compErr } = await (supabase.from('custom_order_components' as any).insert(compsWithId) as any);
-        if (compErr) throw compErr;
-      }
+
+      const { error: replaceError } = await (supabase.rpc as any)('replace_custom_order_lines', {
+        p_order_id: data.id,
+        p_items: data.items,
+        p_components: components,
+      });
+      if (replaceError) throw replaceError;
+
+      const { error: orderError } = await supabase
+        .from('custom_orders')
+        .update(data.order as never)
+        .eq('id', data.id);
+      if (orderError) throw orderError;
 
       // Lock new SKUs
       await lockSkus(data.items, data.id);

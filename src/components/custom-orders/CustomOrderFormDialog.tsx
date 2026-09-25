@@ -99,7 +99,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
   const itemsTotal = items.reduce((sum, item) => sum + item.item_total, 0);
   const componentsTotal = components.reduce((sum, c) => sum + (Number(c.total) || 0), 0);
   const componentsWeight = components.reduce((sum, c) => {
-    return sum + (Number(c.weight_grams) || 0) * (Number(c.quantity) || 1);
+    return sum + (Number(c.weight_grams) || 0) * Math.max(0, Number(c.quantity) || 0);
   }, 0);
 
   const extraChargesTotal = extraCharges.reduce((s, c) => s + (Number(c.amount) || 0), 0);
@@ -358,13 +358,19 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
       const componentsData = components
         .filter(c => c.component_name.trim())
         .map(c => ({
+          product_id: c.product_id || null,
+          sku: c.sku || null,
+          category: c.category || null,
           component_name: c.component_name,
           material: c.material || null,
-          weight_grams: c.weight_grams || 0,
-          quantity: c.quantity || 1,
-          unit_price: c.unit_price || 0,
-          rate_per_gram: c.rate_per_gram || 0,
-          total: c.total || 0,
+          unit: c.unit === 'strings' ? 'strings' : 'quantity',
+          weight_grams: Number(c.weight_grams) || 0,
+          quantity: Math.max(0, Number(c.quantity) || 0),
+          quantity_used: c.quantity_used ?? 0,
+          strings_used: c.strings_used ?? 0,
+          unit_price: Number(c.unit_price) || 0,
+          rate_per_gram: Number(c.rate_per_gram) || 0,
+          total: Number(c.total) || 0,
           discount_type: c.discount_type || 'fixed',
           discount_value: c.discount_value || 0,
           discount: c.discount || 0,

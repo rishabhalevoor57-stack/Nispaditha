@@ -154,8 +154,8 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
                         <p className="text-xs text-muted-foreground">
                           {it.sku ? `${it.sku} • ` : ''}
                           {it.pricing_mode === 'flat_price'
-                            ? `Flat • Qty ${it.quantity || 1}`
-                            : `${it.expected_weight || 0}g × Qty ${it.quantity || 1}${it.rate_per_gram ? ` @ ₹${it.rate_per_gram}/g` : ''}${it.mc_per_gram ? ` + MC ₹${it.mc_per_gram}/g` : ''}`}
+                            ? `Flat • Qty ${it.quantity}${it.strings_used != null ? ` • Strings ${it.strings_used}` : ''}`
+                            : `${it.expected_weight || 0}g × Qty ${it.quantity}${it.strings_used != null ? ` • Strings ${it.strings_used}` : ''}${it.rate_per_gram ? ` @ ₹${it.rate_per_gram}/g` : ''}${it.mc_per_gram ? ` + MC ₹${it.mc_per_gram}/g` : ''}`}
                         </p>
                         {it.customization_notes ? (
                           <p className="text-xs text-muted-foreground italic mt-0.5">{it.customization_notes}</p>
@@ -212,7 +212,8 @@ export const ViewCustomOrderDialog = ({ open, onOpenChange, order, onGenerateInv
                         <p className="font-medium">{c.component_name}{c.material ? ` (${c.material})` : ''}</p>
                         <p className="text-xs text-muted-foreground">
                           {c.weight_grams > 0 ? `${c.weight_grams}g × ` : ''}
-                          {`Qty ${c.quantity || 1}`}
+                          {`Qty ${c.quantity_used ?? c.quantity}`}
+                          {c.strings_used != null ? ` • Strings ${c.strings_used}` : ''}
                           {c.rate_per_gram > 0 ? ` @ ₹${c.rate_per_gram}/g` : c.unit_price > 0 ? ` @ ₹${c.unit_price}` : ''}
                         </p>
                       </div>

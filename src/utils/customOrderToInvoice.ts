@@ -82,7 +82,8 @@ const buildCustomOrderDetails = (
       name: it.item_description || 'Custom Jewellery Piece',
       sku: it.sku || null,
       category: it.category || null,
-      quantity: Number(it.quantity) || 1,
+      quantity: Math.max(0, Number(it.quantity) || 0),
+      strings_used: it.strings_used ?? null,
       weight_grams: Number(it.expected_weight) || 0,
       pricing_mode: it.pricing_mode === 'flat_price' ? 'flat_price' : 'weight_based',
       rate_per_gram: Number(it.rate_per_gram) || 0,
@@ -105,7 +106,10 @@ const buildCustomOrderDetails = (
     .map((c) => ({
       name: c.component_name,
       material: c.material || null,
-      quantity: Number(c.quantity) || 1,
+      quantity: Math.max(0, Number(c.quantity) || 0),
+      quantity_used: c.quantity_used ?? null,
+      strings_used: c.strings_used ?? null,
+      unit: c.unit === 'strings' ? 'strings' : 'quantity',
       weight_grams: Number(c.weight_grams) || 0,
       unit_price: Number(c.unit_price) || 0,
       rate_per_gram: Number(c.rate_per_gram) || 0,
@@ -139,13 +143,13 @@ const buildInvoiceLines = (
     const lineTotal = Number(it.item_total) || 0;
     const isFlat = it.pricing_mode === 'flat_price';
     const mrp = isFlat
-      ? ((Number(it.flat_price) || lineTotal) * (Number(it.quantity) || 1))
+      ? ((Number(it.flat_price) || lineTotal) * Math.max(0, Number(it.quantity) || 0))
       : (Number(it.base_price) || 0) + (Number(it.mc_amount) || 0);
     lines.push({
       product_id: it.product_id || null,
       product_name: it.item_description || 'Custom Item',
       category: it.category || 'Custom Order',
-      quantity: it.quantity || 1,
+      quantity: Math.max(0, Number(it.quantity) || 0),
       weight_grams: isFlat ? 0 : (Number(it.expected_weight) || 0),
       rate_per_gram: isFlat ? 0 : (Number(it.rate_per_gram) || 0),
       gold_value: Number(it.base_price) || 0,
@@ -162,7 +166,7 @@ const buildInvoiceLines = (
     const lineTotal = Number(c.total) || 0;
     const discount = Number(c.discount) || 0;
     const wt = Number(c.weight_grams) || 0;
-    const qty = Number(c.quantity) || 1;
+    const qty = Math.max(0, Number(c.quantity) || 0);
     const isWeightBased = (Number(c.rate_per_gram) || 0) > 0 && wt > 0;
     lines.push({
       product_id: null,
