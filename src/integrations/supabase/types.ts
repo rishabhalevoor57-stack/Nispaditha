@@ -3072,6 +3072,10 @@ export type Database = {
         Args: { p_client_id: string }
         Returns: undefined
       }
+      replace_custom_order_lines: {
+        Args: { p_components?: Json; p_items: Json; p_order_id: string }
+        Returns: undefined
+      }
       send_custom_order_to_inventory: {
         Args: { p_custom_order_id: string; p_final_quantity?: number }
         Returns: string
