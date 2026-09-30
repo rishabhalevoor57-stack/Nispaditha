@@ -106,7 +106,7 @@ const buildCustomOrderDetails = (
     .map((c) => ({
       name: c.component_name,
       material: c.material || null,
-      quantity: Math.max(0, Number(c.quantity) || 0),
+      quantity: Math.max(0, Number(c.quantity_used ?? c.quantity) || 0),
       quantity_used: c.quantity_used ?? null,
       strings_used: c.strings_used ?? null,
       unit: c.unit === 'strings' ? 'strings' : 'quantity',
@@ -166,7 +166,7 @@ const buildInvoiceLines = (
     const lineTotal = Number(c.total) || 0;
     const discount = Number(c.discount) || 0;
     const wt = Number(c.weight_grams) || 0;
-    const qty = Math.max(0, Number(c.quantity) || 0);
+    const qty = Math.max(0, Number(c.quantity_used ?? c.quantity) || 0);
     const isWeightBased = (Number(c.rate_per_gram) || 0) > 0 && wt > 0;
     lines.push({
       product_id: null,

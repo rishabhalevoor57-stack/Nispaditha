@@ -110,7 +110,7 @@ export const buildItemsFromCustomOrderDetails = (
       product_name: `${c.name}${c.material ? ` (${c.material})` : ''}`,
       category: 'Component',
       weight_grams: Number(c.weight_grams) || 0,
-      quantity: Math.max(0, Number(c.quantity) || 0),
+      quantity: Math.max(0, Number(c.quantity_used ?? c.quantity) || 0),
       strings_used: c.strings_used ?? null,
       rate_per_gram: Number(c.rate_per_gram) || 0,
       discount,
