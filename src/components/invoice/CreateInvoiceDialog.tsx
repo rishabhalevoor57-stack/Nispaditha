@@ -61,6 +61,20 @@ export interface InvoicePrefillData {
   advances?: InvoiceAdvancePrefill[];
 }
 
+const getInvoiceSaveErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null) {
+    const dbError = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
+    const parts = [dbError.message, dbError.details, dbError.hint]
+      .filter((part): part is string => typeof part === 'string' && part.trim().length > 0);
+    if (parts.length > 0) {
+      const code = typeof dbError.code === 'string' && dbError.code ? ` (${dbError.code})` : '';
+      return `${parts.join(' — ')}${code}`;
+    }
+  }
+  return 'The invoice could not be saved. Please review the entered details and try again.';
+};
+
 interface CreateInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -403,7 +417,9 @@ export function CreateInvoiceDialog({
 
     try {
       // Generate invoice number
-      const { data: invoiceNum } = await supabase.rpc('generate_invoice_number');
+      const { data: invoiceNum, error: invoiceNumberError } = await supabase.rpc('generate_invoice_number');
+      if (invoiceNumberError) throw invoiceNumberError;
+      if (!invoiceNum) throw new Error('Could not generate an invoice number.');
 
       // Resolve client by priority: selected ID → phone → exact name → walk-in (only if both empty)
       let finalClientId = selectedClient && selectedClient !== 'walk-in' ? selectedClient : null;
@@ -603,7 +619,9 @@ export function CreateInvoiceDialog({
       // Create invoice items
       const itemsToInsert = invoiceItems.map(item => ({
         invoice_id: invoice.id,
-        product_id: item.product_id,
+        // Custom Order components and charge rows are not inventory products.
+        // PostgreSQL UUID columns accept NULL, never an empty string.
+        product_id: prefill?.customOrderId ? (item.product_id || null) : item.product_id,
         product_name: item.product_name,
         category: item.category,
         weight_grams: item.pricing_mode === 'flat_price' ? 0 : item.weight_grams,
@@ -666,7 +684,7 @@ export function CreateInvoiceDialog({
       resetForm();
       onInvoiceCreated();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message = getInvoiceSaveErrorMessage(error);
       toast({ variant: 'destructive', title: 'Error', description: message });
     } finally {
       setIsSubmitting(false);
