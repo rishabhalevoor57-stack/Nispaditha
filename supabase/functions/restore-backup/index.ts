@@ -143,7 +143,8 @@ Deno.serve(async (req) => {
         }
         restored.push(table);
       } catch (e) {
-        errors.push(`${table}: ${e.message}`);
+        const message = e instanceof Error ? e.message : String(e);
+        errors.push(`${table}: ${message}`);
       }
     }
 
@@ -156,7 +157,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

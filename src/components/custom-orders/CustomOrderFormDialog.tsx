@@ -355,7 +355,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
         strings_used: (item as any).strings_used ?? null,
       }));
 
-      const componentsData = components
+      const componentsData: Omit<CustomOrderComponent, 'id' | 'custom_order_id' | 'created_at'>[] = components
         .filter(c => c.component_name.trim())
         .map(c => ({
           product_id: c.product_id || null,
@@ -363,7 +363,7 @@ export const CustomOrderFormDialog = ({ open, onOpenChange, order }: CustomOrder
           category: c.category || null,
           component_name: c.component_name,
           material: c.material || null,
-          unit: c.unit === 'strings' ? 'strings' : 'quantity',
+          unit: (c.unit === 'strings' ? 'strings' : 'quantity') as ComponentUnit,
           weight_grams: Number(c.weight_grams) || 0,
           quantity: Math.max(0, Number(c.quantity) || 0),
           quantity_used: c.quantity_used ?? 0,
