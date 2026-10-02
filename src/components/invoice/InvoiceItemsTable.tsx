@@ -228,11 +228,11 @@ export function InvoiceItemsTable({
                         )}
                       </td>
                       <td className="px-3 py-3 text-center align-middle">
-                        <Input
-                          type="number"
-                          min="1"
+                        <BlankZeroInput
+                          integer
+                          min={1}
                           value={item.quantity}
-                          onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
+                          onValueChange={(value) => handleQuantityChange(index, value)}
                           className="w-16 h-8 text-center"
                         />
                       </td>

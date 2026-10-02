@@ -142,19 +142,22 @@ export const generateCustomOrderDeliveryPdf = (ctx: DeliveryBillContext): jsPDF 
   const activeCharges = charges.filter((c) => c[1] > 0);
 
   const flatDiscount = Number(order.flat_discount) || 0;
+  const itemDiscount = items.reduce((sum, item) => sum + (Number(item.discount) || 0), 0);
+  const componentDiscount = components.reduce((sum, component) => sum + (Number(component.discount) || 0), 0);
+  const totalDiscount = itemDiscount + componentDiscount + flatDiscount;
   const grandTotal = Number(order.total_amount) || 0;
   const balance = Math.max(0, grandTotal - (Number(advancePaid) || 0));
 
   const summaryRows: Array<[string, string]> = [];
   activeCharges.forEach(([label, amt]) => summaryRows.push([label, money(amt)]));
 
-  if (flatDiscount > 0) summaryRows.push(['Flat Discount', '- ' + money(flatDiscount)]);
   if (Number(order.gst_percentage) > 0) {
     summaryRows.push([
       `GST ${order.gst_mode === 'inclusive' ? '(inclusive)' : '(exclusive)'} ${order.gst_percentage}%`,
       order.gst_mode === 'inclusive' ? 'incl.' : 'added',
     ]);
   }
+  if (totalDiscount > 0) summaryRows.push(['Total Discount', '- ' + money(totalDiscount)]);
   summaryRows.push(['Grand Total', money(grandTotal)]);
   if (advancePayments.length > 0) {
     advancePayments.forEach((p) => {
