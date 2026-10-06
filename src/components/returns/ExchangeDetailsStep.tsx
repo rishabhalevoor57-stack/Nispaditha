@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { logStockMove } from '@/utils/stockMovement';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
@@ -40,6 +41,7 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
   const [cashMode, setCashMode] = useState<'cash' | 'upi' | 'card' | 'bank_transfer'>('cash');
   const [sendTo, setSendTo] = useState<'inventory' | 'repair'>('inventory');
   const [notes, setNotes] = useState('');
+  const [newItemValue, setNewItemValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -49,6 +51,10 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
     const ratio = item.return_quantity / item.quantity;
     return sum + item.total * ratio;
   }, 0);
+
+  const originalValue = returnedItems.reduce((s, i) => s + i.total, 0);
+  const newValue = Number(newItemValue) || 0;
+  const difference = Math.round((newValue - refundAmount) * 100) / 100;
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -112,6 +118,20 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
       });
       const { error: itemsErr } = await supabase.from('return_exchange_items').insert(itemsToInsert);
       if (itemsErr) throw itemsErr;
+
+      // Mark the original invoice as EXCHANGED (kept for history; previous status remembered)
+      const { data: invStatus } = await supabase
+        .from('invoices')
+        .select('status, status_before_exchange')
+        .eq('id', invoiceData.id)
+        .maybeSingle();
+      const st = invStatus as { status: string; status_before_exchange: string | null } | null;
+      if (st && st.status !== 'exchanged') {
+        await supabase
+          .from('invoices')
+          .update({ status: 'exchanged', status_before_exchange: st.status } as never)
+          .eq('id', invoiceData.id);
+      }
 
       if (sendTo === 'inventory') {
         for (const item of returnedItems) {
@@ -225,6 +245,23 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="rounded-lg border p-4 space-y-2 text-sm">
+        <Label className="text-base font-semibold">Exchange Calculation</Label>
+        <div className="flex justify-between"><span className="text-muted-foreground">Original Item Value (as billed)</span><span>{formatCurrency(originalValue)}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Exchange Value (returned qty)</span><span className="font-medium">{formatCurrency(refundAmount)}</span></div>
+        <div className="flex justify-between items-center gap-2">
+          <span className="text-muted-foreground">New Item Value</span>
+          <Input type="number" min={0} value={newItemValue} onChange={(e) => setNewItemValue(e.target.value)} placeholder="0.00" className="w-32 h-8 text-right" />
+        </div>
+        {newValue > 0 && (
+          <div className={`flex justify-between font-semibold border-t pt-2 ${difference >= 0 ? 'text-primary' : 'text-destructive'}`}>
+            <span>{difference >= 0 ? 'Difference Payable by Customer' : 'Difference Refundable to Customer'}</span>
+            <span>{formatCurrency(Math.abs(difference))}</span>
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">Old item value uses the exact amount paid on the original invoice — not today's rate. Credits are applied on the new invoice so only the difference is collected.</p>
       </div>
 
       <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">

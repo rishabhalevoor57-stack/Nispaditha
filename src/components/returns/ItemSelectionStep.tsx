@@ -108,6 +108,7 @@ export function ItemSelectionStep({ invoiceData, items, onBack, onConfirm }: Ite
                 <td className="px-3 py-3">
                   <Checkbox
                     checked={item.selected}
+                    disabled={item.max_quantity <= 0}
                     onCheckedChange={() => toggleItem(index)}
                   />
                 </td>
@@ -123,9 +124,17 @@ export function ItemSelectionStep({ invoiceData, items, onBack, onConfirm }: Ite
                 <td className="px-3 py-3 text-right">
                   {item.weight_grams > 0 ? item.weight_grams.toFixed(2) : '-'}
                 </td>
-                <td className="px-3 py-3 text-center">{item.quantity}</td>
+                <td className="px-3 py-3 text-center">
+                  {item.quantity}
+                  {item.max_quantity < item.quantity && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {item.max_quantity <= 0 ? 'Already returned' : `${item.max_quantity} left`}
+                    </p>
+                  )}
+                </td>
                 <td className="px-3 py-3 text-right font-medium">
                   {formatCurrency(item.total)}
+                  <p className="text-[10px] text-muted-foreground">as billed</p>
                 </td>
                 <td className="px-3 py-3">
                   <Input
@@ -134,7 +143,7 @@ export function ItemSelectionStep({ invoiceData, items, onBack, onConfirm }: Ite
                     max={item.max_quantity}
                     value={item.return_quantity}
                     onChange={(e) => updateQuantity(index, parseInt(e.target.value) || 1)}
-                    disabled={!item.selected}
+                    disabled={!item.selected || item.max_quantity <= 0}
                     className="w-16 text-center mx-auto"
                   />
                 </td>
@@ -161,7 +170,7 @@ export function ItemSelectionStep({ invoiceData, items, onBack, onConfirm }: Ite
             <span className="font-medium">{selectedItems.length}</span>
           </p>
           <p>
-            <span className="text-muted-foreground">Estimated Value: </span>
+            <span className="text-muted-foreground">Original Billed Value (returned qty): </span>
             <span className="font-medium">{formatCurrency(selectedTotal)}</span>
           </p>
         </div>
