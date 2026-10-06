@@ -100,7 +100,7 @@ export interface BusinessSettings {
   silver_rate_per_gram: number;
 }
 
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'cancelled';
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'cancelled' | 'exchanged';
 
 export interface Invoice {
   id: string;
