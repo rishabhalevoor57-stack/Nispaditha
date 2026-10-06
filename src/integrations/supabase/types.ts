@@ -1252,6 +1252,7 @@ export type Database = {
           round_off: number
           sent_at: string | null
           status: string
+          status_before_exchange: string | null
           store_credits_used: number
           store_id: string | null
           subtotal: number
@@ -1294,6 +1295,7 @@ export type Database = {
           round_off?: number
           sent_at?: string | null
           status?: string
+          status_before_exchange?: string | null
           store_credits_used?: number
           store_id?: string | null
           subtotal?: number
@@ -1336,6 +1338,7 @@ export type Database = {
           round_off?: number
           sent_at?: string | null
           status?: string
+          status_before_exchange?: string | null
           store_credits_used?: number
           store_id?: string | null
           subtotal?: number

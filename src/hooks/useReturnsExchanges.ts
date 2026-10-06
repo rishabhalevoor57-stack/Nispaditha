@@ -115,6 +115,29 @@ export function useReturnsExchanges() {
         .eq('id', record.id);
       if (deleteError) throw deleteError;
 
+      // Restore original invoice status if no other exchange remains for it
+      if (record.type === 'exchange' && record.original_invoice_id) {
+        const { count } = await supabase
+          .from('return_exchanges')
+          .select('id', { count: 'exact', head: true })
+          .eq('original_invoice_id', record.original_invoice_id)
+          .eq('type', 'exchange');
+        if (!count) {
+          const { data: inv } = await supabase
+            .from('invoices')
+            .select('status, status_before_exchange')
+            .eq('id', record.original_invoice_id)
+            .maybeSingle();
+          const st = inv as { status: string; status_before_exchange: string | null } | null;
+          if (st?.status === 'exchanged') {
+            await supabase
+              .from('invoices')
+              .update({ status: st.status_before_exchange || 'paid', status_before_exchange: null } as never)
+              .eq('id', record.original_invoice_id);
+          }
+        }
+      }
+
       // Log activity
       logActivity({
         module: record.type === 'return' ? 'return' : 'exchange',
