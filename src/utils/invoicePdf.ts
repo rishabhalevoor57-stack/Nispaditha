@@ -601,16 +601,6 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
     doc.text('\u2713 PAID IN FULL', rightX + rightW / 2, rightInnerY + stampH / 2 + 1.3, { align: 'center' });
     rightInnerY += stampH + 2;
     doc.setLineWidth(0.1);
-    if (data.paymentReceivedDate) {
-      const recvStr = new Date(data.paymentReceivedDate).toLocaleDateString('en-IN', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-      });
-      doc.setTextColor(60, 60, 60);
-      doc.setFont(FONT, 'normal');
-      doc.setFontSize(9);
-      doc.text(`Payment Received On: ${recvStr}`, rightX, rightInnerY + 4);
-      rightInnerY += 7;
-    }
   } else if (isPartial) {
     doc.setFillColor(...ORANGE_BG);
     doc.setDrawColor(...ORANGE);
