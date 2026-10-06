@@ -30,7 +30,7 @@ export function ItemSelectionStep({ invoiceData, items, onBack, onConfirm }: Ite
   const toggleItem = (index: number) => {
     setLocalItems((prev) =>
       prev.map((item, i) =>
-        i === index ? { ...item, selected: !item.selected } : item
+        i === index && item.max_quantity > 0 ? { ...item, selected: !item.selected } : item
       )
     );
   };
