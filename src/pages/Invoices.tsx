@@ -103,6 +103,16 @@ export default function Invoices() {
     if (!confirm('Are you sure you want to delete this invoice? Stock for all items will be restored.')) return;
 
     try {
+      // Give back any store credit used on this invoice (once only)
+      const { data: invRow } = await supabase
+        .from('invoices').select('client_id, invoice_number').eq('id', id).maybeSingle();
+      if (invRow?.client_id) {
+        await settleWalletForReference({
+          clientId: invRow.client_id, referenceId: id, targetNet: 0,
+          source: 'invoice_refund', relatedSources: INVOICE_WALLET_SOURCES,
+          referenceLabel: invRow.invoice_number, notes: 'Invoice deleted — credits restored',
+        });
+      }
       // Delete items first so the AFTER DELETE trigger restores stock per line item
       const { error: itemsErr } = await supabase.from('invoice_items').delete().eq('invoice_id', id);
       if (itemsErr) throw itemsErr;
