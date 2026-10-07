@@ -1,18 +1,17 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { logStockMove } from '@/utils/stockMovement';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Switch } from '@/components/ui/switch';
 import { Loader2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { generateReturnPdf } from '@/utils/returnPdf';
-import { adjustWallet } from '@/hooks/useStoreWallet';
+import { settleWalletForReference } from '@/hooks/useStoreWallet';
 import type { ReturnItemSelection } from '@/types/returnExchange';
 
 interface InvoiceData {
@@ -37,7 +36,9 @@ const formatCurrency = (amount: number) =>
  * equal to the proportional total of the returned items. No new item picker.
  */
 export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComplete }: ExchangeDetailsStepProps) {
-  const [asStoreCredits, setAsStoreCredits] = useState(true);
+  const [method, setMethod] = useState<'store_credit' | 'cash' | null>(null);
+  const asStoreCredits = method === 'store_credit';
+  const submitLock = useRef(false);
   const [cashMode, setCashMode] = useState<'cash' | 'upi' | 'card' | 'bank_transfer'>('cash');
   const [sendTo, setSendTo] = useState<'inventory' | 'repair'>('inventory');
   const [notes, setNotes] = useState('');
@@ -47,16 +48,31 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
   const { user } = useAuth();
   const { logActivity } = useActivityLogger();
 
-  const refundAmount = returnedItems.reduce((sum, item) => {
+  const eligibleAmount = Math.round(returnedItems.reduce((sum, item) => {
     const ratio = item.return_quantity / item.quantity;
     return sum + item.total * ratio;
-  }, 0);
+  }, 0) * 100) / 100;
+  const [valueInput, setValueInput] = useState<string>(eligibleAmount.toFixed(2));
+  const exchangeValue = Math.round((Number(valueInput) || 0) * 100) / 100;
 
   const originalValue = returnedItems.reduce((s, i) => s + i.total, 0);
   const newValue = Number(newItemValue) || 0;
-  const difference = Math.round((newValue - refundAmount) * 100) / 100;
+  const difference = Math.round((newValue - exchangeValue) * 100) / 100;
+  // Customer pays only the extra; any leftover goes back as credit/refund.
+  const additionalCharge = difference > 0 ? difference : 0;
+  const refundAmount = difference < 0 ? Math.abs(difference) : 0;
 
   const handleSubmit = async () => {
+    if (submitLock.current) return;
+    if (valueInput.trim() === '' || !(exchangeValue >= 0)) {
+      toast({ variant: 'destructive', title: 'Enter a valid exchange value' });
+      return;
+    }
+    if (refundAmount > 0 && !method) {
+      toast({ variant: 'destructive', title: 'Choose Store Credit or Cash Refund for the leftover amount' });
+      return;
+    }
+    submitLock.current = true;
     setIsSubmitting(true);
     try {
       const { data: refNum, error: refError } = await supabase.rpc(
@@ -72,7 +88,7 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
         .maybeSingle();
       const clientId = invRow?.client_id || null;
 
-      const paymentMode = asStoreCredits ? 'store_credit' : cashMode;
+      const paymentMode = refundAmount > 0 ? (asStoreCredits ? 'store_credit' : cashMode) : (additionalCharge > 0 ? cashMode : null);
 
       const { data: rec, error: recErr } = await supabase
         .from('return_exchanges')
@@ -85,10 +101,11 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
           client_name: invoiceData.client_name,
           client_phone: invoiceData.client_phone,
           refund_amount: refundAmount,
-          additional_charge: 0,
+          additional_charge: additionalCharge,
           payment_mode: paymentMode,
-          refund_method: asStoreCredits ? 'store_credit' : 'cash',
+          refund_method: refundAmount > 0 && asStoreCredits ? 'store_credit' : 'cash',
           disposition: sendTo,
+          reason: `Exchange value ${exchangeValue.toFixed(2)} vs new item ${newValue.toFixed(2)}`,
           notes: notes || null,
           created_by: user?.id,
         }] as never)
@@ -172,8 +189,11 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
         );
       }
 
+      if (asStoreCredits && !clientId && refundAmount > 0) {
+        toast({ variant: 'destructive', title: 'No client linked', description: 'Store credit could not be added — this invoice has no client.' });
+      }
       if (asStoreCredits && clientId && refundAmount > 0) {
-        await adjustWallet(clientId, refundAmount, 'exchange', rec.id, refNum, `Exchange credit for ${invoiceData.invoice_number}`);
+        await settleWalletForReference({ clientId, referenceId: rec.id, targetNet: refundAmount, source: 'exchange', relatedSources: ['exchange'], referenceLabel: refNum, notes: `Exchange credit for ${invoiceData.invoice_number}` });
         toast({ title: `${formatCurrency(refundAmount)} credits added to ${invoiceData.client_name || 'client'}'s wallet` });
       }
 
@@ -197,7 +217,7 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
             clientPhone: invoiceData.client_phone,
             items: itemsToInsert,
             refundAmount,
-            additionalCharge: 0,
+            additionalCharge,
             paymentMode,
             notes,
             businessSettings: settingsData,
@@ -212,6 +232,7 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
     } catch (error: unknown) {
       toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Failed' });
     } finally {
+      submitLock.current = false;
       setIsSubmitting(false);
     }
   };
@@ -250,7 +271,11 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
       <div className="rounded-lg border p-4 space-y-2 text-sm">
         <Label className="text-base font-semibold">Exchange Calculation</Label>
         <div className="flex justify-between"><span className="text-muted-foreground">Original Item Value (as billed)</span><span>{formatCurrency(originalValue)}</span></div>
-        <div className="flex justify-between"><span className="text-muted-foreground">Exchange Value (returned qty)</span><span className="font-medium">{formatCurrency(refundAmount)}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Eligible value (returned qty)</span><span>{formatCurrency(eligibleAmount)}</span></div>
+        <div className="flex justify-between items-center gap-2">
+          <span className="text-muted-foreground">Exchange Value (editable)</span>
+          <Input type="number" min={0} step="0.01" value={valueInput} onChange={(e) => setValueInput(e.target.value)} className="w-32 h-8 text-right font-medium" />
+        </div>
         <div className="flex justify-between items-center gap-2">
           <span className="text-muted-foreground">New Item Value</span>
           <Input type="number" min={0} value={newItemValue} onChange={(e) => setNewItemValue(e.target.value)} placeholder="0.00" className="w-32 h-8 text-right" />
@@ -261,30 +286,36 @@ export function ExchangeDetailsStep({ invoiceData, returnedItems, onBack, onComp
             <span>{formatCurrency(Math.abs(difference))}</span>
           </div>
         )}
-        <p className="text-xs text-muted-foreground">Old item value uses the exact amount paid on the original invoice — not today's rate. Credits are applied on the new invoice so only the difference is collected.</p>
+        <p className="text-xs text-muted-foreground">Old item value uses the exact amount paid on the original invoice — not today's rate. If the new item costs more, the customer pays only the difference; if less, the leftover is given as Store Credit or Cash Refund.</p>
       </div>
 
       <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
         <div className="flex justify-between items-center text-lg font-bold">
-          <span>Credits to Issue (No GST)</span>
-          <span className="text-primary">{formatCurrency(refundAmount)}</span>
+          <span>{additionalCharge > 0 ? 'Customer Pays' : 'Customer Receives'}</span>
+          <span className="text-primary">{formatCurrency(additionalCharge > 0 ? additionalCharge : refundAmount)}</span>
         </div>
         <div className="text-xs text-muted-foreground mt-1">
-          {asStoreCredits ? '1 credit = ₹1. Will be added to client wallet automatically.' : `Refund will be issued via ${cashMode.toUpperCase()}.`}
+          {additionalCharge > 0 ? `Collect the difference via ${cashMode.toUpperCase()}.` : refundAmount === 0 ? 'Even exchange — nothing to pay or refund.' : method === 'store_credit' ? 'Will be added to the client\'s store credit.' : method === 'cash' ? `Will be paid out via ${cashMode.toUpperCase()}.` : 'Choose how the customer receives the leftover amount.'}
         </div>
       </div>
 
-      <div className="rounded-lg border p-3 flex items-center justify-between">
+      {refundAmount > 0 && (
         <div>
-          <Label>Refund as Store Credits</Label>
-          <p className="text-xs text-muted-foreground">Default. Toggle off only for cash exception.</p>
+          <Label>Customer Receives *</Label>
+          <RadioGroup value={method ?? ''} onValueChange={(v) => setMethod(v as 'store_credit' | 'cash')} className="grid grid-cols-2 gap-2 mt-1">
+            <label className="flex items-center gap-2 rounded-md border p-2 cursor-pointer">
+              <RadioGroupItem value="store_credit" /><span className="text-sm">Store Credit</span>
+            </label>
+            <label className="flex items-center gap-2 rounded-md border p-2 cursor-pointer">
+              <RadioGroupItem value="cash" /><span className="text-sm">Cash Refund</span>
+            </label>
+          </RadioGroup>
         </div>
-        <Switch checked={asStoreCredits} onCheckedChange={setAsStoreCredits} />
-      </div>
+      )}
 
-      {!asStoreCredits && (
+      {((refundAmount > 0 && method === 'cash') || additionalCharge > 0) && (
         <div>
-          <Label>Cash Refund Mode</Label>
+          <Label>{additionalCharge > 0 ? 'Difference Payment Mode' : 'Cash Refund Mode'}</Label>
           <RadioGroup value={cashMode} onValueChange={(v) => setCashMode(v as typeof cashMode)} className="grid grid-cols-4 gap-2 mt-1">
             {(['cash', 'upi', 'card', 'bank_transfer'] as const).map((m) => (
               <label key={m} className="flex items-center gap-2 rounded-md border p-2 cursor-pointer">
