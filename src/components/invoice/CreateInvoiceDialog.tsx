@@ -37,7 +37,7 @@ import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { downloadInvoicePdf, printInvoice } from '@/utils/invoicePdf';
-import { adjustWallet, getWalletBalance } from '@/hooks/useStoreWallet';
+import { adjustWallet, getWalletBalance, settleWalletForReference, INVOICE_WALLET_SOURCES } from '@/hooks/useStoreWallet';
 import { Wallet } from 'lucide-react';
 import { stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
 import { computeGrandTotal } from '@/lib/invoiceTotals';
@@ -564,19 +564,25 @@ export function CreateInvoiceDialog({
         }
       }
 
-      // Debit store wallet for credits used
+      // Debit store wallet for credits used (idempotent — never double-debits)
       if (cappedCredits > 0 && finalClientId) {
         try {
-          await adjustWallet(
-            finalClientId,
-            -cappedCredits,
-            'invoice',
-            invoice.id,
-            invoiceNum,
-            'Credits applied to invoice',
-          );
+          await settleWalletForReference({
+            clientId: finalClientId,
+            referenceId: invoice.id,
+            targetNet: -cappedCredits,
+            source: 'invoice',
+            relatedSources: INVOICE_WALLET_SOURCES,
+            referenceLabel: invoiceNum,
+            notes: 'Credits applied to invoice',
+          });
         } catch (e) {
           console.error('Wallet debit failed', e);
+          toast({
+            variant: 'destructive',
+            title: 'Store credit not deducted',
+            description: e instanceof Error ? e.message : 'Could not debit store credit',
+          });
         }
       }
 

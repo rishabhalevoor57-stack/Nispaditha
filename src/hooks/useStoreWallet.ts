@@ -79,7 +79,50 @@ export async function adjustWallet(
   return Number(data) || 0;
 }
 
+/** Net wallet effect (credits − debits) already recorded for one reference. */
+export async function walletNetForReference(
+  clientId: string,
+  referenceId: string,
+  sources: string[],
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('wallet_transactions')
+    .select('type, amount, source')
+    .eq('client_id', clientId)
+    .eq('reference_id', referenceId)
+    .in('source', sources);
+  if (error) throw error;
+  return (data || []).reduce(
+    (s, t) => s + (t.type === 'credit' ? 1 : -1) * (Number(t.amount) || 0),
+    0,
+  );
+}
+
+/**
+ * Idempotent wallet settlement: brings the net wallet effect for a reference to
+ * `targetNet` (positive = credit, negative = debit, 0 = fully reversed).
+ * Re-running never creates duplicate credits/debits.
+ */
+export async function settleWalletForReference(opts: {
+  clientId: string;
+  referenceId: string;
+  targetNet: number;
+  source: Parameters<typeof adjustWallet>[2];
+  relatedSources: string[];
+  referenceLabel?: string | null;
+  notes?: string | null;
+}): Promise<number> {
+  const current = await walletNetForReference(opts.clientId, opts.referenceId, opts.relatedSources);
+  const delta = Math.round((opts.targetNet - current) * 100) / 100;
+  if (Math.abs(delta) < 0.01) return 0;
+  await adjustWallet(opts.clientId, delta, opts.source, opts.referenceId, opts.referenceLabel, opts.notes);
+  return delta;
+}
+
+export const INVOICE_WALLET_SOURCES = ['invoice', 'cancel_refund', 'invoice_refund'];
+
 /** Quick read of a single client's wallet balance (no transactions). */
+
 export async function getWalletBalance(clientId: string): Promise<number> {
   const { data } = await supabase
     .from('store_wallets')

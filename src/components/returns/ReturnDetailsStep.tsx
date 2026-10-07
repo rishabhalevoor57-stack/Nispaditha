@@ -1,17 +1,17 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { Input } from '@/components/ui/input';
 import { logStockMove } from '@/utils/stockMovement';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Switch } from '@/components/ui/switch';
 import { Loader2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { generateReturnPdf } from '@/utils/returnPdf';
-import { adjustWallet } from '@/hooks/useStoreWallet';
+import { settleWalletForReference } from '@/hooks/useStoreWallet';
 import type { ReturnItemSelection } from '@/types/returnExchange';
 
 interface InvoiceData {
@@ -33,7 +33,9 @@ const formatCurrency = (amount: number) =>
 
 export function ReturnDetailsStep({ invoiceData, selectedItems, onBack, onComplete }: ReturnDetailsStepProps) {
   // Default refund to store credits; toggle off => cash exception
-  const [asStoreCredits, setAsStoreCredits] = useState(true);
+  const [method, setMethod] = useState<'store_credit' | 'cash' | null>(null);
+  const asStoreCredits = method === 'store_credit';
+  const submitLock = useRef(false);
   const [cashMode, setCashMode] = useState<'cash' | 'upi' | 'card' | 'bank_transfer'>('cash');
   const [sendTo, setSendTo] = useState<'inventory' | 'repair'>('inventory');
   const [notes, setNotes] = useState('');
@@ -42,12 +44,24 @@ export function ReturnDetailsStep({ invoiceData, selectedItems, onBack, onComple
   const { user } = useAuth();
   const { logActivity } = useActivityLogger();
 
-  const refundAmount = selectedItems.reduce((sum, item) => {
+  const eligibleAmount = Math.round(selectedItems.reduce((sum, item) => {
     const ratio = item.return_quantity / item.quantity;
     return sum + item.total * ratio;
-  }, 0);
+  }, 0) * 100) / 100;
+  const [valueInput, setValueInput] = useState<string>(eligibleAmount.toFixed(2));
+  const refundAmount = Math.round((Number(valueInput) || 0) * 100) / 100;
 
   const handleSubmit = async () => {
+    if (submitLock.current) return;
+    if (!method) {
+      toast({ variant: 'destructive', title: 'Choose Store Credit or Cash Refund' });
+      return;
+    }
+    if (!(refundAmount >= 0) || valueInput.trim() === '') {
+      toast({ variant: 'destructive', title: 'Enter a valid return value' });
+      return;
+    }
+    submitLock.current = true;
     setIsSubmitting(true);
     try {
       const { data: refNum, error: refError } = await supabase.rpc(
@@ -156,8 +170,11 @@ export function ReturnDetailsStep({ invoiceData, selectedItems, onBack, onComple
       }
 
       // Credit wallet if store credit refund
+      if (asStoreCredits && !clientId && refundAmount > 0) {
+        toast({ variant: 'destructive', title: 'No client linked', description: 'Store credit could not be added — this invoice has no client.' });
+      }
       if (asStoreCredits && clientId && refundAmount > 0) {
-        await adjustWallet(clientId, refundAmount, 'return', returnRecord.id, refNum, `Return refund for ${invoiceData.invoice_number}`);
+        await settleWalletForReference({ clientId, referenceId: returnRecord.id, targetNet: refundAmount, source: 'return', relatedSources: ['return'], referenceLabel: refNum, notes: `Return refund for ${invoiceData.invoice_number}` });
         toast({ title: `${formatCurrency(refundAmount)} credits added to ${invoiceData.client_name || 'client'}'s wallet` });
       }
 
@@ -197,6 +214,7 @@ export function ReturnDetailsStep({ invoiceData, selectedItems, onBack, onComple
     } catch (error: unknown) {
       toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Failed' });
     } finally {
+      submitLock.current = false;
       setIsSubmitting(false);
     }
   };
@@ -232,24 +250,32 @@ export function ReturnDetailsStep({ invoiceData, selectedItems, onBack, onComple
       </div>
 
       <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-        <div className="flex justify-between items-center text-lg font-bold">
-          <span>Total Refund (No GST)</span>
-          <span className="text-primary">{formatCurrency(refundAmount)}</span>
+        <div className="flex justify-between text-sm text-muted-foreground">
+          <span>Original eligible value (as billed)</span>
+          <span>{formatCurrency(eligibleAmount)}</span>
+        </div>
+        <div className="flex justify-between items-center gap-2 text-lg font-bold mt-2">
+          <span>Return Value (editable)</span>
+          <Input type="number" min={0} step="0.01" value={valueInput} onChange={(e) => setValueInput(e.target.value)} className="w-40 h-9 text-right font-bold" />
         </div>
         <div className="text-xs text-muted-foreground mt-1">
-          {asStoreCredits ? '1 credit = ₹1. Will be added to client wallet automatically.' : `Refund will be issued via ${cashMode.toUpperCase()}.`}
+          {method === 'store_credit' ? `${formatCurrency(refundAmount)} will be added to the client's store credit.` : method === 'cash' ? `${formatCurrency(refundAmount)} will be paid out via ${cashMode.toUpperCase()}.` : 'Choose how the customer receives this amount.'}
         </div>
       </div>
 
-      <div className="rounded-lg border p-3 flex items-center justify-between">
-        <div>
-          <Label>Refund as Store Credits</Label>
-          <p className="text-xs text-muted-foreground">Default. Toggle off only for cash exception.</p>
-        </div>
-        <Switch checked={asStoreCredits} onCheckedChange={setAsStoreCredits} />
+      <div>
+        <Label>Customer Receives *</Label>
+        <RadioGroup value={method ?? ''} onValueChange={(v) => setMethod(v as 'store_credit' | 'cash')} className="grid grid-cols-2 gap-2 mt-1">
+          <label className="flex items-center gap-2 rounded-md border p-2 cursor-pointer">
+            <RadioGroupItem value="store_credit" /><span className="text-sm">Store Credit</span>
+          </label>
+          <label className="flex items-center gap-2 rounded-md border p-2 cursor-pointer">
+            <RadioGroupItem value="cash" /><span className="text-sm">Cash Refund</span>
+          </label>
+        </RadioGroup>
       </div>
 
-      {!asStoreCredits && (
+      {method === 'cash' && (
         <div>
           <Label>Cash Refund Mode</Label>
           <RadioGroup value={cashMode} onValueChange={(v) => setCashMode(v as typeof cashMode)} className="grid grid-cols-4 gap-2 mt-1">

@@ -33,7 +33,7 @@ import { InvoiceTotalsSection } from './InvoiceTotalsSection';
 import { MetalRateToggle, type MetalRateOption } from './MetalRateToggle';
 import { useInvoiceCalculations } from '@/hooks/useInvoiceCalculations';
 import { useActivityLogger } from '@/hooks/useActivityLog';
-import { adjustWallet } from '@/hooks/useStoreWallet';
+import { adjustWallet, settleWalletForReference, INVOICE_WALLET_SOURCES } from '@/hooks/useStoreWallet';
 import { cn } from '@/lib/utils';
 import { stripCustomOrderPayload } from '@/utils/invoiceCustomOrderDetails';
 import { computeGrandTotal } from '@/lib/invoiceTotals';
@@ -479,11 +479,13 @@ export function ViewInvoiceDialog({
       // (draft -> sent/paid), so no client-side product mutation here.
 
 
-      // Debit wallet for credits
+      // Debit wallet for credits (idempotent — never double-debits)
       if (credits > 0 && invoice.client_id) {
-        try {
-          await adjustWallet(invoice.client_id, -credits, 'invoice', invoice.id, newNum as string, 'Credits applied on draft finalize');
-        } catch (e) { console.error('Wallet debit failed', e); }
+        await settleWalletForReference({
+          clientId: invoice.client_id, referenceId: invoice.id, targetNet: -credits,
+          source: 'invoice', relatedSources: INVOICE_WALLET_SOURCES,
+          referenceLabel: newNum as string, notes: 'Credits applied on draft finalize',
+        });
       }
 
       // Record advance as invoice_payment
@@ -659,14 +661,13 @@ export function ViewInvoiceDialog({
 
 
 
-      // Refund any wallet credits used back to client
-      const credits = Number((invoice as unknown as { store_credits_used?: number }).store_credits_used) || 0;
-      if (credits > 0 && invoice.client_id) {
-        try {
-          await adjustWallet(invoice.client_id, credits, 'cancel_refund', invoice.id, invoice.invoice_number, 'Invoice cancelled — credits refunded');
-        } catch (e) {
-          console.error('Wallet refund on cancel failed', e);
-        }
+      // Refund any wallet credits used back to client (once only)
+      if (invoice.client_id) {
+        await settleWalletForReference({
+          clientId: invoice.client_id, referenceId: invoice.id, targetNet: 0,
+          source: 'cancel_refund', relatedSources: INVOICE_WALLET_SOURCES,
+          referenceLabel: invoice.invoice_number, notes: 'Invoice cancelled — credits refunded',
+        });
       }
 
       const { error } = await supabase

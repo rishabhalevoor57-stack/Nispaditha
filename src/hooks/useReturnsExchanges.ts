@@ -3,6 +3,7 @@ import { logStockMove } from '@/utils/stockMovement';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useActivityLogger } from '@/hooks/useActivityLog';
+import { settleWalletForReference } from '@/hooks/useStoreWallet';
 import type { ReturnExchange } from '@/types/returnExchange';
 
 export function useReturnsExchanges() {
@@ -57,6 +58,21 @@ export function useReturnsExchanges() {
 
   const deleteRecord = async (record: ReturnExchange) => {
     try {
+      // Reverse any store credit issued by this return/exchange FIRST (once only).
+      // If the credit was already spent, this fails and nothing is deleted.
+      const clientId = (record as ReturnExchange & { client_id?: string | null }).client_id;
+      if (clientId && record.type !== 'buyback') {
+        await settleWalletForReference({
+          clientId,
+          referenceId: record.id,
+          targetNet: 0,
+          source: record.type,
+          relatedSources: [record.type],
+          referenceLabel: record.reference_number,
+          notes: `${record.reference_number} deleted — credit reversed`,
+        });
+      }
+
       // Fetch items to reverse stock adjustments
       const { data: items, error: itemsError } = await supabase
         .from('return_exchange_items')
