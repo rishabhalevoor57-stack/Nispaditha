@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useInventorySnapshot } from '@/hooks/useInventorySnapshot';
 
 export interface CategoryStockData {
   categoryId: string;
@@ -25,108 +24,13 @@ export interface ProductForValuation {
 }
 
 export const useStockValuation = () => {
-  // Fetch live silver rate
-  const { data: silverRate = 95, isLoading: rateLoading } = useQuery({
-    queryKey: ['silver-rate'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('business_settings')
-        .select('silver_rate_per_gram')
-        .maybeSingle();
-      return data?.silver_rate_per_gram || 95;
-    },
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
-
-  // Fetch all in-stock, non-deleted products (paginated past the 1000-row API cap)
-  const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ['products-for-valuation'],
-    queryFn: async () => {
-      const PAGE = 1000;
-      let all: ProductForValuation[] = [];
-      for (let from = 0; ; from += PAGE) {
-        const { data, error } = await supabase
-          .from('products')
-          .select('id, name, sku, weight_grams, quantity, purchase_price, selling_price, pricing_mode, category_id, categories(name)')
-          .is('deleted_at', null)
-          .gt('quantity', 0)
-          .order('created_at', { ascending: false })
-          .range(from, from + PAGE - 1);
-        if (error) throw error;
-        all = all.concat((data || []) as ProductForValuation[]);
-        if (!data || data.length < PAGE) break;
-      }
-      return all;
-    },
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
-
-
-  // Calculate category-wise stock valuation
-  const categoryData: CategoryStockData[] = (() => {
-    const categoryMap = new Map<string, CategoryStockData>();
-
-    products.forEach((product) => {
-      const categoryId = product.category_id || 'uncategorized';
-      const categoryName = product.categories?.name || 'Uncategorized';
-
-      if (!categoryMap.has(categoryId)) {
-        categoryMap.set(categoryId, {
-          categoryId,
-          categoryName,
-          totalItems: 0,
-          totalQuantity: 0,
-          totalWeight: 0,
-          stockValue: 0,
-          purchaseValue: 0,
-        });
-      }
-
-      const category = categoryMap.get(categoryId)!;
-      const isFlat = product.pricing_mode === 'flat_price';
-      // Weight-based: effective stock weight = item weight x current quantity
-      const itemWeight = isFlat ? 0 : (Number(product.weight_grams) || 0) * product.quantity;
-      const itemValue = itemWeight * silverRate;
-
-      category.totalItems += 1;
-      category.totalQuantity += product.quantity;
-      category.totalWeight += itemWeight;
-      category.stockValue += itemValue;
-      // Flat price: simple sum of purchase price values, no multiplication
-      category.purchaseValue += isFlat
-        ? (Number(product.purchase_price) || 0)
-        : (Number(product.purchase_price) || 0) * product.quantity;
-    });
-
-    return Array.from(categoryMap.values()).sort((a, b) => b.stockValue - a.stockValue);
-  })();
-
-  // Calculate totals
-  const totals = categoryData.reduce(
-    (acc, cat) => ({
-      totalItems: acc.totalItems + cat.totalItems,
-      totalQuantity: acc.totalQuantity + cat.totalQuantity,
-      totalWeight: acc.totalWeight + cat.totalWeight,
-      totalStockValue: acc.totalStockValue + cat.stockValue,
-      totalPurchaseValue: acc.totalPurchaseValue + cat.purchaseValue,
-    }),
-    { totalItems: 0, totalQuantity: 0, totalWeight: 0, totalStockValue: 0, totalPurchaseValue: 0 }
-  );
-
-  // Get products by category
-  const getProductsByCategory = (categoryId: string): ProductForValuation[] => {
-    if (categoryId === 'uncategorized') {
-      return products.filter((p) => !p.category_id);
-    }
-    return products.filter((p) => p.category_id === categoryId);
-  };
-
+  const snapshot = useInventorySnapshot();
+  const products = snapshot.inStockProducts;
+  const getProductsByCategory = (categoryId: string): ProductForValuation[] =>
+    products.filter(p => (p.category_id || 'uncategorized') === categoryId);
   return {
-    categoryData,
-    totals,
-    silverRate,
-    products,
-    isLoading: rateLoading || productsLoading,
-    getProductsByCategory,
+    categoryData: snapshot.categoryData, totals: snapshot.totals,
+    silverRate: snapshot.silverRate, products,
+    isLoading: snapshot.isLoading, getProductsByCategory,
   };
 };

@@ -10,6 +10,7 @@ import { Package, BarChart3, ChevronRight, IndianRupee } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { useStockValuation, CategoryStockData, ProductForValuation } from '@/hooks/useStockValuation';
 import { cn } from '@/lib/utils';
+import { productStockValues } from '@/lib/inventoryMetrics';
 
 const COLORS = [
   'hsl(var(--primary))',
@@ -283,9 +284,7 @@ export const CategoryStockValuation = () => {
               </TableHeader>
               <TableBody>
                 {categoryProducts.map((product) => {
-                  const isFlat = product.pricing_mode === 'flat_price';
-                  const totalWeight = isFlat ? 0 : (Number(product.weight_grams) || 0) * product.quantity;
-                  const value = isFlat ? (Number(product.purchase_price) || 0) : totalWeight * silverRate;
+                  const { weight: totalWeight, metalValue: value } = productStockValues(product, silverRate);
                   return (
                     <TableRow key={product.id}>
                       <TableCell className="font-mono text-xs">{product.sku}</TableCell>
