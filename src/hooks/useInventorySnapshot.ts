@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useId, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBranch } from '@/contexts/BranchContext';
@@ -11,6 +11,7 @@ export function useInventorySnapshot() {
   const { loading: branchLoading, defaultBranch } = useBranch();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const subscriberId = useId();
   const scope = [user?.id, branch.filterId, defaultBranch?.id];
   const enabled = !!user && !branchLoading;
   const inventory = useQuery({
@@ -50,7 +51,7 @@ export function useInventorySnapshot() {
   });
   useEffect(() => {
     const refresh = () => { void queryClient.invalidateQueries({ queryKey: ['inventory-snapshot'] }); };
-    const channel = supabase.channel(`inventory-reporting-${user?.id}-${branch.filterId ?? 'all'}`)
+    const channel = supabase.channel(`inventory-reporting-${subscriberId}-${user?.id}-${branch.filterId ?? 'all'}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sku_registry' }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'business_settings' }, () => {
@@ -61,7 +62,7 @@ export function useInventorySnapshot() {
       window.removeEventListener('inventory:refresh', refresh);
       void supabase.removeChannel(channel);
     };
-  }, [queryClient, user?.id, branch.filterId]);
+  }, [queryClient, subscriberId, user?.id, branch.filterId]);
   const silverRate = inventoryNumber(settingsQuery.data?.silver_rate_per_gram);
   const metrics = useMemo(() => calculateInventoryMetrics(inventory.data?.records ?? [], silverRate, inventory.data?.historicalSkus ?? []), [inventory.data, silverRate]);
   return { ...metrics, silverRate, settings: settingsQuery.data,
