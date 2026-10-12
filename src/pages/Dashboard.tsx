@@ -10,6 +10,7 @@ import { CustomOrdersSummary } from '@/components/dashboard/CustomOrdersSummary'
 import { GSTSalesSummary } from '@/components/dashboard/GSTSalesSummary';
 import { supabase } from '@/integrations/supabase/client';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
+import { useInventorySnapshot } from '@/hooks/useInventorySnapshot';
 
 import { 
   IndianRupee, 
@@ -59,7 +60,8 @@ export default function Dashboard() {
     outOfStockCount: 0,
   });
   const [recentInvoices, setRecentInvoices] = useState<RecentInvoice[]>([]);
-  const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
+  const inventory = useInventorySnapshot();
+  const lowStockProducts = inventory.lowStockProducts.slice(0, 5);
   const [isLoading, setIsLoading] = useState(true);
   const branch = useBranchFilter();
 
@@ -94,24 +96,6 @@ export default function Dashboard() {
         .select('amount')
         .gte('expense_date', startOfMonth.toISOString().split('T')[0]) as any);
 
-      // Single source of truth: pull every active product (paginated past the 1000-row cap)
-      const PAGE = 1000;
-      let allProducts: any[] = [];
-      for (let from = 0; ; from += PAGE) {
-        const { data } = await b(supabase
-          .from('products')
-          .select('id, name, sku, quantity, low_stock_alert')
-          .is('deleted_at', null)
-          .order('created_at', { ascending: false })
-          .range(from, from + PAGE - 1) as any);
-        allProducts = allProducts.concat((data as any[]) || []);
-        if (!data || (data as any[]).length < PAGE) break;
-      }
-
-      const lowStockFiltered = allProducts.filter((p: any) => p.quantity > 0 && p.quantity <= p.low_stock_alert);
-      const inStockProducts = allProducts.filter((p: any) => (p.quantity || 0) > 0);
-      const outOfStockProducts = allProducts.filter((p: any) => (p.quantity || 0) <= 0);
-
       const { count: clientCount } = await b(supabase
         .from('clients')
         .select('*', { count: 'exact', head: true }) as any);
@@ -128,14 +112,13 @@ export default function Dashboard() {
         todaySales: todayInvoices?.reduce((sum, inv) => sum + Number(inv.grand_total), 0) || 0,
         monthlySales: monthlyInvoices?.reduce((sum, inv) => sum + Number(inv.grand_total), 0) || 0,
         totalExpenses: monthlyExpenses?.reduce((sum, exp) => sum + Number(exp.amount), 0) || 0,
-        lowStockCount: lowStockFiltered.length,
+        lowStockCount: 0,
         totalClients: clientCount || 0,
-        totalProducts: inStockProducts.length,
-        outOfStockCount: outOfStockProducts.length,
+        totalProducts: 0,
+        outOfStockCount: 0,
 
       });
 
-      setLowStockProducts(lowStockFiltered.slice(0, 5));
       setRecentInvoices(recent || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -243,9 +226,9 @@ export default function Dashboard() {
         <LiveMetalRatesCard />
         <StatCard
           title="Low Stock Alerts"
-          value={stats.lowStockCount}
+          value={inventory.lowStockProducts.length}
           icon={AlertTriangle}
-          variant={stats.lowStockCount > 0 ? 'warning' : 'default'}
+          variant={inventory.lowStockProducts.length > 0 ? 'warning' : 'default'}
         />
         <StatCard
           title="Total Clients"
@@ -255,7 +238,7 @@ export default function Dashboard() {
         />
         <StatCard
           title="Products In Stock"
-          value={stats.totalProducts}
+          value={inventory.inventoryStats.currentProducts}
           icon={Package}
           variant="default"
         />
@@ -265,15 +248,15 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <StatCard
           title="Out of Stock"
-          value={stats.outOfStockCount}
+          value={inventory.inventoryStats.outOfStockCount}
           icon={AlertTriangle}
-          variant={stats.outOfStockCount > 0 ? 'warning' : 'default'}
+          variant={inventory.inventoryStats.outOfStockCount > 0 ? 'warning' : 'default'}
         />
         <StatCard
           title="Low Stock Items"
-          value={stats.lowStockCount}
+          value={inventory.lowStockProducts.length}
           icon={AlertTriangle}
-          variant={stats.lowStockCount > 0 ? 'warning' : 'default'}
+          variant={inventory.lowStockProducts.length > 0 ? 'warning' : 'default'}
         />
       </div>
 
@@ -314,7 +297,7 @@ export default function Dashboard() {
           <DataTable 
             data={lowStockProducts} 
             columns={lowStockColumns}
-            isLoading={isLoading}
+            isLoading={inventory.isLoading}
             emptyMessage="All products are well stocked!"
           />
         </div>

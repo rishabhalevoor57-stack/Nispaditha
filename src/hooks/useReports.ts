@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useInventorySnapshot } from '@/hooks/useInventorySnapshot';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchPendingInvoices, aggregateOutstanding } from '@/lib/pendingBalances';
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear, format, subMonths, parseISO } from 'date-fns';
@@ -95,27 +96,8 @@ export const useReports = () => {
     },
   });
 
-  // Products with categories (active only, fully paginated past the 1000-row API cap)
-  const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ['report-products'],
-    queryFn: async () => {
-      const PAGE = 1000;
-      let all: any[] = [];
-      for (let from = 0; ; from += PAGE) {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*, categories(name)')
-          .is('deleted_at', null)
-          .order('created_at', { ascending: false })
-          .range(from, from + PAGE - 1);
-        if (error) throw error;
-        all = all.concat(data || []);
-        if (!data || data.length < PAGE) break;
-      }
-      return all;
-    },
-  });
-
+  const snapshot = useInventorySnapshot();
+  const { products, inventoryStats, settings, isLoading: productsLoading } = snapshot;
 
   // Clients
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
@@ -144,16 +126,6 @@ export const useReports = () => {
         .lte('created_at', toISO);
       if (error) throw error;
       return data || [];
-    },
-  });
-
-  // Business settings for rates
-  const { data: settings } = useQuery({
-    queryKey: ['report-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('business_settings').select('*').limit(1).single();
-      if (error) throw error;
-      return data;
     },
   });
 
@@ -201,21 +173,10 @@ export const useReports = () => {
     return Object.entries(map).map(([category, data]) => ({ category, ...data }));
   }, [invoices]);
 
-  // Category-wise stock value (in-stock items only, current qty × current rate)
-  const categoryStockData = useMemo(() => {
-    const silverRate = settings?.silver_rate_per_gram || 0;
-    const map: Record<string, { items: number; qty: number; weight: number; value: number }> = {};
-    products.filter((p: any) => (p.quantity || 0) > 0).forEach((p: any) => {
-      const cat = p.categories?.name || 'Uncategorized';
-      if (!map[cat]) map[cat] = { items: 0, qty: 0, weight: 0, value: 0 };
-      map[cat].items += 1;
-      map[cat].qty += p.quantity || 0;
-      map[cat].weight += Number(p.weight_grams || 0) * (p.quantity || 0);
-      map[cat].value += Number(p.weight_grams || 0) * (p.quantity || 0) * silverRate;
-    });
-    return Object.entries(map).map(([category, data]) => ({ category, ...data }));
-  }, [products, settings]);
-
+  const categoryStockData = snapshot.categoryData.map(category => ({
+    category: category.categoryName, items: category.totalItems,
+    qty: category.totalQuantity, weight: category.totalWeight, value: category.stockValue,
+  }));
 
   // Top selling products
   const topSellingProducts = useMemo(() => {
@@ -277,49 +238,15 @@ export const useReports = () => {
     [pendingInvoices]
   );
 
-  // Inventory reports — low stock excludes zero-quantity items (those are "out of stock")
-  const lowStockItems = useMemo(() => {
-    return products
-      .filter((p: any) => (p.quantity || 0) > 0 && p.quantity <= p.low_stock_alert)
-      .map((p: any) => ({ name: p.name, sku: p.sku, quantity: p.quantity, alert: p.low_stock_alert, category: p.categories?.name }));
-  }, [products]);
-
-  const outOfStockItems = useMemo(() => {
-    return products
-      .filter((p: any) => (p.quantity || 0) <= 0)
-      .map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        sku: p.sku,
-        category: p.categories?.name || null,
-        weight: Number(p.weight_grams || 0),
-        lastUpdated: p.updated_at,
-      }))
-      .sort((a, b) => (b.lastUpdated || '').localeCompare(a.lastUpdated || ''));
-  }, [products]);
-
-  // Stock value = current quantity × current weight × live rate
-  const totalStockValue = useMemo(() => {
-    const silverRate = settings?.silver_rate_per_gram || 0;
-    return products
-      .filter((p: any) => (p.quantity || 0) > 0)
-      .reduce((s: number, p: any) => s + Number(p.weight_grams || 0) * (p.quantity || 0) * silverRate, 0);
-  }, [products, settings]);
-
-  // Single source of truth for inventory counts (one SKU = one product)
-  const inventoryStats = useMemo(() => {
-    const inStock = products.filter((p: any) => (p.quantity || 0) > 0);
-    const outOfStock = products.filter((p: any) => (p.quantity || 0) <= 0);
-    return {
-      inStockProducts: inStock,
-      currentProducts: inStock.length,
-      outOfStockCount: outOfStock.length,
-      lifetimeSkus: products.length,
-      totalQuantity: inStock.reduce((s: number, p: any) => s + (p.quantity || 0), 0),
-      totalWeight: inStock.reduce((s: number, p: any) => s + Number(p.weight_grams || 0) * (p.quantity || 0), 0),
-    };
-  }, [products]);
-
+  const lowStockItems = snapshot.lowStockProducts.map(p => ({
+    name: p.name, sku: p.sku, quantity: p.quantity, alert: p.low_stock_alert,
+    category: p.categories?.name ?? null,
+  }));
+  const outOfStockItems = snapshot.outOfStockProducts.map(p => ({
+    id: p.id, name: p.name, sku: p.sku, category: p.categories?.name ?? null,
+    weight: Number(p.weight_grams || 0), lastUpdated: p.updated_at,
+  })).sort((a, b) => (b.lastUpdated || '').localeCompare(a.lastUpdated || ''));
+  const totalStockValue = snapshot.totals.totalStockValue;
 
   // Custom order reports
   const customOrderStats = useMemo(() => {
