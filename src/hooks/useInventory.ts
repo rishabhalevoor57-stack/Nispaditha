@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { parseInventoryMetal, resolveImportVendor, type InventoryImportRow } from '@/lib/inventoryImport';
 import { logStockMove } from '@/utils/stockMovement';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -372,18 +373,26 @@ export function useInventory() {
     return null;
   };
 
-  const bulkImport = async (productsToImport: Partial<ProductFormData>[], onProgress?: (current: number, total: number) => void) => {
+  const bulkImport = async (productsToImport: InventoryImportRow[], onProgress?: (current: number, total: number) => void) => {
     try {
       // Build lookup maps for category and vendor names
       const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c.id]));
-      const supplierMap = new Map(suppliers.map(s => [s.name.toLowerCase(), s.id]));
+      // Resolve against fresh, complete vendor records, not a stale/limited dropdown cache.
+      const importSuppliers: Supplier[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabase.from('suppliers').select('id, name').order('id').range(offset, offset + 999);
+        if (error) throw error;
+        importSuppliers.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
 
       const validProducts = productsToImport
         .filter(p => p.sku && p.name)
         .map(p => {
           const ext = p as any;
           const categoryName = (ext._category_name || '').toLowerCase();
-          const vendorName = (ext._vendor_name || '').toLowerCase();
+          const supplierId = resolveImportVendor(p._vendor_name, importSuppliers);
+          const metal = parseInventoryMetal(p.metal_type, p.purity);
 
           const weight = p.weight_grams || 0;
           const pricingMode = p.pricing_mode || 'weight_based';
@@ -406,10 +415,10 @@ export function useInventory() {
           }
 
           return {
-            sku: p.sku!,
-            name: p.name!,
+            sku: p.sku || '',
+            name: p.name || '',
             description: p.description || null,
-            metal_type: p.metal_type || null,
+            metal_type: metal,
             purity: p.purity || null,
             weight_grams: weight,
             quantity: p.quantity || 0,
@@ -428,7 +437,7 @@ export function useInventory() {
             purchase_making_charges: purchaseMC,
             date_ordered: parseDateSafe(p.date_ordered) || new Date().toISOString().split('T')[0],
             category_id: categoryMap.get(categoryName) || null,
-            supplier_id: supplierMap.get(vendorName) || null,
+            supplier_id: supplierId,
           };
         });
 
@@ -444,7 +453,7 @@ export function useInventory() {
         a.name.trim().toLowerCase() === b.name.trim().toLowerCase() &&
         Math.abs((Number(a.weight_grams) || 0) - (Number(b.weight_grams) || 0)) < 0.001;
 
-      const mergeTargets = new Map<string, { id: string; sku: string; addQty: number; baseQty: number }>();
+      const mergeTargets = new Map<string, { id: string; sku: string; addQty: number; baseQty: number; supplier_id?: string; metal_type?: string }>();
       const blocked: string[] = [];
       const seenInBatch = new Map<string, { name: string; weight_grams: number }>();
       const toInsert: typeof validProducts = [];
@@ -457,7 +466,11 @@ export function useInventory() {
           if (existing) {
             if (sameItem(existing, p)) {
               // Same SKU + Name + Weight → increase quantity only
-              const t = mergeTargets.get(p.sku) || { id: existing.id, sku: p.sku, addQty: 0, baseQty: existing.quantity };
+              const t: { id: string; sku: string; addQty: number; baseQty: number; supplier_id?: string; metal_type?: string } = mergeTargets.get(p.sku) || { id: existing.id, sku: p.sku, addQty: 0, baseQty: existing.quantity };
+              if (t.supplier_id && p.supplier_id && t.supplier_id !== p.supplier_id) throw new Error(`SKU "${p.sku}" has conflicting vendors in the file.`);
+              if (t.metal_type && p.metal_type && t.metal_type !== p.metal_type) throw new Error(`SKU "${p.sku}" has conflicting metals in the file.`);
+              if (p.supplier_id) t.supplier_id = p.supplier_id;
+              if (p.metal_type) t.metal_type = p.metal_type;
               t.addQty += Number(p.quantity) || 0;
               mergeTargets.set(p.sku, t);
             } else {
@@ -470,7 +483,13 @@ export function useInventory() {
           if (seen) {
             if (sameItem(seen, p)) {
               const target = toInsert.find(x => x.sku === p.sku);
-              if (target) target.quantity += Number(p.quantity) || 0;
+              if (target) {
+                if (target.supplier_id && p.supplier_id && target.supplier_id !== p.supplier_id) throw new Error(`SKU "${p.sku}" has conflicting vendors in the file.`);
+                if (target.metal_type && p.metal_type && target.metal_type !== p.metal_type) throw new Error(`SKU "${p.sku}" has conflicting metals in the file.`);
+                target.supplier_id = p.supplier_id || target.supplier_id;
+                target.metal_type = p.metal_type || target.metal_type;
+                target.quantity += Number(p.quantity) || 0;
+              }
             } else {
               blocked.push(`${p.sku} (duplicate SKU with different name/weight inside the file)`);
             }
@@ -501,7 +520,7 @@ export function useInventory() {
 
       for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
         const batch = toInsert.slice(i, i + BATCH_SIZE);
-        const { error } = await supabase.from('products').insert(batch);
+        const { error } = await supabase.from('products').insert(batch.map(p => ({ ...p, metal_type: p.metal_type || 'silver', supplier_id: p.supplier_id || null, branch_id: branch.branchId })));
         if (error) throw error;
 
         imported += batch.length;
@@ -514,6 +533,13 @@ export function useInventory() {
       // Apply quantity merges for identical SKU + Name + Weight
       let merged = 0;
       for (const t of mergeTargets.values()) {
+        if (t.supplier_id || t.metal_type) {
+          const { error } = await supabase.from('products').update({
+            ...(t.supplier_id ? { supplier_id: t.supplier_id } : {}),
+            ...(t.metal_type ? { metal_type: t.metal_type } : {}),
+          }).eq('id', t.id);
+          if (error) throw error;
+        }
         if (t.addQty <= 0) continue;
         await logStockMove({
           productId: t.id,
@@ -535,7 +561,7 @@ export function useInventory() {
       return true;
 
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message = error instanceof Error ? error.message : (typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : 'An error occurred');
       toast({ variant: 'destructive', title: 'Import failed', description: message });
       return false;
     }
