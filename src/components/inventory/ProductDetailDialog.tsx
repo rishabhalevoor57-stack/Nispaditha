@@ -1,3 +1,5 @@
+import { useMetalRates } from '@/hooks/useMetalRates';
+import { formatMetalLabel, normalizeMetalType } from '@/lib/metalTypes';
 import { useState, useEffect } from 'react';
 import { logStockMove } from '@/utils/stockMovement';
 import {
@@ -44,7 +46,7 @@ export function ProductDetailDialog({
   const { user } = useAuth();
   const { toast } = useToast();
   const { logActivity } = useActivityLogger();
-  const [silverRate, setSilverRate] = useState<number>(0);
+  const rates = useMetalRates();
   const [history, setHistory] = useState<Array<{ id: string; created_at: string; quantity_change: number; type: string; reason: string | null }>>([]);
   const [repairOpen, setRepairOpen] = useState(false);
   const [repairQty, setRepairQty] = useState<number>(1);
@@ -53,22 +55,9 @@ export function ProductDetailDialog({
 
   useEffect(() => {
     if (open && product) {
-      fetchSilverRate();
       fetchHistory(product.id);
     }
   }, [open, product?.id]);
-
-  const fetchSilverRate = async () => {
-    const { data } = await supabase
-      .from('business_settings')
-      .select('silver_rate_per_gram')
-      .limit(1)
-      .single();
-    
-    if (data) {
-      setSilverRate(data.silver_rate_per_gram);
-    }
-  };
 
   const fetchHistory = async (productId: string) => {
     const { data } = await supabase
@@ -206,9 +195,9 @@ export function ProductDetailDialog({
           {/* Details Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <DetailItem label="Pricing Mode" value={product.pricing_mode === 'flat_price' ? 'Flat Price' : 'Weight Based'} />
+            <DetailItem label="Metal" value={formatMetalLabel(product.metal_type)} />
             {product.pricing_mode === 'weight_based' && (
               <>
-                <DetailItem label="Metal Type" value="Silver" />
                 <DetailItem label="Purity" value={product.purity || '-'} />
                 <DetailItem label="Weight" value={`${product.weight_grams}g`} />
               </>
@@ -232,8 +221,8 @@ export function ProductDetailDialog({
             <Alert className="border-primary/20 bg-primary/5">
               <Coins className="h-4 w-4 text-primary" />
               <AlertDescription className="text-sm">
-                <span className="font-medium">Current Silver Rate Applied: </span>
-                {formatCurrency(silverRate)} per gram
+                <span className="font-medium">Current {formatMetalLabel(product.metal_type)} Rate: </span>
+                {formatCurrency(rates.rateFor(normalizeMetalType(product.metal_type === 'gold' ? `gold ${product.purity || '22k'}` : product.metal_type)))} per gram
               </AlertDescription>
             </Alert>
           )}
