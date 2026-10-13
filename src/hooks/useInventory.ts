@@ -375,15 +375,61 @@ export function useInventory() {
   const bulkImport = async (productsToImport: Partial<ProductFormData>[], onProgress?: (current: number, total: number) => void) => {
     try {
       // Build lookup maps for category and vendor names
-      const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c.id]));
-      const supplierMap = new Map(suppliers.map(s => [s.name.toLowerCase(), s.id]));
+      const norm = (s: string) => (s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+      const categoryMap = new Map(categories.map(c => [norm(c.name), c.id]));
+      // Fresh vendor list (local state may be stale), matched case/space-insensitively
+      const { data: freshVendors } = await supabase.from('suppliers').select('id, name, vendor_code');
+      const supplierMap = new Map<string, string>();
+      (freshVendors || suppliers).forEach((s: any) => {
+        supplierMap.set(norm(s.name), s.id);
+        if (s.vendor_code) supplierMap.set(norm(s.vendor_code), s.id);
+      });
+      // Create vendors that don't exist yet (once per unique name)
+      const missingVendors = new Map<string, string>();
+      productsToImport.forEach(p => {
+        const raw = ((p as any)._vendor_name || '').trim().replace(/\s+/g, ' ');
+        if (raw && !supplierMap.has(norm(raw))) missingVendors.set(norm(raw), raw);
+      });
+      if (missingVendors.size > 0) {
+        const { data: created, error: vErr } = await supabase
+          .from('suppliers')
+          .insert([...missingVendors.values()].map(name => ({ name })))
+          .select('id, name');
+        if (vErr) {
+          toast({ variant: 'destructive', title: 'Could not create vendors', description: `${[...missingVendors.values()].join(', ')}: ${vErr.message}` });
+          return false;
+        }
+        (created || []).forEach(s => supplierMap.set(norm(s.name), s.id));
+        toast({ title: `${created?.length || 0} new vendor(s) created`, description: [...missingVendors.values()].join(', ') });
+      }
+
+      // Metal validation: Silver / Gold (or existing purity-specific gold types)
+      const invalidMetal: string[] = [];
+      const resolveMetal = (raw: string | undefined): string | null => {
+        const v = norm(raw || '');
+        if (!v) return null;
+        if (v === 'silver' || v === 'ag') return 'silver';
+        if (v.startsWith('gold') || v === 'au') {
+          if (v.includes('18')) return 'gold_18k';
+          if (v.includes('24')) return 'gold_24k';
+          return 'gold_22k';
+        }
+        return undefined as any;
+      };
+      productsToImport.forEach(p => {
+        if (p.metal_type && resolveMetal(p.metal_type) === undefined) invalidMetal.push(`${p.sku} ("${p.metal_type}")`);
+      });
+      if (invalidMetal.length > 0) {
+        toast({ variant: 'destructive', title: 'Invalid Metal values', description: `Use Silver or Gold. ${invalidMetal.slice(0, 5).join('; ')}${invalidMetal.length > 5 ? ' …' : ''}` });
+        return false;
+      }
 
       const validProducts = productsToImport
         .filter(p => p.sku && p.name)
         .map(p => {
           const ext = p as any;
-          const categoryName = (ext._category_name || '').toLowerCase();
-          const vendorName = (ext._vendor_name || '').toLowerCase();
+          const categoryName = norm(ext._category_name || '');
+          const vendorName = norm(ext._vendor_name || '');
 
           const weight = p.weight_grams || 0;
           const pricingMode = p.pricing_mode || 'weight_based';
