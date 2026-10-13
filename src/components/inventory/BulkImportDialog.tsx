@@ -46,6 +46,7 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
       'Date of Purchase',
       'GST',
       'Purity',
+      'Metal',
     ];
     
     const sampleRow = [
@@ -66,6 +67,7 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
       '2026-04-01',
       '3',
       '925',
+      'Silver',
     ];
     
     const csv = [headers.join(','), sampleRow.join(',')].join('\n');
