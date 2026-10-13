@@ -1,4 +1,4 @@
-# Inventory import
-- [ ] Correct vendor matching and validate unknown vendors without losing associations.
-- [ ] Support Metal in CSV/Excel imports and manual inventory entry, preserving prices and legacy classifications.
-- [ ] Verify import rules and inventory entry without modifying unrelated ERP functions.
+# Inventory consistency
+- [ ] Unify Dashboard and Inventory Reports stock data, branch scope, and refresh behavior.
+- [ ] Correct SKU history, thresholds, weight-based and flat-price valuation without modifying stored data.
+- [ ] Verify calculations against live records and compare authenticated screens.

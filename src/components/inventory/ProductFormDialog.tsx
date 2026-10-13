@@ -17,9 +17,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Upload, X } from 'lucide-react';
-import { parseInventoryMetal } from '@/lib/inventoryImport';
-import { resolveMetalRate } from '@/lib/metalTypes';
-import { useMetalRates } from '@/hooks/useMetalRates';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ProductFormData, 
@@ -59,7 +56,6 @@ export function ProductFormDialog({
   suppliers,
   onSubmit,
 }: ProductFormDialogProps) {
-  const rates = useMetalRates();
   const [formData, setFormData] = useState<ProductFormData>(initialProductForm);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -82,7 +78,7 @@ export function ProductFormDialog({
         name: product.name,
         description: product.description || '',
         category_id: product.category_id || '',
-        metal_type: product.metal_type || 'silver',
+        metal_type: product.metal_type || '',
         purity: product.purity || '',
         weight_grams: product.weight_grams,
         quantity: product.quantity,
@@ -133,8 +129,8 @@ export function ProductFormDialog({
 
   // Reset manual override flags when dialog opens
   useEffect(() => {
-    setSellingPriceManual(Boolean(product));
-    setPurchasePriceManual(Boolean(product));
+    setSellingPriceManual(false);
+    setPurchasePriceManual(false);
   }, [open]);
 
   // Update selling price when components change (only if not manually overridden)
@@ -364,26 +360,13 @@ export function ProductFormDialog({
           {/* Metal Details - always visible */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="metal_type">Metal</Label>
-              <Select value={formData.metal_type || 'silver'} onValueChange={(value) => {
-                updateField('metal_type', value);
-                if (!product && formData.pricing_mode === 'weight_based') {
-                  const metal = parseInventoryMetal(value, formData.purity) || 'silver';
-                  updateField('price_per_gram', resolveMetalRate(metal, { silver: rates.silver, gold22: rates.gold22 }));
-                }
-              }}>
-                <SelectTrigger id="metal_type"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="silver">Silver</SelectItem>
-                  <SelectItem value="gold">Gold</SelectItem>
-                  <SelectItem value="gold_18k">Gold 18K</SelectItem>
-                  <SelectItem value="gold_22k">Gold 22K</SelectItem>
-                  <SelectItem value="gold_24k">Gold 24K</SelectItem>
-                  {formData.metal_type && !['silver', 'gold', 'gold_18k', 'gold_22k', 'gold_24k'].includes(formData.metal_type) && (
-                    <SelectItem value={formData.metal_type}>{formData.metal_type}</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="metal_type">Metal Type</Label>
+              <Input
+                id="metal_type"
+                value={formData.metal_type}
+                onChange={(e) => updateField('metal_type', e.target.value)}
+                placeholder="e.g., Gold, Silver"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="purity">Purity</Label>

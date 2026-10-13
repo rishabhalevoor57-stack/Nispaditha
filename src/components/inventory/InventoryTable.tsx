@@ -1,6 +1,4 @@
-import { useMetalRates } from '@/hooks/useMetalRates';
-import { formatMetalLabel, normalizeMetalType } from '@/lib/metalTypes';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { logStockMove } from '@/utils/stockMovement';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,7 +50,7 @@ export function InventoryTable({
   const { user } = useAuth();
   const { toast } = useToast();
   const { logActivity } = useActivityLogger();
-  const rates = useMetalRates();
+  const [silverRate, setSilverRate] = useState<number>(0);
   const [repairProduct, setRepairProduct] = useState<Product | null>(null);
   const [repairQty, setRepairQty] = useState<number>(1);
   const [repairNotes, setRepairNotes] = useState<string>('');
@@ -116,6 +114,22 @@ export function InventoryTable({
       toast({ variant: 'destructive', title: 'Failed', description: e instanceof Error ? e.message : 'Error' });
     } finally {
       setRepairSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSilverRate();
+  }, []);
+
+  const fetchSilverRate = async () => {
+    const { data } = await supabase
+      .from('business_settings')
+      .select('silver_rate_per_gram')
+      .limit(1)
+      .single();
+    
+    if (data) {
+      setSilverRate(data.silver_rate_per_gram);
     }
   };
 
@@ -249,11 +263,11 @@ export function InventoryTable({
                             <TooltipTrigger asChild>
                               <span className="inline-flex items-center gap-1 text-xs text-primary cursor-help">
                                 <Coins className="w-3 h-3" />
-                                {formatCurrency(rates.rateFor(normalizeMetalType(product.metal_type === 'gold' ? `gold ${product.purity || '22k'}` : product.metal_type)))}/g
+                                {formatCurrency(silverRate)}/g
                               </span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Current {formatMetalLabel(product.metal_type)} Rate</p>
+                              <p>Current Silver Rate Applied</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

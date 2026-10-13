@@ -84,7 +84,7 @@ export const initialProductForm: ProductFormData = {
   name: '',
   description: '',
   category_id: '',
-  metal_type: 'silver',
+  metal_type: '',
   purity: '',
   weight_grams: 0,
   quantity: 0,
