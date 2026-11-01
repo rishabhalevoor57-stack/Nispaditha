@@ -4,10 +4,20 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, type AppRole } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Shield, Loader2, History } from 'lucide-react';
+import { Users, Shield, Loader2, History, UserMinus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface UserRow {
@@ -35,9 +45,12 @@ export const UserManagement = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const { user, isSuperAdmin } = useAuth();
+  const [removeTarget, setRemoveTarget] = useState<UserRow | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const { user, roles } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isTrueSuperAdmin = roles.includes('super_admin');
 
   useEffect(() => { fetchUsers(); }, []);
 
