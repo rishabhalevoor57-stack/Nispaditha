@@ -172,7 +172,7 @@ export const UserManagement = () => {
           User Management
         </CardTitle>
         <CardDescription>
-          Assign roles, pause access, or review a user's activity. Paused users lose all access immediately.
+          Assign roles, review a user's activity. Super Admins can also pause access or remove a user entirely. Paused users lose all access immediately.
           <br />
           <span className="text-xs font-medium">Admins: {adminCount}/{MAX_ADMINS}</span>
         </CardDescription>
@@ -250,6 +250,27 @@ export const UserManagement = () => {
           ))}
           {users.length === 0 && <p className="text-center text-muted-foreground py-8">No users found.</p>}
         </div>
+        <AlertDialog open={!!removeTarget} onOpenChange={(open) => { if (!open) setRemoveTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove user?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently removes {removeTarget?.full_name || removeTarget?.email} from the system: the account and its sign-in access are deleted and they are signed out everywhere. Their business history (invoices, orders, activity) is kept but no longer linked to them. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={isRemoving}
+                onClick={(e) => { e.preventDefault(); if (removeTarget) handleRemoveUser(removeTarget); }}
+              >
+                {isRemoving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
