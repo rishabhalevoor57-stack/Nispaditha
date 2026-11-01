@@ -51,6 +51,7 @@ export const UserManagement = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const isTrueSuperAdmin = roles.includes('super_admin');
+  const isSuperAdmin = isTrueSuperAdmin || roles.includes('admin');
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -130,6 +131,29 @@ export const UserManagement = () => {
       setSavingId(null);
     }
   };
+
+  const handleRemoveUser = async (target: UserRow) => {
+    if (target.user_id === user?.id) {
+      toast({ variant: 'destructive', title: 'Not allowed', description: 'You cannot remove your own account.' });
+      setRemoveTarget(null);
+      return;
+    }
+    setIsRemoving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('remove-user', { body: { userId: target.user_id } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setUsers(prev => prev.filter(u => u.user_id !== target.user_id));
+      setRemoveTarget(null);
+      toast({ title: 'User removed', description: `${target.full_name || target.email} was permanently removed and signed out everywhere.` });
+    } catch (err: any) {
+      const message = err?.context?.body?.error || err?.message || 'Failed to remove user';
+      toast({ variant: 'destructive', title: 'Error', description: message });
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
 
   if (isLoading) {
     return (
