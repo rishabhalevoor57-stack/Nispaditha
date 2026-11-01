@@ -4,10 +4,20 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, type AppRole } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Shield, Loader2, History } from 'lucide-react';
+import { Users, Shield, Loader2, History, UserMinus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface UserRow {
@@ -35,9 +45,13 @@ export const UserManagement = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const { user, isSuperAdmin } = useAuth();
+  const [removeTarget, setRemoveTarget] = useState<UserRow | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const { user, roles } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isTrueSuperAdmin = roles.includes('super_admin');
+  const isSuperAdmin = isTrueSuperAdmin || roles.includes('admin');
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -118,6 +132,29 @@ export const UserManagement = () => {
     }
   };
 
+  const handleRemoveUser = async (target: UserRow) => {
+    if (target.user_id === user?.id) {
+      toast({ variant: 'destructive', title: 'Not allowed', description: 'You cannot remove your own account.' });
+      setRemoveTarget(null);
+      return;
+    }
+    setIsRemoving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('remove-user', { body: { userId: target.user_id } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setUsers(prev => prev.filter(u => u.user_id !== target.user_id));
+      setRemoveTarget(null);
+      toast({ title: 'User removed', description: `${target.full_name || target.email} was permanently removed and signed out everywhere.` });
+    } catch (err: any) {
+      const message = err?.context?.body?.error || err?.message || 'Failed to remove user';
+      toast({ variant: 'destructive', title: 'Error', description: message });
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
+
   if (isLoading) {
     return (
       <Card className="shadow-card">
@@ -135,7 +172,7 @@ export const UserManagement = () => {
           User Management
         </CardTitle>
         <CardDescription>
-          Assign roles, pause access, or review a user's activity. Paused users lose all access immediately.
+          Assign roles, review a user's activity. Super Admins can also pause access or remove a user entirely. Paused users lose all access immediately.
           <br />
           <span className="text-xs font-medium">Admins: {adminCount}/{MAX_ADMINS}</span>
         </CardDescription>
@@ -156,14 +193,16 @@ export const UserManagement = () => {
                 {!u.is_active && <Badge variant="destructive" className="text-xs">Paused</Badge>}
               </div>
               <div className="flex items-center gap-3 flex-wrap">
+                {isTrueSuperAdmin && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Active</span>
+                  <span className="text-xs text-muted-foreground">{u.is_active ? 'Active' : 'Paused'}</span>
                   <Switch
                     checked={u.is_active}
                     disabled={savingId === u.user_id || u.user_id === user?.id}
                     onCheckedChange={(v) => handleActiveToggle(u.user_id, v)}
                   />
                 </div>
+                )}
                 <Select
                   value={u.role}
                   onValueChange={(val) => handleRoleChange(u.user_id, val as AppRole)}
@@ -193,12 +232,45 @@ export const UserManagement = () => {
                   <History className="w-4 h-4 mr-1" />
                   History
                 </Button>
+                {isTrueSuperAdmin && u.user_id !== user?.id && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-destructive hover:text-destructive"
+                    disabled={savingId === u.user_id}
+                    onClick={() => setRemoveTarget(u)}
+                  >
+                    <UserMinus className="w-4 h-4 mr-1" />
+                    Remove
+                  </Button>
+                )}
                 {savingId === u.user_id && <Loader2 className="w-4 h-4 animate-spin" />}
               </div>
             </div>
           ))}
           {users.length === 0 && <p className="text-center text-muted-foreground py-8">No users found.</p>}
         </div>
+        <AlertDialog open={!!removeTarget} onOpenChange={(open) => { if (!open) setRemoveTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove user?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently removes {removeTarget?.full_name || removeTarget?.email} from the system: the account and its sign-in access are deleted and they are signed out everywhere. Their business history (invoices, orders, activity) is kept but no longer linked to them. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={isRemoving}
+                onClick={(e) => { e.preventDefault(); if (removeTarget) handleRemoveUser(removeTarget); }}
+              >
+                {isRemoving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );

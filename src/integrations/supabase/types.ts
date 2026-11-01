@@ -3053,6 +3053,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      prep_user_removal: {
+        Args: { p_target_user_id: string }
+        Returns: undefined
+      }
       process_buyback: {
         Args: {
           p_client_id: string
