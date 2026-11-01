@@ -193,14 +193,16 @@ export const UserManagement = () => {
                 {!u.is_active && <Badge variant="destructive" className="text-xs">Paused</Badge>}
               </div>
               <div className="flex items-center gap-3 flex-wrap">
+                {isTrueSuperAdmin && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Active</span>
+                  <span className="text-xs text-muted-foreground">{u.is_active ? 'Active' : 'Paused'}</span>
                   <Switch
                     checked={u.is_active}
                     disabled={savingId === u.user_id || u.user_id === user?.id}
                     onCheckedChange={(v) => handleActiveToggle(u.user_id, v)}
                   />
                 </div>
+                )}
                 <Select
                   value={u.role}
                   onValueChange={(val) => handleRoleChange(u.user_id, val as AppRole)}
@@ -230,6 +232,18 @@ export const UserManagement = () => {
                   <History className="w-4 h-4 mr-1" />
                   History
                 </Button>
+                {isTrueSuperAdmin && u.user_id !== user?.id && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-destructive hover:text-destructive"
+                    disabled={savingId === u.user_id}
+                    onClick={() => setRemoveTarget(u)}
+                  >
+                    <UserMinus className="w-4 h-4 mr-1" />
+                    Remove
+                  </Button>
+                )}
                 {savingId === u.user_id && <Loader2 className="w-4 h-4 animate-spin" />}
               </div>
             </div>
