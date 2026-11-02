@@ -280,6 +280,7 @@ export type Database = {
       business_settings: {
         Row: {
           address: string | null
+          branch_code: string | null
           business_name: string
           created_at: string
           currency: string
@@ -296,6 +297,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          branch_code?: string | null
           business_name?: string
           created_at?: string
           currency?: string
@@ -312,6 +314,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          branch_code?: string | null
           business_name?: string
           created_at?: string
           currency?: string
