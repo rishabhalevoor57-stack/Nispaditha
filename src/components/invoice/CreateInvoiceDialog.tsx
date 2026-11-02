@@ -884,6 +884,12 @@ export function CreateInvoiceDialog({
             <div className="bg-muted/50 rounded-lg p-3 text-sm">
               <span className="text-muted-foreground">Shop GSTIN: </span>
               <span className="font-mono font-medium">{businessSettings.gst_number}</span>
+              {businessSettings.branch_code && (
+                <span className="ml-4 text-muted-foreground">Branch Code: </span>
+              )}
+              {businessSettings.branch_code && (
+                <span className="font-mono font-medium">{businessSettings.branch_code}</span>
+              )}
             </div>
           )}
 

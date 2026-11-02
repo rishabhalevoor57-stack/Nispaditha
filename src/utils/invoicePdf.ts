@@ -202,6 +202,12 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<jsPDF> {
   doc.setLineWidth(0.3);
   doc.roundedRect(pageWidth - margin - gstWidth, 12, gstWidth, 5, 1, 1);
   doc.text(gstText, pageWidth - margin - 2.5, 15.5, { align: 'right' });
+  if (data.businessSettings.branch_code) {
+    doc.setFont(FONT, 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(85, 85, 85);
+    doc.text(`Branch Code: ${data.businessSettings.branch_code}`, pageWidth - margin, 20.5, { align: 'right' });
+  }
 
   doc.setTextColor(0, 0, 0);
   doc.setDrawColor(0, 0, 0);
