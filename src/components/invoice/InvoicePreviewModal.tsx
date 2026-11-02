@@ -209,6 +209,11 @@ export function InvoicePreviewModal({
                 >
                   GSTIN: {businessSettings.gst_number || '29AAAQFN9742E1ZO'}
                 </div>
+                {businessSettings.branch_code && (
+                  <div className="mt-1 text-[8px]" style={{ color: '#555' }}>
+                    Branch Code: {businessSettings.branch_code}
+                  </div>
+                )}
               </div>
             </div>
 
