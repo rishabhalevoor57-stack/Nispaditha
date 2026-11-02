@@ -94,6 +94,7 @@ export interface BusinessSettings {
   address: string | null;
   phone: string | null;
   email: string | null;
+  branch_code: string | null;
   invoice_prefix: string;
   default_gst: number;
   gold_rate_per_gram: number;

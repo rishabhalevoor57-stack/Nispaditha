@@ -36,6 +36,7 @@ interface BusinessSettings {
   email: string | null;
   gst_number: string | null;
   logo_url: string | null;
+  branch_code: string | null;
   invoice_prefix: string;
   currency: string;
   default_gst: number;
@@ -370,6 +371,13 @@ export default function Settings() {
                   <div className="space-y-2">
                     <Label htmlFor="default_gst">Default GST %</Label>
                     <Input id="default_gst" type="number" step="0.01" value={settings?.default_gst || 3} onChange={(e) => setSettings(s => s ? { ...s, default_gst: parseFloat(e.target.value) || 3 } : null)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="branch_code">Branch Code (Custom)</Label>
+                    <Input id="branch_code" value={settings?.branch_code || ''} onChange={(e) => setSettings(s => s ? { ...s, branch_code: e.target.value } : null)} placeholder="e.g. BLR-01" />
+                    <p className="text-xs text-muted-foreground">Custom code printed on invoices. Leave empty to hide.</p>
                   </div>
                 </div>
                 <Button type="submit" className="btn-gold mt-4" disabled={isSaving}>
