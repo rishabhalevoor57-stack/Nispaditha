@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
 import type { Product, ProductFormData, ProductStatus, TypeOfWork } from '@/types/inventory';
+import { buildSupplierNameIndex, resolveVendorName } from '@/lib/inventoryImportVendors';
 
 
 interface Category {
@@ -17,6 +18,12 @@ interface Supplier {
   id: string;
   name: string;
 }
+
+type BulkImportRow = Partial<ProductFormData> & {
+  _category_name?: string;
+  _vendor_name?: string;
+  _vendor_resolution?: ReturnType<typeof resolveVendorName>;
+};
 
 interface Filters {
   search: string;
@@ -107,7 +114,7 @@ export function useInventory() {
   useEffect(() => {
     fetchProducts();
     fetchCategories();
-    fetchSuppliers();
+    void fetchSuppliers().catch((error) => console.error('Error fetching suppliers:', error));
     const handler = () => fetchProducts();
     window.addEventListener('inventory:refresh', handler);
     return () => window.removeEventListener('inventory:refresh', handler);
@@ -119,9 +126,28 @@ export function useInventory() {
     setCategories(data || []);
   };
 
-  const fetchSuppliers = async () => {
-    const { data } = await supabase.from('suppliers').select('*').order('name');
-    setSuppliers(data || []);
+  const fetchSuppliers = async (): Promise<Supplier[]> => {
+    const pageSize = 1000;
+    const allSuppliers: Supplier[] = [];
+    let from = 0;
+
+    while (true) {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('id, name')
+        .order('name')
+        .range(from, from + pageSize - 1);
+
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+
+      allSuppliers.push(...data);
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+
+    setSuppliers(allSuppliers);
+    return allSuppliers;
   };
 
   useEffect(() => {
@@ -374,16 +400,52 @@ export function useInventory() {
 
   const bulkImport = async (productsToImport: Partial<ProductFormData>[], onProgress?: (current: number, total: number) => void) => {
     try {
-      // Build lookup maps for category and vendor names
-      const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c.id]));
-      const supplierMap = new Map(suppliers.map(s => [s.name.toLowerCase(), s.id]));
+      // Reload suppliers at import time so a fast import cannot race initial loading.
+      const currentSuppliers = await fetchSuppliers();
+      const supplierIndex = buildSupplierNameIndex(currentSuppliers);
 
-      const validProducts = productsToImport
+      const importRows: BulkImportRow[] = productsToImport.map((product) => {
+        const row = product as BulkImportRow;
+        return {
+          ...row,
+          _vendor_resolution: resolveVendorName(
+            row._vendor_name || '',
+            supplierIndex,
+            product.supplier_id || null,
+          ),
+        };
+      });
+
+      const vendorIssues = importRows.flatMap((row, index) => {
+        if (!row.sku || !row.name) return [];
+        const resolution = row._vendor_resolution;
+        if (!resolution || resolution.status === 'blank' || resolution.status === 'matched') return [];
+
+        const rowLabel = row.sku ? `SKU ${row.sku}` : `Row ${index + 2}`;
+        const reason = resolution.status === 'unknown'
+          ? 'was not found among saved vendors'
+          : 'matches more than one saved vendor';
+        return [`${rowLabel}: "${resolution.vendorName}" ${reason}`];
+      });
+
+      if (vendorIssues.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Bulk import stopped: check vendor names',
+          description: `${vendorIssues.slice(0, 3).join('; ')}${vendorIssues.length > 3 ? ` … and ${vendorIssues.length - 3} more` : ''}. No products were imported.`,
+        });
+        return false;
+      }
+
+      // Build category lookup while vendor names use normalized, ambiguity-aware matching.
+      const categoryMap = new Map(categories.map(c => [c.name.toLowerCase(), c.id]));
+
+      const validProducts = importRows
         .filter(p => p.sku && p.name)
         .map(p => {
-          const ext = p as any;
+          const ext = p;
           const categoryName = (ext._category_name || '').toLowerCase();
-          const vendorName = (ext._vendor_name || '').toLowerCase();
+          const vendorResolution = ext._vendor_resolution;
 
           const weight = p.weight_grams || 0;
           const pricingMode = p.pricing_mode || 'weight_based';
@@ -428,15 +490,23 @@ export function useInventory() {
             purchase_making_charges: purchaseMC,
             date_ordered: parseDateSafe(p.date_ordered) || new Date().toISOString().split('T')[0],
             category_id: categoryMap.get(categoryName) || null,
-            supplier_id: supplierMap.get(vendorName) || null,
+            supplier_id: vendorResolution?.status === 'matched' || vendorResolution?.status === 'blank'
+              ? vendorResolution.supplierId
+              : p.supplier_id || null,
           };
         });
 
       // Existing products indexed by SKU for merge / conflict detection
-      const existingBySku = new Map<string, { id: string; name: string; weight_grams: number; quantity: number }>();
+      const existingBySku = new Map<string, { id: string; name: string; weight_grams: number; quantity: number; supplier_id: string | null }>();
       products.forEach(p => {
         if (!existingBySku.has(p.sku)) {
-          existingBySku.set(p.sku, { id: p.id, name: p.name, weight_grams: Number(p.weight_grams) || 0, quantity: Number(p.quantity) || 0 });
+          existingBySku.set(p.sku, {
+            id: p.id,
+            name: p.name,
+            weight_grams: Number(p.weight_grams) || 0,
+            quantity: Number(p.quantity) || 0,
+            supplier_id: p.supplier_id || null,
+          });
         }
       });
 
@@ -444,7 +514,7 @@ export function useInventory() {
         a.name.trim().toLowerCase() === b.name.trim().toLowerCase() &&
         Math.abs((Number(a.weight_grams) || 0) - (Number(b.weight_grams) || 0)) < 0.001;
 
-      const mergeTargets = new Map<string, { id: string; sku: string; addQty: number; baseQty: number }>();
+      const mergeTargets = new Map<string, { id: string; sku: string; addQty: number; baseQty: number; baseSupplierId: string | null; supplierId?: string }>();
       const blocked: string[] = [];
       const seenInBatch = new Map<string, { name: string; weight_grams: number }>();
       const toInsert: typeof validProducts = [];
@@ -457,8 +527,15 @@ export function useInventory() {
           if (existing) {
             if (sameItem(existing, p)) {
               // Same SKU + Name + Weight → increase quantity only
-              const t = mergeTargets.get(p.sku) || { id: existing.id, sku: p.sku, addQty: 0, baseQty: existing.quantity };
+              const t = mergeTargets.get(p.sku) || {
+                id: existing.id,
+                sku: p.sku,
+                addQty: 0,
+                baseQty: existing.quantity,
+                baseSupplierId: existing.supplier_id,
+              };
               t.addQty += Number(p.quantity) || 0;
+              if (p.supplier_id) t.supplierId = p.supplier_id;
               mergeTargets.set(p.sku, t);
             } else {
               blocked.push(`${p.sku} (existing ${existing.weight_grams}g "${existing.name}" vs imported ${p.weight_grams}g "${p.name}")`);
@@ -470,7 +547,10 @@ export function useInventory() {
           if (seen) {
             if (sameItem(seen, p)) {
               const target = toInsert.find(x => x.sku === p.sku);
-              if (target) target.quantity += Number(p.quantity) || 0;
+              if (target) {
+                target.quantity += Number(p.quantity) || 0;
+                if (p.supplier_id) target.supplier_id = p.supplier_id;
+              }
             } else {
               blocked.push(`${p.sku} (duplicate SKU with different name/weight inside the file)`);
             }
@@ -513,22 +593,33 @@ export function useInventory() {
 
       // Apply quantity merges for identical SKU + Name + Weight
       let merged = 0;
+      let vendorsUpdated = 0;
       for (const t of mergeTargets.values()) {
-        if (t.addQty <= 0) continue;
-        await logStockMove({
-          productId: t.id,
-          qtyDelta: t.addQty,
-          module: 'inventory',
-          action: 'Bulk Import',
-          referenceId: t.id,
-          referenceLabel: t.sku ?? null,
-          reason: 'Bulk Import — quantity merged into existing SKU',
-        });
-        merged += 1;
+        const shouldUpdateVendor = t.supplierId !== undefined && t.supplierId !== t.baseSupplierId;
+        if (t.addQty <= 0 && !shouldUpdateVendor) continue;
+
+        if (shouldUpdateVendor) {
+          const { error } = await supabase.from('products').update({ supplier_id: t.supplierId }).eq('id', t.id);
+          if (error) throw error;
+          vendorsUpdated += 1;
+        }
+
+        if (t.addQty > 0) {
+          await logStockMove({
+            productId: t.id,
+            qtyDelta: t.addQty,
+            module: 'inventory',
+            action: 'Bulk Import',
+            referenceId: t.id,
+            referenceLabel: t.sku ?? null,
+            reason: 'Bulk Import — quantity merged into existing SKU',
+          });
+          merged += 1;
+        }
       }
 
       toast({
-        title: `${imported} product(s) imported${merged ? `, ${merged} SKU(s) merged` : ''}`,
+        title: `${imported} product(s) imported${merged ? `, ${merged} SKU(s) merged` : ''}${vendorsUpdated ? `, ${vendorsUpdated} vendor assignment(s) updated` : ''}`,
         description: blocked.length ? `${blocked.length} row(s) blocked due to weight/name mismatch.` : undefined,
       });
       fetchProducts();

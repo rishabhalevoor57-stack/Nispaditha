@@ -11,6 +11,7 @@ import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lu
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import type { ProductFormData } from '@/types/inventory';
+import { findVendorColumnIndex, hasVendorLikeHeader, normalizeImportHeader } from '@/lib/inventoryImportVendors';
 
 interface BulkImportDialogProps {
   open: boolean;
@@ -78,16 +79,6 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
     URL.revokeObjectURL(url);
   };
 
-  const normalizeHeader = (header: string): string => {
-    return header
-      .trim()
-      .replace(/^\uFEFF/, '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[_\s-]+/g, ' ');
-  };
-
   const detectDelimiter = (text: string): string => {
     const sample = text
       .split('\n')
@@ -141,8 +132,8 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
   };
 
   const findColumnIndex = (headers: string[], aliases: readonly string[]): number => {
-    const normalizedHeaders = headers.map(normalizeHeader);
-    const normalizedAliases = aliases.map(normalizeHeader);
+    const normalizedHeaders = headers.map(normalizeImportHeader);
+    const normalizedAliases = aliases.map(normalizeImportHeader);
 
     for (const alias of normalizedAliases) {
       const exact = normalizedHeaders.indexOf(alias);
@@ -197,7 +188,6 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
       weight_grams: ['weight', 'weight_grams', 'weight grams', 'gross weight'],
       quantity: ['qty', 'quantity', 'stock'],
       pricing_mode: ['mode', 'pricing_mode', 'pricing mode', 'price mode'],
-      vendor: ['vendor', 'supplier', 'vendor name'],
       price_per_gram: ['selling price per gram', 'price_per_gram', 'price per gram', 'rate per gram', 'selling piece per gram'],
       making_charges: ['selling mc', 'making_charges', 'making charges', 'making charge', 'mc'],
       purchase_price_per_gram: ['purchase price per gram', 'purchase_price_per_gram'],
@@ -217,6 +207,11 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
     const indexes = Object.fromEntries(
       Object.entries(columnMap).map(([key, aliases]) => [key, findColumnIndex(headers, aliases)])
     ) as Record<keyof typeof columnMap, number>;
+    const vendorIndex = findVendorColumnIndex(headers);
+
+    if (vendorIndex === -1 && hasVendorLikeHeader(headers)) {
+      throw new Error('A vendor name column could not be identified. Use Vendor, Vendor Name, Supplier, or Supplier Name; vendor codes are not matched as names.');
+    }
 
     if (indexes.sku === -1 || indexes.name === -1) {
       throw new Error('CSV must include SKU and Name columns (any common naming variation is supported).');
@@ -262,7 +257,7 @@ export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDia
         purchase_making_charges: parseLocalizedNumber(getValue(values, indexes.purchase_making_charges)),
         date_ordered: getValue(values, indexes.date_ordered) || new Date().toISOString().split('T')[0],
         _category_name: getValue(values, indexes.category),
-        _vendor_name: getValue(values, indexes.vendor),
+        _vendor_name: getValue(values, vendorIndex),
       };
 
       products.push(product);
