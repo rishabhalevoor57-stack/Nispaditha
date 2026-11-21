@@ -15,6 +15,13 @@
       "when": 1793631266544,
       "tag": "0001_add_custom_branch_code_to_business_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795247624058,
+      "tag": "0002_tighten_selected_security_rules",
+      "breakpoints": true
     }
   ]
 }
