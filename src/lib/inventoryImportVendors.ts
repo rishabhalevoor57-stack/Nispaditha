@@ -3,6 +3,13 @@ export interface ImportSupplier {
   name: string;
 }
 
+export interface VendorAssignedProduct {
+  sku: string;
+  name: string;
+  weight_grams: number;
+  supplier_id: string | null;
+}
+
 export type VendorResolution =
   | { status: 'blank'; supplierId: string | null }
   | { status: 'matched'; supplierId: string }
@@ -76,4 +83,36 @@ export const resolveVendorName = (
   if (!supplierId) return { status: 'ambiguous', vendorName: vendorName.trim() };
 
   return { status: 'matched', supplierId };
+};
+
+export const findConflictingVendorSkus = (
+  products: readonly VendorAssignedProduct[],
+): string[] => {
+  const bySku = new Map<string, { name: string; weight: number; supplierId: string | null }>();
+  const conflicts = new Set<string>();
+
+  products.forEach((product) => {
+    const previous = bySku.get(product.sku);
+    if (!previous) {
+      bySku.set(product.sku, {
+        name: product.name,
+        weight: Number(product.weight_grams) || 0,
+        supplierId: product.supplier_id,
+      });
+      return;
+    }
+
+    const sameItem = previous.name.trim().toLowerCase() === product.name.trim().toLowerCase()
+      && Math.abs(previous.weight - (Number(product.weight_grams) || 0)) < 0.001;
+    if (!sameItem) return;
+
+    if (previous.supplierId && product.supplier_id && previous.supplierId !== product.supplier_id) {
+      conflicts.add(product.sku);
+      return;
+    }
+
+    if (!previous.supplierId && product.supplier_id) previous.supplierId = product.supplier_id;
+  });
+
+  return Array.from(conflicts);
 };

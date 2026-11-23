@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useActivityLogger } from '@/hooks/useActivityLog';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
 import type { Product, ProductFormData, ProductStatus, TypeOfWork } from '@/types/inventory';
-import { buildSupplierNameIndex, resolveVendorName } from '@/lib/inventoryImportVendors';
+import { buildSupplierNameIndex, findConflictingVendorSkus, resolveVendorName } from '@/lib/inventoryImportVendors';
 
 
 interface Category {
@@ -495,6 +495,16 @@ export function useInventory() {
               : p.supplier_id || null,
           };
         });
+
+      const conflictingVendorSkus = findConflictingVendorSkus(validProducts);
+      if (conflictingVendorSkus.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Bulk import stopped: conflicting vendors',
+          description: `The same SKU has different vendors in the file: ${conflictingVendorSkus.slice(0, 3).join(', ')}${conflictingVendorSkus.length > 3 ? ` … and ${conflictingVendorSkus.length - 3} more` : ''}. No products were imported.`,
+        });
+        return false;
+      }
 
       // Existing products indexed by SKU for merge / conflict detection
       const existingBySku = new Map<string, { id: string; name: string; weight_grams: number; quantity: number; supplier_id: string | null }>();

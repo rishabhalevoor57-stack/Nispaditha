@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildSupplierNameIndex,
+  findConflictingVendorSkus,
   findVendorColumnIndex,
   hasVendorLikeHeader,
   resolveVendorName,
@@ -37,5 +38,12 @@ describe('bulk import vendor matching', () => {
       status: 'blank',
       supplierId: 'existing-vendor',
     });
+  });
+
+  it('blocks duplicate SKU rows that assign different vendors to the same product', () => {
+    expect(findConflictingVendorSkus([
+      { sku: 'SKU001', name: 'Silver Ring', weight_grams: 5.5, supplier_id: 'vendor-1' },
+      { sku: 'SKU001', name: 'Silver Ring', weight_grams: 5.5, supplier_id: 'vendor-2' },
+    ])).toEqual(['SKU001']);
   });
 });
