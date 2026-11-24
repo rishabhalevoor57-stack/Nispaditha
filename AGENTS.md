@@ -3,3 +3,5 @@
 - Stock reporting refreshes on product changes, inventory refresh events, page entry, and periodic reads; fallback polling covers environments where database realtime is not enabled.
 - SKU registry history without branch ownership is included only in consolidated reporting; branch reports use preserved product history to avoid attributing global SKUs to a branch.
 - Bulk inventory vendor headers and supplier-name resolution share a pure utility so parsing and matching stay consistent.
+- Active product SKUs are unique within a branch, allowing the same SKU to be stocked in multiple branches for transfers.
+- Service-form invoices derive paid and due amounts from an explicit settlement helper so invoice totals and payment receipts reflect only money received.
